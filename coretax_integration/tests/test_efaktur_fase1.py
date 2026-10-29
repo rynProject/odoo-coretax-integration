@@ -514,7 +514,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         faktur._apply_remote(faktur_body("APPROVED", lastError="Pembatalan ditolak: Faktur sudah dikreditkan pembeli"))
         self.assertEqual(faktur.state, "approved")
         bodies = " ".join(move.message_ids.mapped("body"))
-        self.assertIn("Pembatalan e-Faktur ditolak DJP: Faktur sudah dikreditkan pembeli. e-Faktur tetap berlaku.",
+        self.assertIn("Pembatalan e-Faktur tidak berhasil: Faktur sudah dikreditkan pembeli. e-Faktur tetap berlaku.",
                       bodies)
 
     def test_normal_approval_does_not_post_cancel_rejection(self):

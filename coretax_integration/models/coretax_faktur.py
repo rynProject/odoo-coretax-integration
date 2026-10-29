@@ -151,7 +151,7 @@ class CoretaxFaktur(models.Model):
                                                     new=rec.nomor_faktur or rec.display_name))
             for rec in cancel_rejected:
                 reason = re.sub(r"^Pembatalan ditolak:\s*", "", rec.last_error or "").strip().rstrip(".")
-                rec.move_id.message_post(body=_("Pembatalan e-Faktur ditolak DJP: %s. e-Faktur tetap berlaku.",
+                rec.move_id.message_post(body=_("Pembatalan e-Faktur tidak berhasil: %s. e-Faktur tetap berlaku.",
                                                 reason or _("tanpa keterangan")))
         return result
 
