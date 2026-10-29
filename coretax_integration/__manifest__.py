@@ -1,5 +1,5 @@
 {
-    "name": "Coretax Integration (AksaTax)",
+    "name": "Coretax Integration",
     "summary": "Kirim e-Faktur & bukti potong dari Odoo ke DJP (Coretax) lewat AksaTax, status otomatis kembali ke Odoo.",
     "description": """
 Coretax Integration (AksaTax)
