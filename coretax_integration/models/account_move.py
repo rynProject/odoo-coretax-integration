@@ -467,8 +467,7 @@ class AccountMove(models.Model):
         dpp = ppn = 0
         for (kind, rate), lines in by_kind.items():
             net = sum(lines.mapped("balance"))
-            if kind != "ppn_zero":
-                dpp += abs(net)
+            dpp += abs(net)  # baris 0%/dibebaskan (kode 07/08) ikut DPP dengan PPN 0
             for line in lines:
                 base = abs(line.balance)
                 if kind == "ppn_non_luxury":

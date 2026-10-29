@@ -523,3 +523,17 @@ class TestRetur(CoretaxTestCommon):
             self.assertEqual(retur.state, "error")
             self.assertEqual(retur.version, 2 if bumped else 1, code)
             retur.unlink()
+
+    def test_amounts_zero_and_exempt_lines_count_in_dpp(self):
+        for xmlid in ("tax_ST0", "tax_ST2"):
+            credit, faktur = self._sale_credit(self._chart_tax(xmlid), faktur_vals={})
+            self.assertEqual(credit._coretax_retur_amounts(faktur=faktur),
+                             {"dpp": 1000000, "ppn": 0, "ppnbm": 0, "tarif": 12}, xmlid)
+        wizard = self._wizard(credit)
+        self.assertEqual((wizard.nilai_dpp, wizard.nilai_ppn), (1000000, 0))
+        _fake, patcher = self._patch({
+            ("POST", "/nota-retur"): (201, retur_body()),
+            ("POST", f"/nota-retur/{RETUR_ID}/kirim"): (200, retur_body("SUBMITTED"))})
+        with patcher:
+            wizard.action_confirm()
+        self.assertEqual(credit.coretax_retur_ids.state, "submitted")
