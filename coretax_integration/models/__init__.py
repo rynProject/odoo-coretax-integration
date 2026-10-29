@@ -5,4 +5,5 @@ from . import coretax_bupot
 from . import account_move
 from . import res_partner
 from . import account_tax
+from . import account_move_line
 from . import template_id
