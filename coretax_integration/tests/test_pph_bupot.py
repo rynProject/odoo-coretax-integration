@@ -162,3 +162,36 @@ class TestPphBupot(PphTestCommon):
         bill._reverse_moves([{"invoice_date": bill.invoice_date}], cancel=True)
         self.assertEqual(sent.jumlah_bruto, 15_000_000)
         self.assertTrue(bill.activity_ids.filtered(lambda a: sent.name in (a.summary or "")))
+
+    def _partial_refund(self, bill):
+        refund = bill._reverse_moves([{"invoice_date": bill.invoice_date}])
+        refund.invoice_line_ids[1:].unlink()
+        refund.invoice_line_ids.price_unit = 4_000_000
+        refund.action_post()
+        return refund
+
+    def test_cancel_posted_credit_note_restores_dpp(self):
+        bill = self._three_lines()
+        refund = self._partial_refund(bill)
+        self.assertEqual(self._teknik(bill).jumlah_bruto, 11_000_000)
+        refund.button_cancel()
+        self.assertEqual(self._teknik(bill).jumlah_bruto, 15_000_000)
+
+    def test_cancel_credit_note_on_sent_bupot_single_activity(self):
+        bill = self._three_lines()
+        sent = self._teknik(bill)
+        sent.write({"aksatax_id": "x-1", "state": "approved"})
+        refund = self._partial_refund(bill)
+        refund.button_cancel()
+        summary = "Pembetulan bukti potong %s" % sent.name
+        self.assertEqual(len(bill.activity_ids.filtered(lambda a: a.summary == summary)), 1)
+        bill._coretax_sync_bupot()
+        self.assertEqual(len(bill.activity_ids.filtered(lambda a: a.summary == summary)), 1)
+
+    def test_orphan_rejected_bupot_can_be_unlinked(self):
+        bill = self._three_lines()
+        bupot = self._teknik(bill)
+        bupot.write({"aksatax_id": "x-1", "state": "rejected"})
+        bupot.move_id = False
+        bupot.unlink()
+        self.assertFalse(bupot.exists())

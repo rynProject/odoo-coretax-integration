@@ -152,7 +152,7 @@ class CoretaxBupot(models.Model):
             rec.pph_selisih = -sum(rec.tax_line_ids.mapped("balance")) - rec.pph_estimasi
 
     def unlink(self):
-        if not self.env.context.get("coretax_bupot_sync") and self.filtered(lambda b: b.origin == "bill"):
+        if not self.env.context.get("coretax_bupot_sync") and self.filtered(lambda b: b.origin == "bill" and b.move_id):
             raise UserError(_("Bukti potong dari tagihan vendor mengikuti tagihannya. "
                               "Ubah, batalkan, atau hapus tagihannya."))
         return super().unlink()

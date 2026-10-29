@@ -71,7 +71,7 @@ class AccountMove(models.Model):
                     else:
                         to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena DPP-nya menjadi 0 "
                                                    "setelah nota kredit.", tax_object.code)))
-                elif bupot.jumlah_bruto != dpp:
+                elif bill.company_currency_id.compare_amounts(bupot.jumlah_bruto, dpp) != 0:
                     # sudah di AksaTax: jangan diubah, beri peringatan dan aktivitas pembetulan
                     bill._coretax_warn_sent_bupot(bupot, dpp)
             for bupot in active.filtered(lambda b: b.state in EDITABLE_STATES and b.tax_object_id not in groups):
@@ -84,6 +84,9 @@ class AccountMove(models.Model):
     def _coretax_warn_sent_bupot(self, bupot, new_dpp):
         """Catat dan jadwalkan aktivitas saat DPP bupot yang sudah di AksaTax berubah."""
         self.ensure_one()
+        summary = _("Pembetulan bukti potong %s", bupot.name)
+        if self.activity_ids.filtered(lambda a: a.summary == summary):
+            return  # peringatan untuk bupot ini sudah ada dan belum diselesaikan
         old_dpp = bupot.jumlah_bruto
         bupot.message_post(body=_(
             "DPP tagihan berubah dari %(old)s menjadi %(new)s, tetapi bukti potong ini sudah ada di AksaTax "
@@ -95,10 +98,10 @@ class AccountMove(models.Model):
                  "sudah ada di AksaTax. Lakukan pembetulan atau pembatalan bukti potong di AksaTax.",
                  bill=self.name, old=old_dpp, new=new_dpp, bupot=bupot.name)
         self.activity_schedule("mail.mail_activity_data_todo", user_id=user.id,
-                               summary=_("Pembetulan bukti potong %s", bupot.name), note=note)
+                               summary=summary, note=note)
 
     def _coretax_bupot_guard(self, action_label):
-        sent = self.coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b._coretax_is_at_aksatax())
+        sent = self.filtered(lambda m: m.move_type in ("in_invoice", "in_receipt")).coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b._coretax_is_at_aksatax())
         if sent:
             raise UserError(_(
                 "Tagihan %(moves)s punya bukti potong yang sudah ada di AksaTax (%(bupots)s). Batalkan dulu "
@@ -112,7 +115,7 @@ class AccountMove(models.Model):
         return parents.filtered(lambda m: m.state == "posted" and m.move_type in ("in_invoice", "in_receipt"))
 
     def _coretax_delete_editable_bupots(self, note=None):
-        editable = self.coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b.state in EDITABLE_STATES)
+        editable = self.filtered(lambda m: m.move_type in ("in_invoice", "in_receipt")).coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b.state in EDITABLE_STATES)
         moves = editable.move_id
         editable.with_context(coretax_bupot_sync=True).unlink()
         if note:
@@ -128,10 +131,9 @@ class AccountMove(models.Model):
 
     def button_cancel(self):
         self._coretax_bupot_guard(_("membatalkan"))
-        parents = self._coretax_refund_parents()
+        # nota kredit terposting melewati button_draft (yang sudah menyinkronkan induknya) sebelum dibatalkan
         res = super().button_cancel()
         self._coretax_delete_editable_bupots(_("Bukti potong yang belum dikirim dihapus karena tagihan dibatalkan."))
-        parents._coretax_sync_bupot()
         return res
 
     def unlink(self):
