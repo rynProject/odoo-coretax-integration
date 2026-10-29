@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from .coretax_bupot import EDITABLE_STATES, INACTIVE_STATES
@@ -10,6 +10,30 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     coretax_bupot_ids = fields.One2many("coretax.bupot", "move_id", string="Bukti potong PPh")
+    coretax_bupot_count = fields.Integer(compute="_compute_coretax_bupot_count", string="Jumlah bukti potong")
+    coretax_has_pph = fields.Boolean(compute="_compute_coretax_has_pph", string="Punya baris PPh")
+
+    @api.depends("coretax_bupot_ids")
+    def _compute_coretax_bupot_count(self):
+        for move in self:
+            move.coretax_bupot_count = len(move.coretax_bupot_ids)
+
+    @api.depends("invoice_line_ids.tax_ids", "invoice_line_ids.coretax_tax_object_id")
+    def _compute_coretax_has_pph(self):
+        for move in self:
+            move.coretax_has_pph = any(
+                line.display_type == "product" and line.coretax_tax_object_id
+                and line.tax_ids.filtered("coretax_tax_object_id")
+                for line in move.invoice_line_ids)
+
+    def action_coretax_view_bupot(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_bupot")
+        action["domain"] = [("move_id", "=", self.id)]
+        action["context"] = {"active_test": False}
+        if self.coretax_bupot_count == 1:
+            action.update(views=[[False, "form"]], res_id=self.coretax_bupot_ids.id)
+        return action
 
     def _get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line(self):
         # EXTENDS 'account': jumlahkan pajak per repartition line, bukan per kode objek PPh,

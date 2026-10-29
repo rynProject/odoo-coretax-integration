@@ -11,6 +11,8 @@
                 <field name="move_id"/>
                 <filter name="todo" string="Belum dikirim / gagal" domain="[('state', 'in', ('new', 'error'))]"/>
                 <filter name="in_aksatax" string="Di AksaTax" domain="[('state', 'not in', ('new', 'error'))]"/>
+                <filter name="from_bill" string="Dari tagihan" domain="[('origin', '=', 'bill')]"/>
+                <filter name="manual" string="Manual" domain="[('origin', '=', 'manual')]"/>
                 <filter name="approved" string="Disetujui DJP" domain="[('state', '=', 'approved')]"/>
                 <separator/>
                 <filter name="date" string="Tanggal pemotongan" date="tanggal_pemotongan"/>
@@ -75,22 +77,26 @@
                         <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <b>Perlu tindakan:</b>
                         <field name="last_error" class="d-block" readonly="1"/>
                     </div>
+                    <div class="alert alert-warning" role="alert" invisible="origin != 'bill' or (pph_selisih &gt; -1 and pph_selisih &lt; 1)">
+                        <i title="Selisih" class="fa fa-exclamation-triangle"/> PPh di jurnal berbeda dengan perkiraan PPh DJP
+                        (dibulatkan ke bawah). Periksa sebelum mengirim.
+                    </div>
                     <div class="oe_title">
                         <label for="name" string="Bukti Potong"/>
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
                         <group string="Penerima penghasilan">
-                            <field name="partner_id" readonly="state not in ('new', 'error')"
+                            <field name="partner_id" readonly="state not in ('new', 'error') or origin == 'bill'"
                                    options="{'no_create': True}"/>
                             <field name="partner_match_state" widget="badge" readonly="1"
                                    decoration-success="partner_match_state == 'matched'"
                                    decoration-warning="partner_match_state == 'unmatched'"
                                    decoration-danger="partner_match_state == 'no_id'"/>
-                            <field name="jenis" widget="radio" readonly="state not in ('new', 'error')"/>
+                            <field name="jenis" widget="radio" readonly="state not in ('new', 'error') or origin == 'bill'"/>
                         </group>
                         <group string="Objek pajak">
-                            <field name="tax_object_id" readonly="state not in ('new', 'error')" options="{'no_create': True}"/>
+                            <field name="tax_object_id" readonly="state not in ('new', 'error') or origin == 'bill'" options="{'no_create': True}"/>
                             <field name="tarif"/>
                             <field name="tanggal_pemotongan" readonly="state not in ('new', 'error')"/>
                         </group>
@@ -117,11 +123,37 @@
                             <field name="dok_tanggal" readonly="state not in ('new', 'error')"/>
                         </group>
                         <group>
-                            <field name="move_id" readonly="state not in ('new', 'error')"/>
+                            <field name="origin" readonly="1"/>
+                            <field name="move_id" readonly="state not in ('new', 'error') or origin == 'bill'"/>
                             <field name="ajukan" readonly="state not in ('new', 'error')"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="1"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Sumber" name="source" invisible="origin != 'bill'">
+                            <group>
+                                <group>
+                                    <field name="pph_gl"/>
+                                    <field name="pph_selisih"/>
+                                </group>
+                            </group>
+                            <field name="source_line_ids" readonly="1">
+                                <list>
+                                    <field name="move_id"/>
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="balance" string="DPP (IDR)"/>
+                                </list>
+                            </field>
+                            <field name="tax_line_ids" readonly="1">
+                                <list>
+                                    <field name="move_id"/>
+                                    <field name="account_id"/>
+                                    <field name="balance"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>

@@ -1,5 +1,5 @@
 from odoo.exceptions import ValidationError
-from odoo.tests import tagged
+from odoo.tests import Form, tagged
 
 from odoo.addons.coretax_integration import _coretax_post_init
 
@@ -105,3 +105,20 @@ class TestPphTax(PphTestCommon):
         tax_vals = [v for v in res["tax_lines"] if "PPh 23" in v["name"]]
         self.assertEqual(len(tax_vals), 1)
         self.assertAlmostEqual(abs(tax_vals[0]["balance"]), 6_000)
+
+    def test_bill_form_fills_object_and_buttons(self):
+        with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as form:
+            form.partner_id = self.partner_a
+            form.invoice_date = "2026-10-01"
+            with form.invoice_line_ids.new() as line:
+                line.product_id = self.product_a
+                line.price_unit = 20_000_000
+                line.tax_ids.clear()
+                line.tax_ids.add(self.pph42)
+                self.assertEqual(line.coretax_tax_object_id, self.obj_sewa)
+        bill = form.save()
+        bill.action_post()
+        self.assertTrue(bill.coretax_has_pph)
+        self.assertEqual(bill.coretax_bupot_count, 1)
+        action = bill.action_coretax_view_bupot()
+        self.assertEqual(action["res_id"], bill.coretax_bupot_ids.id)
