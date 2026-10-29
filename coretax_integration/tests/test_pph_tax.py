@@ -122,3 +122,21 @@ class TestPphTax(PphTestCommon):
         self.assertEqual(bill.coretax_bupot_count, 1)
         action = bill.action_coretax_view_bupot()
         self.assertEqual(action["res_id"], bill.coretax_bupot_ids.id)
+
+    def test_pph_tax_forbidden_inside_group_tax(self):
+        group = self.env["account.tax"].create({
+            "name": "Grup", "amount_type": "group", "type_tax_use": "purchase",
+            "company_id": self.company_data["company"].id, "children_tax_ids": [(6, 0, [self.ppn.id])]})
+        with self.assertRaisesRegex(ValidationError, "grup"):
+            group.children_tax_ids = [(4, self.pph23.id)]
+        with self.assertRaisesRegex(ValidationError, "grup"):
+            self.env["account.tax"].create({
+                "name": "Grup2", "amount_type": "group", "type_tax_use": "purchase",
+                "company_id": self.company_data["company"].id,
+                "children_tax_ids": [(6, 0, [self.ppn.id, self.pph23.id])]})
+        plain = self.pph23.copy({"name": "PPh polos", "coretax_tax_object_id": False})
+        group2 = self.env["account.tax"].create({
+            "name": "Grup3", "amount_type": "group", "type_tax_use": "purchase",
+            "company_id": self.company_data["company"].id, "children_tax_ids": [(6, 0, [plain.id])]})
+        with self.assertRaisesRegex(ValidationError, "grup"):
+            plain.coretax_tax_object_id = self.obj_teknik

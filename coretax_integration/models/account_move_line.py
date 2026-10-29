@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools.sql import column_exists, create_column
 
 
 class AccountMoveLine(models.Model):
@@ -7,9 +8,25 @@ class AccountMoveLine(models.Model):
 
     coretax_tax_object_id = fields.Many2one(
         "coretax.tax.object", string="Kode objek PPh (Coretax)",
-        compute="_compute_coretax_tax_object_id", store=True, readonly=False, copy=True, index=True,
+        compute="_compute_coretax_tax_object_id", store=True, readonly=False, copy=True, index="btree_not_null",
         help="Kode objek pajak PPh baris ini. Terisi otomatis dari pajak PPh pada baris; "
              "dapat diganti bila kode objek berbeda.")
+
+    def _auto_init(self):
+        # kolom dibuat langsung (kosong) agar upgrade tidak menghitung ulang seluruh journal item;
+        # pajak PPh belum ada sebelum versi ini, jadi baris lama memang kosong.
+        if not column_exists(self.env.cr, "account_move_line", "coretax_tax_object_id"):
+            create_column(self.env.cr, "account_move_line", "coretax_tax_object_id", "int4")
+        return super()._auto_init()
+
+    def copy_data(self, default=None):
+        # nilai False eksplisit (baris lama sebelum pajaknya diberi kode objek) jangan disalin,
+        # agar compute mengisinya dari pajak.
+        vals_list = super().copy_data(default)
+        for vals in vals_list:
+            if "coretax_tax_object_id" in vals and not vals["coretax_tax_object_id"]:
+                del vals["coretax_tax_object_id"]
+        return vals_list
 
     @api.depends("tax_ids")
     def _compute_coretax_tax_object_id(self):
