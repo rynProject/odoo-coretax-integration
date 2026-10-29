@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from freezegun import freeze_time
 
 from odoo.exceptions import UserError
@@ -96,10 +98,12 @@ class TestCoretaxFlow(CoretaxTestCommon):
     def test_check_blocks_unsupported_transaction_code(self):
         move = self._invoice()
         move.l10n_id_kode_transaksi = "10"
-        levels = [level for level, _msg in move._coretax_check(self.connection)]
-        self.assertIn("error", levels)
-        with self.assertRaises(UserError):
-            move._coretax_create_faktur(connection=self.connection)
+        with patch("odoo.addons.coretax_integration.models.account_move.SUPPORTED_TRX_CODES",
+                   {"01", "02", "03", "04", "05", "06", "07", "08", "09"}):
+            levels = [level for level, _msg in move._coretax_check(self.connection)]
+            self.assertIn("error", levels)
+            with self.assertRaises(UserError):
+                move._coretax_create_faktur(connection=self.connection)
 
     def test_send_wizard_reports_results(self):
         move = self._invoice()
