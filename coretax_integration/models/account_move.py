@@ -8,9 +8,9 @@ from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STAT
 
 _logger = logging.getLogger(__name__)
 
-# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-09). 07/08 ikut
-# mengirim keterangan tambahan; 10 belum didukung AksaTax.
-SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09"}
+# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-10). 07/08 ikut
+# mengirim keterangan tambahan; 10 hanya diterima AksaTax versi terbaru.
+SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"}
 
 
 class AccountMove(models.Model):
@@ -193,6 +193,30 @@ class AccountMove(models.Model):
         return payload
 
     # ── pengiriman ────────────────────────────────────────────────────
+    def _coretax_explain_error(self, exc):
+        """AksaTax lama menolak kode transaksi 10 (atau keterangan tambahan
+        baru untuk 07/08) sebagai VALIDATION; terjemahkan jadi pesan
+        'perbarui server'."""
+        self.ensure_one()
+        kode = self.l10n_id_kode_transaksi
+        if exc.code != "VALIDATION" or kode not in ("07", "08", "10"):
+            return exc
+        for detail in exc.details or []:
+            if not isinstance(detail, dict):
+                continue
+            path = detail.get("path")
+            if isinstance(path, (list, tuple)):
+                path = ".".join(str(part) for part in path)
+            if kode == "10" and path == "kdJenisTransaksi":
+                return AksaTaxError(
+                    _("Kode transaksi 10 butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
+                    code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
+            if kode in ("07", "08") and path == "idKeteranganTambahan":
+                return AksaTaxError(
+                    _("Keterangan tambahan ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
+                    code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
+        return exc
+
     def _coretax_create_faktur(self, mode="send", connection=None):
         """Buat e-Faktur di AksaTax untuk satu faktur, lalu (bila mode 'send')
         kirim ke DJP. Selalu menghasilkan dokumen coretax.faktur - yang gagal
@@ -225,7 +249,8 @@ class AccountMove(models.Model):
                 result = client.send_faktur(faktur.aksatax_id, f"{faktur._idempotency_base()}-kirim-1")
                 faktur.write({"state": REMOTE_STATES.get(result.get("status"), "submitted"), "send_attempt": 1,
                               "submitted_at": fields.Datetime.now()})
-        except AksaTaxError as exc:
+        except AksaTaxError as caught:
+            exc = self._coretax_explain_error(caught)
             if faktur.aksatax_id:
                 # draft sudah ada di AksaTax, hanya kirim ke DJP yang gagal:
                 # status tetap draft dan bisa dikirim ulang dari Odoo

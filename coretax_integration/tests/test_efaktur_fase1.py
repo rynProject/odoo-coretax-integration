@@ -128,10 +128,6 @@ class TestEfakturFase1(CoretaxTestCommon):
         move = self._invoice_code("07")
         self.assertTrue(any("keterangan tambahan" in e for e in self._errors(move)))
 
-    def test_code_10_still_unsupported(self):
-        move = self._invoice_code("10")
-        self.assertTrue(any("belum didukung" in e for e in self._errors(move)))
-
     def test_code_01_has_no_keterangan(self):
         move = self._invoice_code("01")
         self.assertNotIn("idKeteranganTambahan", move._coretax_payload(CP_ID))

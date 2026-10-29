@@ -5,3 +5,4 @@ from . import test_kesiapan
 from . import test_pph_tax
 from . import test_pph_bupot
 from . import test_efaktur_fase1
+from . import test_efaktur_fase2
