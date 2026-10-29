@@ -44,8 +44,12 @@ class AccountTax(models.Model):
         results = super()._prepare_base_line_tax_repartition_grouping_key(
             base_line, base_line_grouping_key, tax_data, tax_rep_data)
         # Hanya journal item PPh yang dipecah per kode objek; PPN tetap satu.
-        results["coretax_tax_object_id"] = (
-            base_line["coretax_tax_object_id"].id if tax_data["tax"].coretax_tax_object_id else False)
+        # Hitungan diskon pembayaran dini harus menjumlah per repartition line, tanpa pecahan.
+        tax_object = tax_data["tax"].coretax_tax_object_id
+        if tax_object and not self.env.context.get("coretax_no_pph_split"):
+            results["coretax_tax_object_id"] = (base_line["coretax_tax_object_id"] or tax_object).id
+        else:
+            results["coretax_tax_object_id"] = False
         return results
 
     def _prepare_tax_line_repartition_grouping_key(self, tax_line):

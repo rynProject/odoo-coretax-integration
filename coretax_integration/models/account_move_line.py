@@ -27,6 +27,10 @@ class AccountMoveLine(models.Model):
             pph_taxes = line.tax_ids.filtered("coretax_tax_object_id")
             if len(pph_taxes) > 1:
                 raise ValidationError(_("Satu baris hanya boleh memakai satu pajak PPh."))
+            if pph_taxes and not line.coretax_tax_object_id:
+                raise ValidationError(_(
+                    "Baris dengan pajak PPh wajib punya kode objek pajak. "
+                    "Pilih kode objek di kolom Kode objek."))
             if pph_taxes and line.coretax_tax_object_id \
                     and line.coretax_tax_object_id.jenis != pph_taxes.coretax_tax_object_id.jenis:
                 raise ValidationError(_(

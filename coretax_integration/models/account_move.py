@@ -16,6 +16,12 @@ SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "09"}
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    def _get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line(self):
+        # EXTENDS 'account': jumlahkan pajak per repartition line, bukan per kode objek PPh,
+        # supaya selisih diskon pembayaran dini PPh tidak saling menimpa.
+        return super(AccountMove, self.with_context(coretax_no_pph_split=True)) \
+            ._get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line()
+
     coretax_faktur_ids = fields.One2many("coretax.faktur", "move_id", string="e-Faktur Coretax")
     coretax_faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur terakhir",
                                         compute="_compute_coretax_faktur_id", store=True, index=True)

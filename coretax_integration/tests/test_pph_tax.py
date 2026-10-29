@@ -84,3 +84,24 @@ class TestPphTax(PphTestCommon):
     def test_two_pph_taxes_on_one_line_rejected(self):
         with self.assertRaises(ValidationError):
             self._bill([(1_000_000, self.pph23 | self.pph42)], post=False)
+
+    def test_pph_line_requires_object(self):
+        bill = self._bill([(1_000_000, self.pph23)], post=False)
+        with self.assertRaisesRegex(ValidationError, "wajib punya kode objek pajak"):
+            bill.invoice_line_ids[0].coretax_tax_object_id = False
+
+    def test_early_payment_discount_with_split_pph(self):
+        term = self.env["account.payment.term"].create({
+            "name": "2/10 net 30 PPh", "early_pay_discount_computation": "included",
+            "early_discount": True, "discount_percentage": 2, "discount_days": 10,
+            "line_ids": [(0, 0, {"value": "percent", "value_amount": 100, "nb_days": 30})],
+        })
+        bill = self._bill([(10_000_000, self.pph23), (5_000_000, self.pph23, self.obj_konsultan)],
+                          invoice_payment_term_id=term.id)
+        term_line = bill.line_ids.filtered(lambda l: l.display_type == "payment_term")
+        res = self.env["account.move"]._get_invoice_counterpart_amls_for_early_payment_discount(
+            [{"aml": term_line, "amount_currency": term_line.amount_currency, "balance": term_line.balance}],
+            term_line.balance)
+        tax_vals = [v for v in res["tax_lines"] if "PPh 23" in v["name"]]
+        self.assertEqual(len(tax_vals), 1)
+        self.assertAlmostEqual(abs(tax_vals[0]["balance"]), 6_000)
