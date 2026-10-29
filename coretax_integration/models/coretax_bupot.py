@@ -211,6 +211,9 @@ class CoretaxBupot(models.Model):
             problems.append(_("Tagihan vendor %s belum diposting.", self.move_id.display_name))
         if self.jumlah_bruto <= 0:
             problems.append(_("Jumlah bruto harus lebih dari 0."))
+        if self.origin == "bill" and self.tarif == 0 and self.fasilitas == "NONE":
+            problems.append(_("Bukti potong dengan tarif 0 wajib memakai fasilitas (mis. SKB). "
+                              "Pilih fasilitas dan isi nomor dokumennya."))
         if self.fasilitas != "NONE" and not self.nomor_fasilitas:
             problems.append(_("Isi nomor dokumen fasilitas (%s).", dict(FASILITAS)[self.fasilitas]))
         if self.fasilitas == "SKD" and not self.tarif_fasilitas:

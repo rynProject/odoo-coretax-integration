@@ -97,7 +97,7 @@
                         </group>
                         <group string="Objek pajak">
                             <field name="tax_object_id" readonly="state not in ('new', 'error') or origin == 'bill'" options="{'no_create': True}"/>
-                            <field name="tarif"/>
+                            <field name="tarif" readonly="state not in ('new', 'error') or origin == 'bill'"/>
                             <field name="tanggal_pemotongan" readonly="state not in ('new', 'error')"/>
                         </group>
                     </group>
