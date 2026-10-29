@@ -24,6 +24,8 @@ DOK_DASAR = [
     ("01", "Faktur Pajak"), ("02", "Invoice"), ("03", "Pengumuman"), ("04", "Surat Perjanjian"),
     ("05", "Bukti Pembayaran"), ("06", "Akta Perikatan"), ("07", "Akta RUPS"), ("08", "Surat Pernyataan"),
 ]
+EDITABLE_STATES = ("new", "error")
+INACTIVE_STATES = ("rejected", "cancelled")
 FASILITAS = [
     ("NONE", "Tanpa fasilitas"), ("SKB", "Surat Keterangan Bebas (SKB)"), ("SKD", "Surat Keterangan Domisili (SKD/P3B)"),
     ("DTP", "Ditanggung Pemerintah (DTP)"), ("PP23", "PP 23 / PP 55 (UMKM)"), ("LAINNYA", "Fasilitas lainnya"),
@@ -71,6 +73,10 @@ class CoretaxBupot(models.Model):
     _order = "tanggal_pemotongan desc, id desc"
     _check_company_auto = True
 
+    _bill_unique = models.UniqueIndex(
+        "(move_id, tax_object_id) WHERE origin = 'bill' AND state NOT IN ('rejected', 'cancelled')",
+        "Tagihan ini sudah punya bukti potong aktif untuk kode objek pajak yang sama.")
+
     name = fields.Char(string="Bukti Potong", compute="_compute_name", store=True)
     company_id = fields.Many2one("res.company", string="Perusahaan", required=True, default=lambda self: self.env.company)
     currency_id = fields.Many2one("res.currency", default=lambda self: self.env.ref("base.IDR"), readonly=True)
@@ -83,19 +89,24 @@ class CoretaxBupot(models.Model):
                              string="Jenis", required=True, default="BPPU", tracking=True)
     tax_object_id = fields.Many2one("coretax.tax.object", string="Kode objek pajak", required=True, tracking=True,
                                     domain="[('jenis', '=', jenis)]")
-    tarif = fields.Float(related="tax_object_id.tarif", string="Tarif (%)")
-    tanggal_pemotongan = fields.Date(string="Tanggal pemotongan", required=True, default=fields.Date.context_today)
+    origin = fields.Selection([("bill", "Dari tagihan"), ("manual", "Manual")], string="Asal", default="manual",
+                              readonly=True, required=True)
+    tarif = fields.Float(string="Tarif (%)", compute="_compute_tarif", store=True, readonly=False, tracking=True)
+    tanggal_pemotongan = fields.Date(string="Tanggal pemotongan", required=True, default=fields.Date.context_today,
+                                     tracking=True)
     jumlah_bruto = fields.Monetary(string="Jumlah bruto (DPP)", required=True, tracking=True,
                                    help="Nilai penghasilan sebelum dipotong pajak, dalam Rupiah.")
     kira_netto = fields.Float(string="Perkiraan penghasilan neto (%)", default=100.0,
                               help="Untuk PPh 26 (BPNR). Biarkan 100 bila tidak ada ketentuan khusus.")
     pph_estimasi = fields.Monetary(string="Perkiraan PPh dipotong", compute="_compute_pph_estimasi")
-    fasilitas = fields.Selection(FASILITAS, string="Fasilitas pajak", default="NONE", required=True)
-    nomor_fasilitas = fields.Char(string="Nomor dokumen fasilitas")
+    fasilitas = fields.Selection(FASILITAS, string="Fasilitas pajak", default="NONE", required=True, tracking=True)
+    nomor_fasilitas = fields.Char(string="Nomor dokumen fasilitas", tracking=True)
     tarif_fasilitas = fields.Float(string="Tarif P3B (%)", help="Wajib untuk fasilitas SKD.")
-    dok_jenis = fields.Selection(DOK_DASAR, string="Jenis dokumen dasar", default="02", required=True)
-    dok_nomor = fields.Char(string="Nomor dokumen dasar", required=True)
-    dok_tanggal = fields.Date(string="Tanggal dokumen dasar", required=True, default=fields.Date.context_today)
+    dok_jenis = fields.Selection(DOK_DASAR, string="Jenis dokumen dasar", default="02", required=True,
+                            tracking=True)
+    dok_nomor = fields.Char(string="Nomor dokumen dasar", required=True, tracking=True)
+    dok_tanggal = fields.Date(string="Tanggal dokumen dasar", required=True, default=fields.Date.context_today,
+                               tracking=True)
     ajukan = fields.Boolean(string="Langsung ajukan persetujuan di AksaTax")
 
     state = fields.Selection(BUPOT_STATES, string="Status", default="new", required=True, tracking=True, index=True)
@@ -105,6 +116,50 @@ class CoretaxBupot(models.Model):
     version = fields.Integer(default=1, readonly=True, copy=False)
     last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
     aksatax_url = fields.Char(compute="_compute_aksatax_url")
+
+    source_line_ids = fields.Many2many("account.move.line", string="Baris sumber", compute="_compute_source_line_ids")
+    tax_line_ids = fields.Many2many("account.move.line", string="Journal item PPh", compute="_compute_tax_line_ids")
+    pph_gl = fields.Monetary(string="PPh di jurnal", compute="_compute_pph_gl")
+    pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_selisih")
+
+    @api.depends("tax_object_id")
+    def _compute_tarif(self):
+        for rec in self:
+            rec.tarif = rec.tax_object_id.tarif
+
+    def _compute_source_line_ids(self):
+        for rec in self:
+            if rec.origin == "bill" and rec.move_id:
+                rec.source_line_ids = rec.move_id._coretax_pph_groups().get(rec.tax_object_id)
+            else:
+                rec.source_line_ids = False
+
+    def _compute_tax_line_ids(self):
+        for rec in self:
+            if rec.origin == "bill" and rec.move_id:
+                rec.tax_line_ids = rec.move_id._coretax_pph_family().line_ids.filtered(
+                    lambda l: l.tax_line_id.coretax_tax_object_id and l.coretax_tax_object_id == rec.tax_object_id)
+            else:
+                rec.tax_line_ids = False
+
+    def _compute_pph_gl(self):
+        for rec in self:
+            rec.pph_gl = -sum(rec.tax_line_ids.mapped("balance"))
+
+    @api.depends("pph_estimasi")
+    def _compute_pph_selisih(self):
+        for rec in self:
+            rec.pph_selisih = -sum(rec.tax_line_ids.mapped("balance")) - rec.pph_estimasi
+
+    def unlink(self):
+        if not self.env.context.get("coretax_bupot_sync") and self.filtered(lambda b: b.origin == "bill" and b.move_id):
+            raise UserError(_("Bukti potong dari tagihan vendor mengikuti tagihannya. "
+                              "Ubah, batalkan, atau hapus tagihannya."))
+        return super().unlink()
+
+    def _coretax_is_at_aksatax(self):
+        self.ensure_one()
+        return bool(self.aksatax_id) and self.state not in INACTIVE_STATES
 
     @api.depends("nomor_bupot", "partner_id", "tax_object_id")
     def _compute_name(self):
@@ -152,8 +207,13 @@ class CoretaxBupot(models.Model):
     def _check_before_send(self):
         self.ensure_one()
         problems = []
+        if self.origin == "bill" and self.move_id.state != "posted":
+            problems.append(_("Tagihan vendor %s belum diposting.", self.move_id.display_name))
         if self.jumlah_bruto <= 0:
             problems.append(_("Jumlah bruto harus lebih dari 0."))
+        if self.origin == "bill" and self.tarif == 0 and self.fasilitas == "NONE":
+            problems.append(_("Bukti potong dengan tarif 0 wajib memakai fasilitas (mis. SKB). "
+                              "Pilih fasilitas dan isi nomor dokumennya."))
         if self.fasilitas != "NONE" and not self.nomor_fasilitas:
             problems.append(_("Isi nomor dokumen fasilitas (%s).", dict(FASILITAS)[self.fasilitas]))
         if self.fasilitas == "SKD" and not self.tarif_fasilitas:

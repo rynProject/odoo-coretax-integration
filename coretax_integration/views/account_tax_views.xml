@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tax_form_coretax" model="ir.ui.view">
+        <field name="name">account.tax.form.coretax</field>
+        <field name="model">account.tax</field>
+        <field name="inherit_id" ref="account.view_tax_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='advanced_options']//field[@name='invoice_label']" position="after">
+                <field name="coretax_tax_object_id" invisible="type_tax_use != 'purchase'"
+                       options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

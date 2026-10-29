@@ -13,13 +13,16 @@ Menghubungkan Odoo dengan AksaTax (https://aksatax.id) melalui Public API-nya:
   pelanggan, kode transaksi, kode barang/jasa, mata uang, kelompok pajak).
 * Bukti Potong PPh Unifikasi (BPPU/BPNR) dari tagihan vendor, dikirim ke
   AksaTax sebagai draft untuk ditandatangani di sana.
+* PPh pada tagihan vendor: pajak PPh (mis. PPh 23, PPh 4 ayat 2) per kode objek
+  dengan akun terpisah, serta bukti potong otomatis per kode objek saat
+  tagihan diposting, tetap sinkron saat tagihan dibatalkan atau dibuatkan nota kredit.
 * Pencocokan pelanggan/vendor dengan Lawan Transaksi AksaTax (per perusahaan).
 * Ringkasan, daftar "Perlu tindakan", dan Riwayat Sinkronisasi.
 
 Data baris e-Faktur memakai penyusun data bawaan Odoo
 (l10n_id_efaktur_coretax), jadi angkanya sama dengan XML Coretax resmi.
 """,
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
     "website": "https://www.aksa.id",
@@ -37,6 +40,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
         "views/coretax_log_views.xml",
         "views/coretax_wizard_views.xml",
         "views/account_move_views.xml",
+        "views/account_tax_views.xml",
         "views/res_partner_views.xml",
         "views/res_config_settings_views.xml",
         "views/coretax_readiness_views.xml",
@@ -52,4 +56,5 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
     "images": ["static/description/banner.png", "static/description/dashboard_screenshot.png"],
     "application": True,
     "installable": True,
+    "post_init_hook": "_coretax_post_init",
 }

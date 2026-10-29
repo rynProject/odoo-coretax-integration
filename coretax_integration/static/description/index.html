@@ -151,6 +151,7 @@
                 <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">BUKTI POTONG PPh</div>
                 <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Bukti Potong dari tagihan vendor</h3>
                 <p style="color: #5b6075; font-size: 16px; margin: 0;">Klik <b>Buat Bukti Potong</b> di tagihan vendor. Penerima, jumlah bruto, dan dokumen dasar terisi otomatis, dan perkiraan PPh dihitung dari kode objek pajak. Bukti potong dikirim ke AksaTax sebagai draft untuk ditandatangani di sana.</p>
+                <p style="color: #5b6075; font-size: 16px; margin: 12px 0 0;">Atau pasang <b>pajak PPh</b> (negatif, berkode objek; empat pajak siap pakai untuk chart template <code>id</code>) di baris tagihan: saat diposting, Odoo otomatis membuat satu bukti potong per kode objek. Tagihan yang bukti potongnya sudah di AksaTax tidak bisa direset, dibatalkan, atau dihapus, dan nota kredit memicu aktivitas pembetulan. Upgrade modul memuat pajak PPh bawaan secara otomatis.</p>
             </div>
             <div class="col-lg-7">
                 <img src="bukti_potong.png" alt="Form Bukti Potong PPh" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>

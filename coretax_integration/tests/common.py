@@ -77,3 +77,37 @@ class CoretaxTestCommon(AccountTestInvoicingCommon):
     def _patch(self, routes):
         fake = FakeAksaTax(routes)
         return fake, patch("requests.Session.request", new=lambda session, *a, **kw: fake(session, *a, **kw))
+
+
+class PphTestCommon(CoretaxTestCommon):
+    """Pajak PPh dari template l10n_id dan helper tagihan vendor ber-PPh."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        template = cls.env["account.chart.template"].with_company(cls.company_data["company"])
+        cls.pph23 = template.ref("tax_pph23_2")
+        cls.pph23_skb = template.ref("tax_pph23_skb")
+        cls.pph42 = template.ref("tax_pph42_sewa_10")
+        cls.ppn = template.ref("tax_PT4")
+        cls.obj_teknik = cls.env.ref("coretax_integration.tax_object_24_104_01")
+        cls.obj_konsultan = cls.env.ref("coretax_integration.tax_object_24_104_03")
+        cls.obj_sewa = cls.env.ref("coretax_integration.tax_object_28_402_01")
+
+    def _bill(self, lines, post=True, **vals):
+        """lines: list (price_unit, taxes) atau (price_unit, taxes, tax_object)."""
+        line_vals = []
+        for line in lines:
+            price, taxes = line[0], line[1]
+            vals_line = {"product_id": self.product_a.id, "quantity": 1, "price_unit": price,
+                         "tax_ids": [(6, 0, taxes.ids)]}
+            if len(line) > 2:
+                vals_line["coretax_tax_object_id"] = line[2].id
+            line_vals.append((0, 0, vals_line))
+        move = self.env["account.move"].create({
+            "move_type": "in_invoice", "partner_id": self.partner_a.id, "invoice_date": "2026-10-01",
+            "invoice_line_ids": line_vals, **vals,
+        })
+        if post:
+            move.action_post()
+        return move
