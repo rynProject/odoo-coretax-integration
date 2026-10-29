@@ -208,6 +208,32 @@
     </div>
 </section>
 
+<!-- Batal, ganti, PDF, nota retur -->
+<section style="padding: 0 16px 16px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <div class="row">
+            <div class="col-lg-6" style="margin-bottom: 20px;">
+                <div style="background: #f1f4fb; border-radius: 12px; padding: 24px; height: 100%; border-top: 4px solid #d9930f;">
+                    <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">KELOLA e-FAKTUR</div>
+                    <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Batal, ganti, dan PDF e-Faktur dari Odoo</h3>
+                    <p style="color: #5b6075; font-size: 16px;">Tombol <b>Batalkan e-Faktur</b> meminta alasan (minimal 5 karakter). Statusnya menjadi <b>Proses batal</b>, lalu <b>Dibatalkan</b>. Pembatalan ditahan selama e-Faktur masih punya nota retur aktif.</p>
+                    <p style="color: #5b6075; font-size: 16px;">Tombol <b>Ganti e-Faktur</b> membuka faktur untuk diedit. Saat dikirim lagi, Odoo mengirim faktur pengganti dengan NSFP asli, dan e-Faktur lama menjadi <b>Diganti</b> setelah yang baru disetujui. Dari Odoo, e-Faktur bisa diganti satu kali; penggantian kedua dilakukan di AksaTax/DJP.</p>
+                    <p style="color: #5b6075; font-size: 16px; margin: 0;">Tombol <b>Unduh PDF Faktur Pajak</b> menyimpan PDF resmi sebagai satu lampiran di faktur, diperbarui setiap kali diunduh.</p>
+                </div>
+            </div>
+            <div class="col-lg-6" style="margin-bottom: 20px;">
+                <div style="background: #f1f4fb; border-radius: 12px; padding: 24px; height: 100%; border-top: 4px solid #d9930f;">
+                    <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">NOTA RETUR</div>
+                    <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Nota retur dari nota kredit</h3>
+                    <p style="color: #5b6075; font-size: 16px;">Dari nota kredit yang sudah diposting (pelanggan atau vendor), klik <b>Kirim nota retur</b>. Nilai DPP, PPN, dan PPnBM dihitung dengan cara yang sama seperti AksaTax dan masih bisa diubah di wizard.</p>
+                    <p style="color: #5b6075; font-size: 16px;"><b>Keluaran</b> butuh faktur asal yang e-Faktur-nya sudah disetujui. <b>Masukan</b> butuh isian <b>Nomor Faktur Pajak vendor</b> (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal.</p>
+                    <p style="color: #5b6075; font-size: 16px; margin: 0;">Status kembali otomatis. <b>Batalkan nota retur</b> meminta alasan. Selama nota retur aktif, nota kredit tidak bisa direset, dibatalkan, atau dihapus. Daftarnya ada di tombol pintar <b>Nota Retur</b> dan menu <b>Coretax &rsaquo; e-Faktur &rsaquo; Nota Retur</b>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- More features -->
 <section style="padding: 8px 16px 40px;">
     <div style="max-width: 1100px; margin: 0 auto;">
@@ -231,6 +257,18 @@
                     <p style="color: #5b6075; margin: 0;">Pengguna Invoicing otomatis menjadi Pengguna Coretax, dan Administrator Akuntansi otomatis menjadi Administrator Coretax.</p>
                 </div>
             </div>
+            <div class="col-md-4" style="margin-bottom: 16px;">
+                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
+                    <h5 style="font-weight: 700; color: #1f2340;">Kode transaksi 07, 08, dan 10</h5>
+                    <p style="color: #5b6075; margin: 0;">e-Faktur bisa dikirim dengan kode 07 dan 08 (keterangan tambahan dari tab Info Lainnya; 07: 1-31, 08: 1-10) dan kode 10. Kode 10 butuh AksaTax versi terbaru.</p>
+                </div>
+            </div>
+            <div class="col-md-4" style="margin-bottom: 16px;">
+                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
+                    <h5 style="font-weight: 700; color: #1f2340;">Perbarui lawan transaksi</h5>
+                    <p style="color: #5b6075; margin: 0;">Tombol <b>Perbarui di AksaTax</b> di kontak, juga sebagai aksi daftar, memperbarui lawan transaksi yang sudah cocok di AksaTax.</p>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -246,6 +284,7 @@
                     <li>Akun <a href="https://aksatax.id" target="_blank">AksaTax</a> paket <b>Business</b> atau lebih tinggi, karena paket Starter tidak mencakup Public API.</li>
                     <li>API key dari Owner/Admin Pajak dengan izin <code>faktur:baca</code>, <code>faktur:tulis</code>, <code>faktur:kirim</code>, <code>bupot:*</code>, dan <code>status:baca</code>.</li>
                     <li>Satu API key mewakili satu NPWP, jadi setiap perusahaan di Odoo butuh API key sendiri.</li>
+                    <li>Fitur batal, ganti, PDF, dan nota retur butuh AksaTax versi terbaru. Pasang AksaTax lebih dulu (termasuk migrasi 0017 dan 0018), baru upgrade modul Odoo.</li>
                 </ul>
             </div>
             <div class="col-md-6" style="margin-bottom: 16px;">
@@ -269,11 +308,8 @@
         <h3 style="font-weight: 800; color: #1f2340;">Batasan saat ini</h3>
         <p style="color: #5b6075; font-size: 15px;">Hal berikut belum tersedia di Public API AksaTax, jadi dilakukan langsung di aplikasi AksaTax. Tombol <b>Buka di AksaTax</b> membuka dokumennya.</p>
         <ul style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
-            <li>mengubah Lawan Transaksi yang sudah ada;</li>
-            <li>membatalkan atau mengganti e-Faktur, nota retur, dan unduh PDF faktur pajak;</li>
             <li>penandatanganan dan pengiriman Bukti Potong ke DJP;</li>
-            <li>Faktur Masukan dan SPT;</li>
-            <li>kode transaksi 07/08 dan 10.</li>
+            <li>Faktur Masukan dan SPT.</li>
         </ul>
         <p style="color: #5b6075; font-size: 15px; margin: 12px 0 0;">PPh dicatat saat tagihan vendor diposting. PPh yang baru dipotong saat pembayaran, PPh yang dipotong pelanggan, dan kurs pajak KMK untuk tagihan valas belum didukung.</p>
         <p style="color: #8a8fa3; font-size: 13px; margin: 16px 0 0;">Screenshot di halaman ini memakai data contoh fiktif.</p>

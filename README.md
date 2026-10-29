@@ -13,7 +13,12 @@ Modul ada di folder [`coretax_integration/`](coretax_integration/).
 | Pemeriksaan sebelum kirim | Sebelum mengirim, setiap faktur diperiksa: NPWP/NIK pelanggan, kode transaksi, kode barang/jasa, mata uang IDR, kelompok pajak, tanggal. Pesannya ditulis dalam bahasa yang mudah dipahami. |
 | Status otomatis | Odoo menanyakan kabar terbaru ke AksaTax setiap 5 menit. Bisa juga memakai webhook bertanda tangan HMAC supaya lebih cepat. Status dan nomor faktur pajak tampil di faktur Odoo. |
 | Perlu tindakan | e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasannya dan tombol **Buat ulang e-Faktur**. Penanggung jawab faktur juga menerima **aktivitas** "Perbaiki e-Faktur" di Odoo. |
-| Lawan transaksi | Pelanggan dan vendor ditautkan ke *Lawan Transaksi* AksaTax lewat NPWP (**Cocokkan semua**, wizard **Cocokkan dengan AksaTax**, atau otomatis saat mengirim). Yang belum ada bisa **didaftarkan dari Odoo** di **Data Master › Lawan Transaksi** (satu per satu atau massal); NPWP yang ternyata sudah terdaftar langsung ditautkan. Bila diaktifkan, kontak baru juga didaftarkan otomatis saat mengirim e-Faktur/bukti potong. |
+| Batal e-Faktur | Tombol **Batalkan e-Faktur** di faktur yang sudah disetujui meminta alasan (minimal 5 karakter). Status menjadi **Proses batal**, lalu **Dibatalkan**. Ditahan selama e-Faktur masih punya nota retur aktif. |
+| Ganti e-Faktur | Tombol **Ganti e-Faktur** membuka faktur untuk diedit; pengiriman berikutnya berupa faktur pengganti dengan NSFP asli. Setelah disetujui, e-Faktur lama berstatus **Diganti**. |
+| PDF faktur pajak | Tombol **Unduh PDF Faktur Pajak** menyimpan PDF resmi sebagai satu lampiran di faktur, diperbarui setiap kali diunduh. |
+| Kode transaksi 07/08/10 | e-Faktur bisa dikirim dengan kode 07 dan 08 (keterangan tambahan dari tab Info Lainnya; 07: 1-31, 08: 1-10) dan kode 10. |
+| Nota retur | Dari nota kredit yang sudah diposting (pelanggan atau vendor), tombol **Kirim nota retur** membuka wizard. Nilai DPP/PPN/PPnBM dihitung seperti AksaTax dan bisa diubah. Status kembali otomatis; **Batalkan nota retur** meminta alasan. Nota kredit terkunci selama nota retur aktif. |
+| Lawan transaksi | Pelanggan dan vendor ditautkan ke *Lawan Transaksi* AksaTax lewat NPWP (**Cocokkan semua**, wizard **Cocokkan dengan AksaTax**, atau otomatis saat mengirim). Yang belum ada bisa **didaftarkan dari Odoo** di **Data Master › Lawan Transaksi** (satu per satu atau massal); NPWP yang ternyata sudah terdaftar langsung ditautkan. Lawan transaksi yang sudah cocok bisa diperbarui lewat tombol **Perbarui di AksaTax** (di kontak, atau aksi daftar). Bila diaktifkan, kontak baru juga didaftarkan otomatis saat mengirim e-Faktur/bukti potong. |
 | Pemetaan field | Data lawan transaksi (NPWP, NIK, nomor paspor/identitas lain, NITKU/TKU, nama, alamat, email) diambil dari field kontak standar Odoo, dan bisa diganti field lain termasuk field kustom/Studio di **Pengaturan › Koneksi AksaTax**. Pencocokan dan pemeriksaan memakai pemetaan yang sama. |
 | Kesiapan data | **Data Master › Kesiapan data**: produk yang masih berkode barang/jasa umum 000000, satuan tanpa kode Coretax, dan pelanggan di faktur siap kirim yang belum punya NPWP/NIK - semuanya bisa diperbaiki langsung dari daftarnya. Angkanya juga tampil di Ringkasan. |
 | Bukti Potong PPh | Dibuat dari tagihan vendor (tombol **Buat Bukti Potong**) lalu dikirim ke AksaTax sebagai draft. Penandatanganan dan pengiriman ke DJP dilakukan di AksaTax. |
@@ -32,6 +37,7 @@ Coretax
 ├── e-Faktur
 │   ├── Siap dikirim          (faktur pelanggan ber-PPN yang belum punya e-Faktur)
 │   ├── Semua e-Faktur        (daftar / kanban per status)
+│   ├── Nota Retur            (nota retur keluaran dan masukan)
 │   └── Perlu tindakan        (ditolak DJP / gagal dikirim)
 ├── Bukti Potong
 ├── Data Master
@@ -55,6 +61,8 @@ Hak akses ada dua tingkat:
 - Akun AksaTax dengan **paket Business atau lebih tinggi**, karena paket Starter tidak mencakup Public API.
 - API key AksaTax yang dibuat oleh **Owner/Admin Pajak**, dengan izin `faktur:baca`, `faktur:tulis`, `faktur:kirim`,
   `bupot:*`, dan `status:baca`. Satu API key mewakili satu NPWP, jadi tiap perusahaan di Odoo butuh API key sendiri.
+- Fitur batal, ganti, PDF, kode 07/08/10, nota retur, dan perbarui lawan transaksi butuh AksaTax versi terbaru
+  (lihat **Upgrade**).
 - Untuk mendaftarkan lawan transaksi dari Odoo, AksaTax harus sudah menyediakan `POST /api/v1/public/lawan-transaksi`
   (izin `faktur:tulis`).
 
@@ -92,19 +100,50 @@ Odoo (polling /api/v1/public/events setiap 5 menit, atau webhook)
   putus, AksaTax tidak membuat dokumen ganda.
 - Setelah ditolak atau dibatalkan, **Buat ulang e-Faktur** membuat versi baru. Versi lama tetap tersimpan sebagai riwayat.
 
+### Batalkan e-Faktur
+
+Tombol **Batalkan e-Faktur** membuka wizard alasan (minimal 5 karakter). Status menjadi **Proses batal**, lalu
+**Dibatalkan** saat DJP mengonfirmasi. Pembatalan ditahan selama e-Faktur masih punya nota retur aktif.
+
+### Ganti e-Faktur (faktur pengganti)
+
+Tombol **Ganti e-Faktur** membuka faktur untuk diedit. Saat dikirim lagi, Odoo mengirim faktur pengganti
+(`fgPengganti`) dengan NSFP asli. Setelah disetujui, status e-Faktur lama menjadi **Diganti**. Dari Odoo, satu
+e-Faktur bisa diganti satu kali; penggantian kedua dilakukan di AksaTax/DJP. Faktur tidak bisa dibatalkan selama
+penggantian berjalan.
+
+### PDF faktur pajak
+
+Tombol **Unduh PDF Faktur Pajak** menyimpan PDF resmi sebagai satu lampiran di faktur dan memperbaruinya setiap
+kali diunduh.
+
+### Nota retur
+
+- Dari nota kredit yang sudah diposting (pelanggan atau vendor), klik **Kirim nota retur**. Nilai DPP/PPN/PPnBM
+  dihitung seperti AksaTax dan bisa diubah di wizard.
+- **Keluaran:** faktur asal harus punya e-Faktur yang sudah disetujui.
+- **Masukan:** isi **Nomor Faktur Pajak vendor** (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal.
+- Status kembali otomatis. **Batalkan nota retur** meminta alasan.
+- Selama nota retur aktif, nota kredit tidak bisa direset, dibatalkan, atau dihapus.
+- Daftarnya ada di tombol pintar **Nota Retur** dan menu **Coretax › e-Faktur › Nota Retur**. Di aplikasi AksaTax
+  ada halaman Nota Retur.
+
 ## Batasan saat ini (dari sisi AksaTax Public API)
 
 Hal berikut belum tersedia di Public API AksaTax, jadi dilakukan langsung di aplikasi AksaTax. Tombol **Buka di AksaTax**
 membuka dokumennya.
 
-- mengubah Lawan Transaksi yang sudah ada
-- membatalkan atau mengganti e-Faktur, nota retur, dan unduh PDF faktur pajak
 - penandatanganan dan pengiriman Bukti Potong ke DJP
 - Faktur Masukan dan SPT
-- kode transaksi **07/08** (butuh keterangan tambahan) dan **10**
 
 Saat ini AksaTax terhubung ke DJP melalui PJAP PajakExpress dengan kontrak pra-Coretax (NSFP 13 digit). Format nomor
 Coretax 17 digit menunggu spesifikasi dari PJAP. Modul ini hanya menampilkan nomor yang dikembalikan AksaTax.
+
+## Upgrade
+
+Fitur batal, ganti, PDF, kode 07/08/10, nota retur, dan perbarui lawan transaksi butuh AksaTax versi terbaru.
+Urutannya: pasang AksaTax lebih dulu (termasuk migrasi 0017 dan 0018 di sisi AksaTax), baru upgrade modul Odoo
+(versi 19.0.1.4.0). Dengan AksaTax lama, fitur-fitur ini dan kode 10 menampilkan pesan "butuh AksaTax versi terbaru".
 
 ## Pengujian
 
