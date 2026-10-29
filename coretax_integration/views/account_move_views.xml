@@ -15,6 +15,9 @@
                 <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
                         invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
                         groups="coretax_integration.group_coretax_user"/>
+                <button name="action_coretax_download_pdf" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
+                        invisible="coretax_state not in ('approved', 'cancel_requested', 'cancelled', 'replaced')"
+                        groups="coretax_integration.group_coretax_user"/>
                 <button name="action_coretax_cancel_efaktur" type="object" string="Batalkan e-Faktur" icon="fa-ban"
                         invisible="coretax_state != 'approved'"
                         groups="coretax_integration.group_coretax_user"/>

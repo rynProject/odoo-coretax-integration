@@ -34,6 +34,8 @@ LOCKING_STATES = ("submitted", "processing", "approved", "cancel_requested")
 SENDABLE_STATES = ("draft", "validated")
 # Boleh dibuat ulang dari Odoo (dokumen lama diarsipkan).
 RECREATE_STATES = ("rejected", "cancelled", "error")
+# PDF resmi faktur pajak tersedia setelah disetujui DJP (juga untuk yang sudah diminta batal/diganti).
+PDF_STATES = ("approved", "cancel_requested", "cancelled", "replaced")
 ATTENTION_STATES = ("rejected", "error")
 IN_PROGRESS_STATES = ("pending_approval", "validated", "submitted", "processing", "cancel_requested")
 # Kode barang/jasa umum 000000 yang diberikan Odoo ke produk baru (l10n_id_efaktur_coretax).
@@ -279,6 +281,32 @@ class CoretaxFaktur(models.Model):
             except AksaTaxError as exc:
                 raise UserError(exc.full_message()) from exc
         return True
+
+    def action_download_pdf(self):
+        """Unduh PDF faktur pajak dari AksaTax, simpan sebagai lampiran faktur Odoo
+        (satu lampiran per nomor faktur, ditimpa bila diunduh ulang)."""
+        self.ensure_one()
+        if self.state not in PDF_STATES or not self.aksatax_id:
+            raise UserError(_("PDF faktur pajak baru tersedia setelah e-Faktur disetujui DJP. "
+                              "Perbarui status e-Faktur lalu coba lagi."))
+        connection = self.env["coretax.connection"]._for_company(self.company_id)
+        try:
+            content = connection._client(self).faktur_pdf(self.aksatax_id)
+        except AksaTaxError as exc:
+            raise UserError(exc.full_message()) from exc
+        if not content:
+            raise UserError(_("PDF dari AksaTax kosong. Coba lagi nanti atau periksa dokumennya di AksaTax."))
+        name = f"Faktur Pajak {self.nomor_faktur or self.aksatax_id}.pdf"
+        attachment = self.env["ir.attachment"].search([
+            ("res_model", "=", "account.move"), ("res_id", "=", self.move_id.id), ("name", "=", name)], limit=1)
+        if attachment:
+            attachment.write({"raw": content, "mimetype": "application/pdf"})
+        else:
+            attachment = self.env["ir.attachment"].create({
+                "name": name, "raw": content, "mimetype": "application/pdf",
+                "res_model": "account.move", "res_id": self.move_id.id})
+        return {"type": "ir.actions.act_url", "url": f"/web/content/{attachment.id}?download=true",
+                "target": "self"}
 
     def action_recreate(self):
         """Buat ulang e-Faktur dari faktur Odoo (setelah ditolak/dibatalkan/gagal)."""

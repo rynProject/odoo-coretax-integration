@@ -376,3 +376,55 @@ class TestEfakturFase1(CoretaxTestCommon):
             self._cancel(old, "Salah harga satuan")
         self.assertFalse(old.replace_requested)
         self.assertEqual(old.state, "cancel_requested")
+
+    # ── unduh PDF ─────────────────────────────────────────────────────
+    def _pdf_route(self, content):
+        return {("GET", f"/faktur/{FAKTUR_ID}/pdf"): FakeResponse(
+            200, raw=content, headers={"Content-Type": "application/pdf"})}
+
+    def _attachments(self, move):
+        return self.env["ir.attachment"].search([("res_model", "=", "account.move"), ("res_id", "=", move.id)])
+
+    def test_download_pdf_creates_single_attachment(self):
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = "0400260000000001"
+        for content in (b"%PDF-1.7 satu", b"%PDF-1.7 dua"):
+            _fake, patcher = self._patch(self._pdf_route(content))
+            with patcher:
+                action = faktur.action_download_pdf()
+        att = self._attachments(move)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att.name, "Faktur Pajak 0400260000000001.pdf")
+        self.assertEqual(att.mimetype, "application/pdf")
+        self.assertEqual(att.raw, b"%PDF-1.7 dua")
+        self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
+
+    def test_download_pdf_from_move_uses_latest(self):
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = "0400260000000001"
+        _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))
+        with patcher:
+            action = move.action_coretax_download_pdf()
+        self.assertEqual(len(self._attachments(move)), 1)
+        self.assertIn("/web/content/", action["url"])
+
+    def test_pdf_requires_approved(self):
+        move = self._invoice()
+        faktur = self.env["coretax.faktur"].create({"move_id": move.id, "state": "draft", "aksatax_id": FAKTUR_ID})
+        fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))
+        with patcher, self.assertRaisesRegex(UserError, "setelah e-Faktur disetujui DJP"):
+            faktur.action_download_pdf()
+        self.assertEqual(fake.calls, [])
+
+    def test_download_empty_pdf_rejected(self):
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = "0400260000000001"
+        _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 lama"))
+        with patcher:
+            faktur.action_download_pdf()
+        _fake, patcher = self._patch(self._pdf_route(b""))
+        with patcher, self.assertRaisesRegex(UserError, "kosong"):
+            faktur.action_download_pdf()
+        att = self._attachments(move)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att.raw, b"%PDF-1.7 lama")

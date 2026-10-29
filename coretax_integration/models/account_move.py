@@ -247,6 +247,12 @@ class AccountMove(models.Model):
         self.coretax_faktur_id.action_refresh()
         return True
 
+    def action_coretax_download_pdf(self):
+        self.ensure_one()
+        if not self.coretax_faktur_id:
+            raise UserError(_("Faktur ini belum punya e-Faktur."))
+        return self.coretax_faktur_id.action_download_pdf()
+
     def action_coretax_cancel_efaktur(self):
         self.ensure_one()
         if not self.coretax_faktur_id:
