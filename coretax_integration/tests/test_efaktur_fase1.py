@@ -160,3 +160,54 @@ class TestEfakturFase1(CoretaxTestCommon):
             self.env["coretax.faktur.cancel.wizard"].create(
                 {"faktur_id": faktur.id, "alasan": "abc"}).action_confirm()
         self.assertEqual(fake.calls, [])
+
+    def _cancel(self, faktur, alasan):
+        self.env["coretax.faktur.cancel.wizard"].create({"faktur_id": faktur.id, "alasan": alasan}).action_confirm()
+
+    def _keys(self, fake):
+        return [c["headers"]["Idempotency-Key"] for c in fake.calls if c["path"].endswith("/batal")]
+
+    def _failing_cancel_routes(self):
+        return {("POST", f"/faktur/{FAKTUR_ID}/batal"): FakeResponse(
+            503, {"error": {"code": "UNAVAILABLE", "message": "Layanan sibuk"}}, headers={"Retry-After": "0"})}
+
+    def test_cancel_twice_uses_new_key(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._cancel_routes())
+        with patcher:
+            self.assertEqual(faktur.cancel_attempt, 0)
+            self._cancel(faktur, "Salah harga satuan")
+            self.assertEqual(faktur.cancel_attempt, 1)
+            faktur.state = "approved"  # DJP menolak pembatalan
+            self._cancel(faktur, "Salah harga satuan")
+            self.assertEqual(faktur.cancel_attempt, 2)
+        keys = self._keys(fake)
+        self.assertEqual(len(keys), 2)
+        self.assertNotEqual(keys[0], keys[1])
+
+    def test_failed_cancel_then_changed_alasan_new_key(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._failing_cancel_routes())
+        with patcher:
+            with self.assertRaises(UserError):
+                self._cancel(faktur, "Salah harga satuan")
+            self.assertEqual(faktur.cancel_attempt, 0)
+            with self.assertRaises(UserError):
+                self._cancel(faktur, "Salah jumlah barang")
+        keys = self._keys(fake)
+        self.assertEqual(len(keys), 4)  # 2 percobaan x 1 ulang internal
+        self.assertEqual(keys[0], keys[1])
+        self.assertEqual(keys[2], keys[3])
+        self.assertNotEqual(keys[0], keys[2])
+        self.assertEqual(faktur.cancel_attempt, 0)
+
+    def test_failed_cancel_same_alasan_same_key(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._failing_cancel_routes())
+        with patcher:
+            for _i in range(2):
+                with self.assertRaises(UserError):
+                    self._cancel(faktur, "Salah harga satuan")
+        keys = self._keys(fake)
+        self.assertEqual(len(set(keys)), 1)
+        self.assertEqual(faktur.cancel_attempt, 0)

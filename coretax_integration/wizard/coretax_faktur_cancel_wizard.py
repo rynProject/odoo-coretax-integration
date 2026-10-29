@@ -1,3 +1,5 @@
+import hashlib
+
 from odoo import _, fields, models
 from odoo.exceptions import UserError
 
@@ -26,13 +28,16 @@ class CoretaxFakturCancelWizard(models.TransientModel):
         if faktur.state != "approved" or not faktur.aksatax_id:
             raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP yang bisa dibatalkan."))
         connection = self.env["coretax.connection"]._for_company(faktur.company_id)
+        # Kunci berubah bila alasan berubah atau pembatalan sebelumnya sudah diterima.
+        digest = hashlib.sha1(alasan.encode()).hexdigest()[:10]
+        key = f"{faktur._idempotency_base()}-batal-{faktur.cancel_attempt + 1}-{digest}"
         try:
-            result = connection._client(faktur).cancel_faktur(
-                faktur.aksatax_id, alasan, f"{faktur._idempotency_base()}-batal")
+            result = connection._client(faktur).cancel_faktur(faktur.aksatax_id, alasan, key)
         except AksaTaxError as exc:
             faktur.write({"last_error": exc.full_message()})
             raise UserError(exc.full_message()) from exc
-        faktur.write({"state": REMOTE_STATES.get(result.get("status"), "cancel_requested"), "last_error": False})
+        faktur.write({"state": REMOTE_STATES.get(result.get("status"), "cancel_requested"), "last_error": False,
+                      "cancel_attempt": faktur.cancel_attempt + 1})
         message = _("Pembatalan e-Faktur diajukan ke DJP. Alasan: %s", alasan)
         faktur.message_post(body=message)
         faktur.move_id.message_post(body=message)

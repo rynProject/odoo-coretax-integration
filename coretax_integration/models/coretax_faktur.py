@@ -103,6 +103,7 @@ class CoretaxFaktur(models.Model):
     total_ppnbm = fields.Monetary(string="PPnBM", readonly=True)
     last_error = fields.Text(string="Keterangan dari AksaTax/DJP", readonly=True)
     error_code = fields.Char(string="Kode galat", readonly=True, copy=False)
+    cancel_attempt = fields.Integer(string="Percobaan batal", default=0, readonly=True, copy=False)
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     submitted_at = fields.Datetime(string="Dikirim ke DJP pada", readonly=True, copy=False)
     last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
