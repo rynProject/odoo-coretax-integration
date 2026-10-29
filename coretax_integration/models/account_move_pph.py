@@ -47,6 +47,8 @@ class AccountMove(models.Model):
                         code=tax_object.code, rates=", ".join(f"{r:g}%" for r in rates[tax_object])))
             active = bill.coretax_bupot_ids.filtered(
                 lambda b: b.origin == "bill" and b.state not in INACTIVE_STATES)
+            # bupot yang dihapus dikumpulkan dulu; unlink mengosongkan cache sehingga `active` tidak boleh dipakai lagi
+            to_delete = []  # [(bupot, catatan)]
             for tax_object, lines in groups.items():
                 dpp = bill.company_currency_id.round(sum(lines.mapped("balance")))
                 tarif = rates[tax_object][0]
@@ -65,17 +67,15 @@ class AccountMove(models.Model):
                     if dpp > 0:
                         bupot.write(vals)
                     else:
-                        bupot.unlink()
-                        bill._coretax_note_bupot_removed(tax_object)
+                        to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena DPP-nya menjadi 0 "
+                                                   "setelah nota kredit.", tax_object.code)))
                 # sudah di AksaTax dan DPP berubah: ditangani Task 4 (peringatan + aktivitas)
             for bupot in active.filtered(lambda b: b.state in EDITABLE_STATES and b.tax_object_id not in groups):
-                tax_object = bupot.tax_object_id
-                bupot.unlink()
-                bill._coretax_note_bupot_removed(tax_object)
-
-    def _coretax_note_bupot_removed(self, tax_object):
-        self.message_post(body=_("Bukti potong kode objek %s dihapus karena tagihan tidak lagi memuat PPh tersebut.",
-                                 tax_object.code))
+                to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena tagihan tidak lagi memuat "
+                                           "PPh tersebut.", bupot.tax_object_id.code)))
+            for bupot, note in to_delete:
+                bupot.with_context(coretax_bupot_sync=True).unlink()
+                bill.message_post(body=note)
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)

@@ -91,19 +91,22 @@ class CoretaxBupot(models.Model):
                                     domain="[('jenis', '=', jenis)]")
     origin = fields.Selection([("bill", "Dari tagihan"), ("manual", "Manual")], string="Asal", default="manual",
                               readonly=True, required=True)
-    tarif = fields.Float(string="Tarif (%)", compute="_compute_tarif", store=True, readonly=False)
-    tanggal_pemotongan = fields.Date(string="Tanggal pemotongan", required=True, default=fields.Date.context_today)
+    tarif = fields.Float(string="Tarif (%)", compute="_compute_tarif", store=True, readonly=False, tracking=True)
+    tanggal_pemotongan = fields.Date(string="Tanggal pemotongan", required=True, default=fields.Date.context_today,
+                                     tracking=True)
     jumlah_bruto = fields.Monetary(string="Jumlah bruto (DPP)", required=True, tracking=True,
                                    help="Nilai penghasilan sebelum dipotong pajak, dalam Rupiah.")
     kira_netto = fields.Float(string="Perkiraan penghasilan neto (%)", default=100.0,
                               help="Untuk PPh 26 (BPNR). Biarkan 100 bila tidak ada ketentuan khusus.")
     pph_estimasi = fields.Monetary(string="Perkiraan PPh dipotong", compute="_compute_pph_estimasi")
-    fasilitas = fields.Selection(FASILITAS, string="Fasilitas pajak", default="NONE", required=True)
-    nomor_fasilitas = fields.Char(string="Nomor dokumen fasilitas")
+    fasilitas = fields.Selection(FASILITAS, string="Fasilitas pajak", default="NONE", required=True, tracking=True)
+    nomor_fasilitas = fields.Char(string="Nomor dokumen fasilitas", tracking=True)
     tarif_fasilitas = fields.Float(string="Tarif P3B (%)", help="Wajib untuk fasilitas SKD.")
-    dok_jenis = fields.Selection(DOK_DASAR, string="Jenis dokumen dasar", default="02", required=True)
-    dok_nomor = fields.Char(string="Nomor dokumen dasar", required=True)
-    dok_tanggal = fields.Date(string="Tanggal dokumen dasar", required=True, default=fields.Date.context_today)
+    dok_jenis = fields.Selection(DOK_DASAR, string="Jenis dokumen dasar", default="02", required=True,
+                            tracking=True)
+    dok_nomor = fields.Char(string="Nomor dokumen dasar", required=True, tracking=True)
+    dok_tanggal = fields.Date(string="Tanggal dokumen dasar", required=True, default=fields.Date.context_today,
+                               tracking=True)
     ajukan = fields.Boolean(string="Langsung ajukan persetujuan di AksaTax")
 
     state = fields.Selection(BUPOT_STATES, string="Status", default="new", required=True, tracking=True, index=True)
@@ -117,7 +120,7 @@ class CoretaxBupot(models.Model):
     source_line_ids = fields.Many2many("account.move.line", string="Baris sumber", compute="_compute_source_line_ids")
     tax_line_ids = fields.Many2many("account.move.line", string="Journal item PPh", compute="_compute_tax_line_ids")
     pph_gl = fields.Monetary(string="PPh di jurnal", compute="_compute_pph_gl")
-    pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_gl")
+    pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_selisih")
 
     @api.depends("tax_object_id")
     def _compute_tarif(self):
@@ -142,7 +145,11 @@ class CoretaxBupot(models.Model):
     def _compute_pph_gl(self):
         for rec in self:
             rec.pph_gl = -sum(rec.tax_line_ids.mapped("balance"))
-            rec.pph_selisih = rec.pph_gl - rec.pph_estimasi
+
+    @api.depends("pph_estimasi")
+    def _compute_pph_selisih(self):
+        for rec in self:
+            rec.pph_selisih = -sum(rec.tax_line_ids.mapped("balance")) - rec.pph_estimasi
 
     def unlink(self):
         if not self.env.context.get("coretax_bupot_sync") and self.filtered(lambda b: b.origin == "bill"):

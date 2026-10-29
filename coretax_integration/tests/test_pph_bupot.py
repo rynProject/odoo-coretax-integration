@@ -79,3 +79,26 @@ class TestPphBupot(PphTestCommon):
         bill.button_draft()
         with self.assertRaisesRegex(UserError, "belum diposting"):
             bill.coretax_bupot_ids[0].action_send_draft()
+
+    def test_full_reversal_deletes_new_bupots(self):
+        bill = self._three_lines()
+        self.assertEqual(len(bill.coretax_bupot_ids), 2)
+        bill._reverse_moves([{"invoice_date": bill.invoice_date}], cancel=True)
+        self.assertFalse(bill.coretax_bupot_ids)
+        self.assertIn("DPP-nya menjadi 0", bill.message_ids[0].body)
+
+    def test_repost_removes_stale_group(self):
+        bill = self._three_lines()
+        bill.button_draft()
+        bill.invoice_line_ids[2].tax_ids = [(5, 0, 0)]
+        bill.action_post()
+        self.assertEqual(bill.coretax_bupot_ids.tax_object_id, self.obj_teknik)
+        self.assertIn("tidak lagi memuat", bill.message_ids[0].body)
+
+    def test_repost_keeps_facility(self):
+        bill = self._three_lines()
+        bupot = bill.coretax_bupot_ids.filtered(lambda b: b.tax_object_id == self.obj_teknik)
+        bupot.write({"fasilitas": "SKD", "nomor_fasilitas": "SKD-1"})
+        bill.button_draft()
+        bill.action_post()
+        self.assertRecordValues(bupot, [{"fasilitas": "SKD", "nomor_fasilitas": "SKD-1"}])
