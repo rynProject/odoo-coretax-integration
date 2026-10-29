@@ -194,18 +194,26 @@ class AccountMove(models.Model):
 
     # ── pengiriman ────────────────────────────────────────────────────
     def _coretax_explain_error(self, exc):
-        """AksaTax lama menolak kode transaksi 10 sebagai VALIDATION pada
-        kdJenisTransaksi; terjemahkan jadi pesan 'perbarui server'."""
+        """AksaTax lama menolak kode transaksi 10 (atau keterangan tambahan
+        baru untuk 07/08) sebagai VALIDATION; terjemahkan jadi pesan
+        'perbarui server'."""
         self.ensure_one()
-        if exc.code != "VALIDATION" or self.l10n_id_kode_transaksi != "10":
+        kode = self.l10n_id_kode_transaksi
+        if exc.code != "VALIDATION" or kode not in ("07", "08", "10"):
             return exc
         for detail in exc.details or []:
+            if not isinstance(detail, dict):
+                continue
             path = detail.get("path")
             if isinstance(path, (list, tuple)):
                 path = ".".join(str(part) for part in path)
-            if path == "kdJenisTransaksi":
+            if kode == "10" and path == "kdJenisTransaksi":
                 return AksaTaxError(
                     _("Kode transaksi 10 butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
+                    code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
+            if kode in ("07", "08") and path == "idKeteranganTambahan":
+                return AksaTaxError(
+                    _("Keterangan tambahan ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
                     code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
         return exc
 
