@@ -313,14 +313,16 @@ class CoretaxConnection(models.Model):
                 continue
         returs = self.env["coretax.retur"].sudo().search([
             ("company_id", "=", self.company_id.id), ("aksatax_id", "!=", False),
-            ("state", "in", ["submitted", "cancel_requested"]),
+            ("state", "in", ["draft", "submitted", "cancel_requested"]),
             "|", ("last_sync", "=", False), ("last_sync", "<", threshold),
         ], limit=REFRESH_BATCH, order="last_sync asc")
         for retur in returs:
             try:
                 retur._apply_remote(client.get_retur(retur.aksatax_id))
                 count += 1
-            except AksaTaxError:
+            except AksaTaxError as exc:
+                if exc.code == "NOT_FOUND":
+                    retur._mark_not_found()
                 continue
         return count
 

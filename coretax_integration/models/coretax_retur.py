@@ -23,6 +23,9 @@ REMOTE_RETUR_STATES = {
 LIVE_STATES = ("draft", "submitted", "approved", "cancel_requested")
 SENDABLE_STATES = ("new", "draft", "error")
 ATTENTION_STATES = ("rejected", "error")
+# Galat sementara: kiriman belum tentu diterima AksaTax, jadi percobaan ulang memakai kunci idempotensi yang sama.
+TRANSIENT_CODES = ("TIMEOUT", "CONNECTION", "UNAVAILABLE", "RATE_LIMITED", "IDEMPOTENCY_IN_PROGRESS")
+NOT_FOUND_MESSAGE = "Nota retur tidak ditemukan di AksaTax. Kirim ulang dari Odoo."
 
 
 def _digits(value):
@@ -58,6 +61,7 @@ class CoretaxRetur(models.Model):
     nilai_ppn = fields.Monetary(string="PPN retur")
     nilai_ppnbm = fields.Monetary(string="PPnBM retur")
     tarif_ppn = fields.Float(string="Tarif PPN (%)", default=12)
+    referensi = fields.Char(string="Referensi")
 
     state = fields.Selection(RETUR_STATES, string="Status", default="new", required=True, index=True, tracking=True)
     aksatax_id = fields.Char(string="ID AksaTax", readonly=True, copy=False, index=True)
@@ -84,6 +88,17 @@ class CoretaxRetur(models.Model):
         uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
         return f"odoo-{uuid}-retur-{self.id}-v{self.version}"
 
+    def write(self, vals):
+        # Kembali ke "approved" dari "cancel_requested" = DJP menolak pembatalan.
+        cancel_rejected = (self.filtered(lambda r: r.state == "cancel_requested")
+                           if vals.get("state") == "approved" else self.browse())
+        result = super().write(vals)
+        for rec in cancel_rejected:
+            rec.move_id.message_post(body=_(
+                "Pembatalan nota retur %(nomor)s tidak berhasil: %(alasan)s. Nota retur tetap berlaku.",
+                nomor=rec.nomor_dokumen_retur, alasan=rec.last_error or _("tanpa keterangan")))
+        return result
+
     # ── kirim ke AksaTax ──────────────────────────────────────────────
     def _payload(self):
         self.ensure_one()
@@ -95,7 +110,7 @@ class CoretaxRetur(models.Model):
             "nilaiReturPpn": int(round(self.nilai_ppn)),
             "nilaiReturPpnbm": int(round(self.nilai_ppnbm)),
             "tarifPpn": self.tarif_ppn,
-            "referensi": (self.move_id.ref or self.move_id.name or self.nomor_dokumen_retur or "")[:100],
+            "referensi": (self.referensi or self.move_id.name or self.nomor_dokumen_retur or "")[:100],
         }
         if self.sisi == "keluaran":
             payload["fakturId"] = self.faktur_id.aksatax_id
@@ -106,9 +121,9 @@ class CoretaxRetur(models.Model):
                                                   seller.zip) if part)
             payload.update({
                 "nomorFaktur": _digits(self.nomor_faktur),
-                "namaPenjual": seller.name,
+                "namaPenjual": (seller.name or "")[:200],
                 "npwpPenjual": _digits(seller.vat),
-                "alamatPenjual": address,
+                "alamatPenjual": address[:300],
             })
         return payload
 
@@ -152,7 +167,8 @@ class CoretaxRetur(models.Model):
                 try:
                     data = client.create_retur(rec._payload(), base)
                 except AksaTaxError as exc:
-                    rec._record_error(exc, version=rec.version + 1)
+                    # galat sementara: kiriman belum tentu gagal di AksaTax, jadi kunci idempotensi dipakai ulang
+                    rec._record_error(exc, **({} if exc.code in TRANSIENT_CODES else {"version": rec.version + 1}))
                     continue
                 rec.write({"aksatax_id": data.get("id"), "state": "draft", "last_error": False, "error_code": False})
             try:
@@ -216,12 +232,20 @@ class CoretaxRetur(models.Model):
         elif state == "cancelled":
             self.move_id.message_post(body=_("Nota retur %s dibatalkan.", nomor))
 
+    def _mark_not_found(self):
+        self.ensure_one()
+        self.write({"state": "error", "last_error": NOT_FOUND_MESSAGE, "error_code": "NOT_FOUND",
+                    "aksatax_id": False, "last_sync": fields.Datetime.now()})
+
     def action_refresh(self):
         for rec in self.filtered("aksatax_id"):
             connection = self.env["coretax.connection"]._for_company(rec.company_id)
             try:
                 rec._apply_remote(connection._client(rec).get_retur(rec.aksatax_id))
             except AksaTaxError as exc:
+                if exc.code == "NOT_FOUND":
+                    rec._mark_not_found()
+                    continue
                 raise UserError(exc.full_message()) from exc
         return True
 

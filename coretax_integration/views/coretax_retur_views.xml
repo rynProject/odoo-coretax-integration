@@ -27,7 +27,7 @@
         <field name="name">coretax.retur.list</field>
         <field name="model">coretax.retur</field>
         <field name="arch" type="xml">
-            <list string="Nota Retur" decoration-danger="state in ('error', 'rejected')"
+            <list string="Nota Retur" create="0" decoration-danger="state in ('error', 'rejected')"
                   decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'">
                 <field name="tanggal_retur"/>
                 <field name="name"/>
@@ -49,7 +49,7 @@
         <field name="name">coretax.retur.form</field>
         <field name="model">coretax.retur</field>
         <field name="arch" type="xml">
-            <form string="Nota Retur">
+            <form string="Nota Retur" create="0">
                 <header>
                     <button name="action_send" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
                             invisible="state not in ('new', 'draft', 'error')"/>
@@ -60,7 +60,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-danger" role="alert" invisible="state not in ('error', 'rejected') or not last_error">
+                    <div class="alert alert-danger" role="alert" invisible="not last_error">
                         <field name="last_error" readonly="1"/>
                     </div>
                     <div class="oe_title"><h1><field name="name"/></h1></div>
@@ -82,6 +82,7 @@
                             <field name="nilai_ppn" readonly="state not in ('new', 'error')"/>
                             <field name="nilai_ppnbm" readonly="state not in ('new', 'error')"/>
                             <field name="tarif_ppn" readonly="state not in ('new', 'error')"/>
+                            <field name="referensi" readonly="state not in ('new', 'error')"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>

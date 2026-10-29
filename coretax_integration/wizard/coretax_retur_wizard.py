@@ -34,7 +34,8 @@ class CoretaxReturWizard(models.TransientModel):
                                          if self.env.context.get("active_model") == "account.move" else False)
         move = self.env["account.move"].browse(move_id).exists()
         if move:
-            amounts = move._coretax_retur_amounts()
+            faktur = move._coretax_origin_faktur() if move.move_type == "out_refund" else None
+            amounts = move._coretax_retur_amounts(faktur=faktur)
             res.update({
                 "move_id": move.id, "nomor_dokumen_retur": move.name,
                 "tanggal_retur": move.invoice_date or move.date, "referensi": move.name,
@@ -57,8 +58,7 @@ class CoretaxReturWizard(models.TransientModel):
                               live.nomor_dokumen_retur))
         faktur = self.env["coretax.faktur"]
         if move.move_type == "out_refund":
-            fakturs = origin.with_context(active_test=False).sudo().coretax_faktur_ids
-            faktur = fakturs.filtered(lambda f: f.state == "approved").sorted("version", reverse=True)[:1]
+            faktur = move._coretax_origin_faktur()
             if not faktur:
                 raise UserError(_("Faktur asal belum punya e-Faktur yang disetujui DJP. Kirim e-Faktur faktur "
                                   "asal dulu."))
@@ -73,7 +73,7 @@ class CoretaxReturWizard(models.TransientModel):
         faktur = self._check_preconditions()
         move = self.move_id
         keluaran = move.move_type == "out_refund"
-        retur = self.env["coretax.retur"].create({
+        vals = {
             "sisi": "keluaran" if keluaran else "masukan",
             "move_id": move.id,
             "faktur_id": faktur.id if keluaran else False,
@@ -83,7 +83,14 @@ class CoretaxReturWizard(models.TransientModel):
             "tanggal_retur": self.tanggal_retur,
             "nilai_dpp": self.nilai_dpp, "nilai_ppn": self.nilai_ppn, "nilai_ppnbm": self.nilai_ppnbm,
             "tarif_ppn": self.tarif_ppn,
-        })
+            "referensi": self.referensi or move.name,
+        }
+        # nota retur yang belum sampai ke AksaTax (baru/gagal) dipakai ulang, bukan dibuat ganda
+        retur = move.sudo().coretax_retur_ids.filtered(lambda r: r.state in ("new", "error") and not r.aksatax_id)[:1]
+        if retur:
+            retur.write(vals)
+        else:
+            retur = self.env["coretax.retur"].create(vals)
         retur.action_send()
         return {
             "type": "ir.actions.act_window", "res_model": "coretax.retur", "res_id": retur.id,
