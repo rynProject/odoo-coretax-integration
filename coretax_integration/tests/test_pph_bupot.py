@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 
@@ -195,3 +197,17 @@ class TestPphBupot(PphTestCommon):
         bupot.move_id = False
         bupot.unlink()
         self.assertFalse(bupot.exists())
+
+    def test_cancel_posted_credit_note_syncs_parent_once(self):
+        bill = self._three_lines()
+        refund = self._partial_refund(bill)
+        original = type(bill)._coretax_sync_bupot
+        calls = []
+
+        def counting(records):
+            calls.append(records.ids)
+            return original(records)
+
+        with patch.object(type(bill), "_coretax_sync_bupot", autospec=True, side_effect=counting):
+            refund.button_cancel()
+        self.assertEqual(calls, [bill.ids])
