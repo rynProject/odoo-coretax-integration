@@ -1,4 +1,5 @@
 import logging
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -16,6 +17,8 @@ SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    coretax_vendor_tax_number = fields.Char(string="Nomor Faktur Pajak vendor", copy=False,
+                                            help="Nomor faktur pajak dari vendor; dipakai untuk nota retur pembelian.")
     coretax_faktur_ids = fields.One2many("coretax.faktur", "move_id", string="e-Faktur Coretax")
     coretax_faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur terakhir",
                                         compute="_compute_coretax_faktur_id", store=True, index=True)
@@ -26,6 +29,13 @@ class AccountMove(models.Model):
     coretax_faktur_count = fields.Integer(compute="_compute_coretax_faktur_id", store=True)
     coretax_is_replacement = fields.Boolean(string="e-Faktur pengganti", compute="_compute_coretax_is_replacement",
                                             compute_sudo=True)
+
+    @api.constrains("coretax_vendor_tax_number")
+    def _check_coretax_vendor_tax_number(self):
+        for move in self.filtered("coretax_vendor_tax_number"):
+            digits = re.sub(r"\D", "", move.coretax_vendor_tax_number)
+            if len(digits) not in (13, 16, 17):
+                raise ValidationError(_("Nomor Faktur Pajak vendor harus 13, 16, atau 17 digit."))
 
     @api.depends("coretax_faktur_id.replaces_id")
     def _compute_coretax_is_replacement(self):

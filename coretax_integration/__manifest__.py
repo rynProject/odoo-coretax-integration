@@ -22,7 +22,7 @@ Menghubungkan Odoo dengan AksaTax (https://aksatax.id) melalui Public API-nya:
 Data baris e-Faktur memakai penyusun data bawaan Odoo
 (l10n_id_efaktur_coretax), jadi angkanya sama dengan XML Coretax resmi.
 """,
-    "version": "19.0.1.3.0",
+    "version": "19.0.1.4.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
     "website": "https://www.aksa.id",
@@ -37,6 +37,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
         "views/coretax_connection_views.xml",
         "views/coretax_faktur_views.xml",
         "views/coretax_bupot_views.xml",
+        "views/coretax_retur_views.xml",
         "views/coretax_log_views.xml",
         "views/coretax_wizard_views.xml",
         "views/account_move_views.xml",

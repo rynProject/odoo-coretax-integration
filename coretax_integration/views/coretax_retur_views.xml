@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coretax_retur_search" model="ir.ui.view">
+        <field name="name">coretax.retur.search</field>
+        <field name="model">coretax.retur</field>
+        <field name="arch" type="xml">
+            <search string="Cari nota retur">
+                <field name="name"/>
+                <field name="nomor_faktur"/>
+                <field name="partner_id"/>
+                <field name="move_id"/>
+                <filter name="keluaran" string="Keluaran" domain="[('sisi', '=', 'keluaran')]"/>
+                <filter name="masukan" string="Masukan" domain="[('sisi', '=', 'masukan')]"/>
+                <separator/>
+                <filter name="attention" string="Perlu tindakan" domain="[('state', 'in', ('error', 'rejected'))]"/>
+                <filter name="approved" string="Disetujui DJP" domain="[('state', '=', 'approved')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_sisi" string="Sisi" context="{'group_by': 'sisi'}"/>
+                    <filter name="group_month" string="Bulan" context="{'group_by': 'tanggal_retur:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_coretax_retur_list" model="ir.ui.view">
+        <field name="name">coretax.retur.list</field>
+        <field name="model">coretax.retur</field>
+        <field name="arch" type="xml">
+            <list string="Nota Retur" decoration-danger="state in ('error', 'rejected')"
+                  decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'">
+                <field name="tanggal_retur"/>
+                <field name="name"/>
+                <field name="sisi"/>
+                <field name="nomor_faktur"/>
+                <field name="partner_id"/>
+                <field name="nilai_dpp" sum="Total DPP"/>
+                <field name="nilai_ppn" sum="Total PPN"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'"
+                       decoration-danger="state in ('error', 'rejected')" decoration-info="state in ('submitted', 'cancel_requested')"
+                       decoration-warning="state in ('new', 'draft')"/>
+                <field name="last_error" optional="hide" string="Keterangan"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coretax_retur_form" model="ir.ui.view">
+        <field name="name">coretax.retur.form</field>
+        <field name="model">coretax.retur</field>
+        <field name="arch" type="xml">
+            <form string="Nota Retur">
+                <header>
+                    <button name="action_send" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
+                            invisible="state not in ('new', 'draft', 'error')"/>
+                    <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh"
+                            invisible="not aksatax_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-danger" role="alert" invisible="state not in ('error', 'rejected') or not last_error">
+                        <field name="last_error" readonly="1"/>
+                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="sisi" readonly="state != 'new'"/>
+                            <field name="move_id" readonly="state != 'new'"/>
+                            <field name="origin_move_id"/>
+                            <field name="faktur_id" readonly="state != 'new'" invisible="sisi != 'keluaran'"/>
+                            <field name="nomor_faktur" readonly="state not in ('new', 'error')"/>
+                            <field name="partner_id" readonly="state != 'new'"/>
+                        </group>
+                        <group>
+                            <field name="nomor_dokumen_retur" readonly="state not in ('new', 'error')"/>
+                            <field name="tanggal_retur" readonly="state not in ('new', 'error')"/>
+                            <field name="masa"/>
+                            <field name="tahun"/>
+                            <field name="nilai_dpp" readonly="state not in ('new', 'error')"/>
+                            <field name="nilai_ppn" readonly="state not in ('new', 'error')"/>
+                            <field name="nilai_ppnbm" readonly="state not in ('new', 'error')"/>
+                            <field name="tarif_ppn" readonly="state not in ('new', 'error')"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="AksaTax" invisible="not aksatax_id">
+                        <field name="aksatax_id"/>
+                        <field name="last_sync"/>
+                        <field name="alasan_batal" invisible="not alasan_batal"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coretax_retur" model="ir.actions.act_window">
+        <field name="name">Nota Retur</field>
+        <field name="res_model">coretax.retur</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coretax_retur_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada nota retur</p>
+            <p>Nota retur dibuat dari faktur kredit (credit note) yang sudah diposting.</p>
+        </field>
+    </record>
+</odoo>

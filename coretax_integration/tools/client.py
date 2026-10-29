@@ -248,3 +248,18 @@ class AksaTaxClient:
 
     def faktur_pdf(self, faktur_id):
         return self.request("GET", f"/faktur/{faktur_id}/pdf", operation="Unduh PDF e-Faktur", raw=True)
+
+    def create_retur(self, payload, idempotency_key):
+        return self.request("POST", "/nota-retur", payload=payload, idempotency_key=idempotency_key,
+                            operation="Buat nota retur (draft)")
+
+    def get_retur(self, retur_id):
+        return self.request("GET", f"/nota-retur/{retur_id}", operation="Ambil nota retur")
+
+    def send_retur(self, retur_id, idempotency_key):
+        return self.request("POST", f"/nota-retur/{retur_id}/kirim", payload={}, idempotency_key=idempotency_key,
+                            operation="Kirim nota retur ke DJP")
+
+    def cancel_retur(self, retur_id, alasan, idempotency_key):
+        return self.request("POST", f"/nota-retur/{retur_id}/batal", payload={"alasan": alasan},
+                            idempotency_key=idempotency_key, operation="Batalkan nota retur")
