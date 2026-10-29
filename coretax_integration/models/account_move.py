@@ -6,6 +6,7 @@ from odoo.exceptions import UserError, ValidationError
 
 from ..tools.client import AksaTaxError
 from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STATES
+from .coretax_retur import LIVE_STATES as RETUR_LIVE_STATES
 
 _logger = logging.getLogger(__name__)
 
@@ -19,6 +20,9 @@ class AccountMove(models.Model):
 
     coretax_vendor_tax_number = fields.Char(string="Nomor Faktur Pajak vendor", copy=False,
                                             help="Nomor faktur pajak dari vendor; dipakai untuk nota retur pembelian.")
+    coretax_retur_ids = fields.One2many("coretax.retur", "move_id", string="Nota retur Coretax")
+    coretax_retur_count = fields.Integer(compute="_compute_coretax_retur", string="Jumlah nota retur")
+    coretax_retur_live = fields.Boolean(compute="_compute_coretax_retur", string="Nota retur masih berlaku")
     coretax_faktur_ids = fields.One2many("coretax.faktur", "move_id", string="e-Faktur Coretax")
     coretax_faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur terakhir",
                                         compute="_compute_coretax_faktur_id", store=True, index=True)
@@ -385,10 +389,64 @@ class AccountMove(models.Model):
             moves=", ".join(move.name for move, _faktur in locks), action=action_label,
             state=dict(STATES).get(locks[0][1].state), hint=hint))
 
+    # ── nota retur ────────────────────────────────────────────────────
+    @api.depends("coretax_retur_ids", "coretax_retur_ids.state")
+    def _compute_coretax_retur(self):
+        for move in self:
+            returs = move.sudo().coretax_retur_ids
+            move.coretax_retur_count = len(returs)
+            move.coretax_retur_live = any(r.state in RETUR_LIVE_STATES for r in returs)
+
+    def _coretax_retur_guard(self, action_label):
+        """Nota kredit dengan nota retur yang masih berlaku di AksaTax tidak boleh diubah."""
+        refunds = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund"))
+        for move in refunds:
+            live = move.sudo().coretax_retur_ids.filtered(lambda r: r.state in RETUR_LIVE_STATES)[:1]
+            if live:
+                raise UserError(_(
+                    "Nota kredit ini punya nota retur %(nomor)s di AksaTax. Batalkan nota retur dulu, "
+                    "lalu %(action)s.", nomor=live.nomor_dokumen_retur, action=action_label))
+
+    def _coretax_retur_amounts(self):
+        """Nilai retur dari nota kredit, dalam mata uang perusahaan: dict(dpp, ppn, ppnbm, tarif)."""
+        self.ensure_one()
+        stlg = self.env["account.chart.template"].with_company(self.company_id).ref(
+            "l10n_id_tax_group_stlg", raise_if_not_found=False)
+        ppn_taxes = self.line_ids.tax_ids.filtered(lambda t: t.amount > 0 and t.tax_group_id != stlg)
+        ppnbm_taxes = self.line_ids.tax_ids.filtered(lambda t: t.tax_group_id == stlg) if stlg else self.env["account.tax"]
+        product_lines = self.line_ids.filtered(lambda l: l.display_type == "product" and l.tax_ids & ppn_taxes)
+        tax_lines = self.line_ids.filtered(lambda l: l.display_type == "tax")
+        dpp = sum(abs(l.balance) for l in product_lines)
+        ppn = abs(sum(tax_lines.filtered(lambda l: l.tax_line_id in ppn_taxes).mapped("balance")))
+        ppnbm = abs(sum(tax_lines.filtered(lambda l: l.tax_line_id in ppnbm_taxes).mapped("balance")))
+        return {"dpp": int(round(dpp)), "ppn": int(round(ppn)), "ppnbm": int(round(ppnbm)), "tarif": 12}
+
+    def action_coretax_open_retur_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window", "name": _("Kirim nota retur"), "res_model": "coretax.retur.wizard",
+            "view_mode": "form", "target": "new",
+            "context": {"active_model": "account.move", "active_id": self.id, "default_move_id": self.id},
+        }
+
+    def action_coretax_view_retur(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_retur")
+        action["domain"] = [("move_id", "=", self.id)]
+        if self.coretax_retur_count == 1:
+            action.update(views=[[False, "form"]], res_id=self.sudo().coretax_retur_ids.id)
+        return action
+
     def button_draft(self):
         self._coretax_guard(_("dikembalikan ke draft"), allow_replacing=True)
+        self._coretax_retur_guard(_("kembalikan ke draft"))
         return super().button_draft()
 
     def button_cancel(self):
         self._coretax_guard(_("dibatalkan"))
+        self._coretax_retur_guard(_("batalkan nota kredit"))
         return super().button_cancel()
+
+    def unlink(self):
+        self._coretax_retur_guard(_("hapus nota kredit"))
+        return super().unlink()

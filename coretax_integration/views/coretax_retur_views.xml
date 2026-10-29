@@ -53,6 +53,8 @@
                 <header>
                     <button name="action_send" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
                             invisible="state not in ('new', 'draft', 'error')"/>
+                    <button name="action_open_cancel_wizard" type="object" string="Batalkan nota retur" icon="fa-ban"
+                            invisible="state != 'approved'"/>
                     <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh"
                             invisible="not aksatax_id"/>
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>

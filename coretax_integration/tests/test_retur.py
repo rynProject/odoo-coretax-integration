@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from odoo import fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 
 from .common import FAKTUR_ID, CoretaxTestCommon, faktur_body
@@ -172,3 +172,154 @@ class TestRetur(CoretaxTestCommon):
         with self.assertRaisesRegex(ValidationError, "13, 16, atau 17 digit"):
             bill.coretax_vendor_tax_number = "123"
         bill.coretax_vendor_tax_number = False
+
+    # ── wizard kirim, kunci, wizard batal (C2) ───────────────────────
+    def _wizard(self, move, **vals):
+        wizard = self.env["coretax.retur.wizard"].with_context(active_model="account.move", active_id=move.id).create(vals)
+        return wizard
+
+    def _out_credit(self, approved=True):
+        invoice = self._invoice()
+        if approved:
+            self.env["coretax.faktur"].create({
+                "move_id": invoice.id, "state": "approved", "aksatax_id": FAKTUR_ID,
+                "nomor_faktur": "0400260000000001"})
+        return self._credit_note(invoice)
+
+    def _in_credit(self, vendor_number="040.002-26.00000099"):
+        bill = self.env["account.move"].create({
+            "move_type": "in_invoice", "partner_id": self.partner_a.id, "invoice_date": "2026-10-01",
+            "coretax_vendor_tax_number": vendor_number,
+            "invoice_line_ids": [(0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 100000,
+                                         "tax_ids": [(6, 0, self.tax_purchase_a.ids)]})],
+        })
+        bill.action_post()
+        return self._credit_note(bill)
+
+    def test_amounts_from_credit_note(self):
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice", "partner_id": self.partner_a.id, "invoice_date": "2026-10-01",
+            "invoice_line_ids": [(0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 1000000,
+                                         "tax_ids": [(6, 0, self.tax_sale_a.ids)]})],
+        })
+        invoice.action_post()
+        credit = self._credit_note(invoice)
+        self.assertEqual(credit._coretax_retur_amounts(), {"dpp": 1000000, "ppn": 120000, "ppnbm": 0, "tarif": 12})
+
+    def test_wizard_defaults(self):
+        credit = self._out_credit()
+        wizard = self._wizard(credit)
+        self.assertEqual(wizard.nomor_dokumen_retur, credit.name)
+        self.assertEqual(wizard.tanggal_retur, credit.invoice_date)
+        self.assertEqual((wizard.nilai_dpp, wizard.nilai_ppn), (90000, 10800))
+        self.assertEqual(wizard.referensi, credit.name)
+
+    def test_wizard_keluaran_sends(self):
+        credit = self._out_credit()
+        fake, patcher = self._patch({
+            ("POST", "/nota-retur"): (201, retur_body()),
+            ("POST", f"/nota-retur/{RETUR_ID}/kirim"): (202, {"id": RETUR_ID, "status": "SUBMITTED"}),
+        })
+        with patcher:
+            action = self._wizard(credit).action_confirm()
+        retur = self.env["coretax.retur"].browse(action["res_id"])
+        self.assertEqual(retur.state, "submitted")
+        self.assertEqual(retur.sisi, "keluaran")
+        self.assertEqual(fake.calls[0]["json"]["fakturId"], FAKTUR_ID)
+        self.assertEqual(credit.coretax_retur_count, 1)
+
+    def test_wizard_masukan_sends(self):
+        credit = self._in_credit()
+        fake, patcher = self._patch({
+            ("POST", "/nota-retur"): (201, retur_body(sisi="MASUKAN")),
+            ("POST", f"/nota-retur/{RETUR_ID}/kirim"): (202, {"id": RETUR_ID, "status": "SUBMITTED"}),
+        })
+        with patcher:
+            action = self._wizard(credit).action_confirm()
+        retur = self.env["coretax.retur"].browse(action["res_id"])
+        self.assertEqual((retur.state, retur.sisi), ("submitted", "masukan"))
+        self.assertEqual(fake.calls[0]["json"]["nomorFaktur"], "0400022600000099")
+        self.assertEqual(fake.calls[0]["json"]["sisi"], "MASUKAN")
+
+    def test_wizard_requires_posted(self):
+        credit = self._out_credit()
+        wizard = self._wizard(credit)
+        credit.button_draft()
+        with self.assertRaisesRegex(UserError, "Posting nota kredit dulu, lalu kirim nota retur"):
+            wizard.action_confirm()
+
+    def test_wizard_requires_origin(self):
+        credit = self.env["account.move"].create({
+            "move_type": "out_refund", "partner_id": self.partner_a.id, "invoice_date": "2026-10-05",
+            "invoice_line_ids": [(0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 1000,
+                                         "tax_ids": [(6, 0, self.tax_sale_a.ids)]})],
+        })
+        credit.action_post()
+        with self.assertRaisesRegex(UserError, "tidak terhubung ke faktur asal"):
+            self._wizard(credit).action_confirm()
+
+    def test_wizard_rejects_existing_live_retur(self):
+        retur = self._out_retur(state="approved", aksatax_id=RETUR_ID)
+        with self.assertRaisesRegex(UserError, "sudah punya nota retur RTR/001"):
+            self._wizard(retur.move_id).action_confirm()
+
+    def test_wizard_keluaran_needs_approved_faktur(self):
+        credit = self._out_credit(approved=False)
+        with self.assertRaisesRegex(UserError, "Faktur asal belum punya e-Faktur yang disetujui DJP"):
+            self._wizard(credit).action_confirm()
+
+    def test_wizard_masukan_needs_vendor_number(self):
+        credit = self._in_credit(vendor_number=False)
+        with self.assertRaisesRegex(UserError, "Isi Nomor Faktur Pajak vendor"):
+            self._wizard(credit).action_confirm()
+
+    def test_wizard_dpp_must_be_positive(self):
+        credit = self._out_credit()
+        with self.assertRaisesRegex(UserError, "Nilai DPP retur harus lebih dari 0"):
+            self._wizard(credit, nilai_dpp=0).action_confirm()
+
+    def test_credit_note_locked_while_retur_live(self):
+        retur = self._out_retur(state="approved", aksatax_id=RETUR_ID)
+        credit = retur.move_id
+        with self.assertRaisesRegex(UserError, "punya nota retur RTR/001 di AksaTax"):
+            credit.button_draft()
+        with self.assertRaisesRegex(UserError, "Batalkan nota retur dulu"):
+            credit.button_cancel()
+        with self.assertRaisesRegex(UserError, "Batalkan nota retur dulu"):
+            credit.unlink()
+        self.assertTrue(credit.coretax_retur_live)
+        retur.state = "cancelled"
+        self.assertFalse(credit.coretax_retur_live)
+        credit.button_draft()
+        self.assertEqual(credit.state, "draft")
+
+    def test_cancel_wizard(self):
+        retur = self._out_retur(state="approved", aksatax_id=RETUR_ID)
+        action = retur.action_open_cancel_wizard()
+        self.assertEqual(action["res_model"], "coretax.retur.cancel.wizard")
+        wizard = self.env["coretax.retur.cancel.wizard"].create({"retur_id": retur.id, "alasan": "Salah nilai"})
+        fake, patcher = self._patch({
+            ("POST", f"/nota-retur/{RETUR_ID}/batal"): (202, {"id": RETUR_ID, "status": "CANCEL_REQUESTED"}),
+        })
+        with patcher:
+            wizard.action_confirm()
+        self.assertEqual(retur.state, "cancel_requested")
+        self.assertEqual(retur.alasan_batal, "Salah nilai")
+        self.assertEqual(retur.cancel_attempt, 1)
+        key = fake.calls[0]["headers"]["Idempotency-Key"]
+        self.assertTrue(key.startswith(retur._idempotency_base() + "-batal-1-"))
+        self.assertEqual(fake.calls[0]["json"], {"alasan": "Salah nilai"})
+
+    def test_cancel_wizard_short_reason(self):
+        retur = self._out_retur(state="approved", aksatax_id=RETUR_ID)
+        wizard = self.env["coretax.retur.cancel.wizard"].create({"retur_id": retur.id, "alasan": "abc"})
+        with self.assertRaisesRegex(UserError, "minimal 5 karakter"):
+            wizard.action_confirm()
+
+    def test_smart_button_count(self):
+        retur = self._out_retur()
+        credit = retur.move_id
+        self.assertEqual(credit.coretax_retur_count, 1)
+        action = credit.action_coretax_view_retur()
+        self.assertEqual(action["res_id"], retur.id)
+        self.assertEqual(credit.action_coretax_open_retur_wizard()["res_model"], "coretax.retur.wizard")

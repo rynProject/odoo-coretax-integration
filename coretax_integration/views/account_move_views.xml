@@ -31,11 +31,26 @@
                         groups="coretax_integration.group_coretax_user"
                         help="Siapkan bukti potong PPh (mis. PPh 23) untuk tagihan vendor ini."/>
             </xpath>
+            <xpath expr="//header" position="inside">
+                <field name="coretax_retur_live" invisible="1"/>
+                <button name="action_coretax_open_retur_wizard" type="object" string="Kirim nota retur" icon="fa-undo"
+                        invisible="move_type not in ('out_refund', 'in_refund') or state != 'posted' or coretax_retur_live"
+                        groups="coretax_integration.group_coretax_user"
+                        help="Kirim nota retur untuk nota kredit ini ke DJP lewat AksaTax."/>
+            </xpath>
             <xpath expr="//group[@id='other_tab_group']" position="inside">
                 <field name="coretax_vendor_tax_number" invisible="move_type != 'in_invoice'"/>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
                 <field name="coretax_faktur_count" invisible="1"/>
+                <field name="coretax_retur_count" invisible="1"/>
+                <button name="action_coretax_view_retur" type="object" class="oe_stat_button" icon="fa-undo"
+                        invisible="not coretax_retur_count" groups="coretax_integration.group_coretax_user">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Nota Retur</span>
+                        <span class="o_stat_value"><field name="coretax_retur_count"/></span>
+                    </div>
+                </button>
                 <field name="coretax_bupot_count" invisible="1" groups="coretax_integration.group_coretax_user"/>
                 <field name="coretax_has_pph" invisible="1" groups="coretax_integration.group_coretax_user"/>
                 <button name="action_coretax_view_bupot" type="object" class="oe_stat_button" icon="fa-file-text"

@@ -44,9 +44,10 @@ class CoretaxRetur(models.Model):
                               index=True, check_company=True)
     origin_move_id = fields.Many2one("account.move", string="Faktur asal", related="move_id.reversed_entry_id",
                                      store=True, index=True)
-    faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur asal", index=True, ondelete="restrict")
+    faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur asal", index=True, ondelete="restrict",
+                                check_company=True)
     nomor_faktur = fields.Char(string="Nomor Faktur Pajak asal")
-    partner_id = fields.Many2one("res.partner", string="Lawan transaksi")
+    partner_id = fields.Many2one("res.partner", string="Lawan transaksi", check_company=True)
     nomor_dokumen_retur = fields.Char(string="Nomor dokumen retur", required=True)
     tanggal_retur = fields.Date(string="Tanggal retur", required=True)
     masa = fields.Integer(string="Masa pajak", compute="_compute_masa_tahun", store=True)
@@ -223,3 +224,11 @@ class CoretaxRetur(models.Model):
             except AksaTaxError as exc:
                 raise UserError(exc.full_message()) from exc
         return True
+
+    def action_open_cancel_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window", "name": _("Batalkan nota retur"),
+            "res_model": "coretax.retur.cancel.wizard", "view_mode": "form", "target": "new",
+            "context": {"default_retur_id": self.id},
+        }
