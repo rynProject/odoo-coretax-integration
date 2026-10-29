@@ -143,7 +143,7 @@ Coretax 17 digit menunggu spesifikasi dari PJAP. Modul ini hanya menampilkan nom
 
 Fitur batal, ganti, PDF, kode 07/08/10, nota retur, dan perbarui lawan transaksi butuh AksaTax versi terbaru.
 Urutannya: pasang AksaTax lebih dulu (termasuk migrasi 0017 dan 0018 di sisi AksaTax), baru upgrade modul Odoo
-(versi 19.0.1.4.0). Dengan AksaTax lama, kode 07/08/10 menampilkan pesan "butuh AksaTax versi terbaru".
+(versi 19.0.1.4.0). Dengan AksaTax lama, fitur-fitur ini dan kode 10 menampilkan pesan "butuh AksaTax versi terbaru".
 
 ## Pengujian
 
