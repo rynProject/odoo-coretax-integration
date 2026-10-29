@@ -227,6 +227,12 @@ class AccountMove(models.Model):
         self.coretax_faktur_id.action_refresh()
         return True
 
+    def action_coretax_cancel_efaktur(self):
+        self.ensure_one()
+        if not self.coretax_faktur_id:
+            raise UserError(_("Faktur ini belum punya e-Faktur."))
+        return self.coretax_faktur_id.action_open_cancel_wizard()
+
     def action_coretax_view_faktur(self):
         self.ensure_one()
         action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_faktur")

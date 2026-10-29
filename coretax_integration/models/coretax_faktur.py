@@ -222,6 +222,14 @@ class CoretaxFaktur(models.Model):
                        "send_attempt": rec.send_attempt + 1, "submitted_at": fields.Datetime.now(), "last_error": False})
         return True
 
+    def action_open_cancel_wizard(self):
+        self.ensure_one()
+        if self.state != "approved" or not self.aksatax_id:
+            raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP yang bisa dibatalkan."))
+        return {"type": "ir.actions.act_window", "res_model": "coretax.faktur.cancel.wizard",
+                "view_mode": "form", "target": "new", "name": _("Batalkan e-Faktur"),
+                "context": {"default_faktur_id": self.id}}
+
     def action_refresh(self):
         for rec in self.filtered("aksatax_id"):
             connection = self.env["coretax.connection"]._for_company(rec.company_id)

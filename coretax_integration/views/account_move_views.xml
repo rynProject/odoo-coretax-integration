@@ -15,6 +15,9 @@
                 <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
                         invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
                         groups="coretax_integration.group_coretax_user"/>
+                <button name="action_coretax_cancel_efaktur" type="object" string="Batalkan e-Faktur" icon="fa-ban"
+                        invisible="coretax_state != 'approved'"
+                        groups="coretax_integration.group_coretax_user"/>
                 <button name="action_coretax_create_bupot" type="object" string="Buat Bukti Potong" icon="fa-file-text"
                         invisible="move_type not in ('in_invoice', 'in_receipt') or state != 'posted' or coretax_has_pph"
                         groups="coretax_integration.group_coretax_user"

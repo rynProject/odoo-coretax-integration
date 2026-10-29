@@ -2,7 +2,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 from ..tools.client import AksaTaxError
-from .common import CP_ID, FAKTUR_ID, CoretaxTestCommon, FakeResponse
+from .common import CP_ID, FAKTUR_ID, CoretaxTestCommon, FakeResponse, faktur_body
 
 
 @tagged("post_install", "-at_install", "post_install_l10n")
@@ -102,3 +102,61 @@ class TestEfakturFase1(CoretaxTestCommon):
     def test_code_01_has_no_keterangan(self):
         move = self._invoice_code("01")
         self.assertNotIn("idKeteranganTambahan", move._coretax_payload(CP_ID))
+
+    # ── batalkan e-Faktur ─────────────────────────────────────────────
+    def _approved_faktur(self):
+        move = self._invoice()
+        self.partner_a.with_company(move.company_id).coretax_counterparty_id = CP_ID
+        _fake, patcher = self._patch({
+            ("POST", "/faktur"): (201, faktur_body()),
+            ("POST", f"/faktur/{FAKTUR_ID}/kirim"): (202, {"id": FAKTUR_ID, "status": "SUBMITTED"}),
+        })
+        with patcher:
+            faktur = move._coretax_create_faktur(mode="send", connection=self.connection)
+        faktur.write({"state": "approved", "aksatax_id": FAKTUR_ID})
+        return move, faktur
+
+    def _cancel_routes(self):
+        return {("POST", f"/faktur/{FAKTUR_ID}/batal"): (202, {"id": FAKTUR_ID, "status": "CANCEL_REQUESTED"})}
+
+    def test_cancel_sends_alasan(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._cancel_routes())
+        with patcher:
+            wiz = self.env["coretax.faktur.cancel.wizard"].create(
+                {"faktur_id": faktur.id, "alasan": "Salah harga satuan"})
+            wiz.action_confirm()
+        call = fake.calls[0]
+        self.assertEqual(call["json"], {"alasan": "Salah harga satuan"})
+        self.assertTrue(call["headers"].get("Idempotency-Key"))
+        self.assertEqual(faktur.state, "cancel_requested")
+        self.assertIn("Salah harga satuan", " ".join(faktur.message_ids.mapped("body")))
+
+    def test_cancelled_event_unlocks_invoice(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._cancel_routes())
+        with patcher:
+            self.env["coretax.faktur.cancel.wizard"].create(
+                {"faktur_id": faktur.id, "alasan": "Salah harga satuan"}).action_confirm()
+            self.connection._process_event({
+                "id": "evt_90", "sequence": 90, "type": "faktur.cancelled",
+                "object": {"type": "faktur", "id": FAKTUR_ID},
+                "data": {"id": FAKTUR_ID, "status": "CANCELLED"}})
+        self.assertEqual(faktur.state, "cancelled")
+        move.button_draft()
+
+    def test_cancel_only_from_approved(self):
+        move, faktur = self._approved_faktur()
+        faktur.state = "processing"
+        fake, patcher = self._patch({})
+        with patcher, self.assertRaises(UserError):
+            faktur.action_open_cancel_wizard()
+        self.assertEqual(fake.calls, [])
+
+    def test_cancel_reason_too_short(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch({})
+        with patcher, self.assertRaisesRegex(UserError, "minimal 5 karakter"):
+            self.env["coretax.faktur.cancel.wizard"].create(
+                {"faktur_id": faktur.id, "alasan": "abc"}).action_confirm()
+        self.assertEqual(fake.calls, [])
