@@ -449,4 +449,11 @@ class AccountMove(models.Model):
 
     def unlink(self):
         self._coretax_retur_guard(_("hapus nota kredit"))
+        returs = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund")).sudo().coretax_retur_ids
+        # Nota retur yang tidak pernah sampai ke AksaTax ikut dihapus; yang punya riwayat menahan penghapusan.
+        returs.filtered(lambda r: not r.aksatax_id).unlink()
+        history = returs.exists()
+        if history:
+            raise UserError(_("Nota kredit ini punya riwayat nota retur %s di AksaTax, jadi tidak bisa dihapus. "
+                              "Batalkan nota kredit saja.", history[0].nomor_dokumen_retur))
         return super().unlink()

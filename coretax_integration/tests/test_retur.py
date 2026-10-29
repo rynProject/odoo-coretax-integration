@@ -323,3 +323,46 @@ class TestRetur(CoretaxTestCommon):
         action = credit.action_coretax_view_retur()
         self.assertEqual(action["res_id"], retur.id)
         self.assertEqual(credit.action_coretax_open_retur_wizard()["res_model"], "coretax.retur.wizard")
+
+    def test_unlink_credit_note_deletes_unsent_retur(self):
+        retur = self._out_retur(state="error")
+        credit = retur.move_id
+        credit.button_draft()
+        credit.unlink()
+        self.assertFalse(retur.exists())
+        self.assertFalse(credit.exists())
+
+    def test_unlink_credit_note_blocked_by_retur_history(self):
+        retur = self._out_retur(state="cancelled", aksatax_id=RETUR_ID)
+        credit = retur.move_id
+        credit.button_draft()
+        with self.assertRaisesRegex(UserError, "punya riwayat nota retur RTR/001 di AksaTax, jadi tidak bisa "
+                                               "dihapus. Batalkan nota kredit saja."):
+            credit.unlink()
+        self.assertTrue(retur.exists())
+
+    def test_amounts_ppnbm_and_pph(self):
+        template = self.env["account.chart.template"].with_company(self.company_data["company"])
+        stlg = template.ref("l10n_id_tax_group_stlg", raise_if_not_found=False)
+        self.assertTrue(stlg, "grup STLG tidak ada di chart uji")
+        stlg_tax = self.env["account.tax"].search([
+            ("tax_group_id", "=", stlg.id), ("type_tax_use", "=", "purchase"),
+            ("company_id", "=", self.company_data["company"].id)], limit=1)
+        if not stlg_tax:
+            stlg_tax = self.env["account.tax"].create({
+                "name": "STLG uji", "amount": 20, "amount_type": "percent", "type_tax_use": "purchase",
+                "tax_group_id": stlg.id, "company_id": self.company_data["company"].id})
+        pph = template.ref("tax_pph23_2")
+        self.tax_purchase_a.amount = 12.0
+        bill = self.env["account.move"].create({
+            "move_type": "in_invoice", "partner_id": self.partner_a.id, "invoice_date": "2026-10-01",
+            "invoice_line_ids": [
+                (0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 100000,
+                        "tax_ids": [(6, 0, (self.tax_purchase_a + pph).ids)]}),
+                (0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 50000,
+                        "tax_ids": [(6, 0, stlg_tax.ids)]}),
+            ],
+        })
+        bill.action_post()
+        credit = self._credit_note(bill)
+        self.assertEqual(credit._coretax_retur_amounts(), {"dpp": 100000, "ppn": 12000, "ppnbm": 10000, "tarif": 12})
