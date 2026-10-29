@@ -40,7 +40,7 @@
                 </button>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="after">
-                <field name="coretax_tax_object_id" optional="show" options="{'no_create': True}"
+                <field name="coretax_tax_object_id" string="Kode objek" optional="show" options="{'no_create': True}"
                        column_invisible="parent.move_type not in ('in_invoice', 'in_receipt', 'in_refund')"/>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="after">
