@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Kode objek pajak yang paling sering dipakai (sumber: data contoh
+         AksaTax). Tarif hanya untuk perkiraan di Odoo - perhitungan resmi
+         dilakukan AksaTax/DJP. Administrator bisa menambah kode lain di
+         Coretax › Data Master › Kode Objek Pajak. -->
+    <record id="tax_object_24_104_01" model="coretax.tax.object"><field name="code">24-104-01</field><field name="name">Jasa teknik</field><field name="pasal">23</field><field name="tarif">2</field></record>
+    <record id="tax_object_24_104_02" model="coretax.tax.object"><field name="code">24-104-02</field><field name="name">Jasa manajemen</field><field name="pasal">23</field><field name="tarif">2</field></record>
+    <record id="tax_object_24_104_03" model="coretax.tax.object"><field name="code">24-104-03</field><field name="name">Jasa konsultan</field><field name="pasal">23</field><field name="tarif">2</field></record>
+    <record id="tax_object_24_104_06" model="coretax.tax.object"><field name="code">24-104-06</field><field name="name">Jasa perbaikan dan perawatan</field><field name="pasal">23</field><field name="tarif">2</field></record>
+    <record id="tax_object_24_104_15" model="coretax.tax.object"><field name="code">24-104-15</field><field name="name">Jasa periklanan</field><field name="pasal">23</field><field name="tarif">2</field></record>
+    <record id="tax_object_28_402_01" model="coretax.tax.object"><field name="code">28-402-01</field><field name="name">Sewa tanah dan/atau bangunan</field><field name="pasal">4(2)</field><field name="tarif">10</field></record>
+    <record id="tax_object_28_409_01" model="coretax.tax.object"><field name="code">28-409-01</field><field name="name">Jasa konstruksi oleh penyedia jasa kualifikasi kecil</field><field name="pasal">4(2)</field><field name="tarif">1.75</field></record>
+    <record id="tax_object_22_100_09" model="coretax.tax.object"><field name="code">22-100-09</field><field name="name">Penjualan hasil produksi kepada distributor dalam negeri (industri otomotif)</field><field name="pasal">22</field><field name="tarif">0.45</field></record>
+    <record id="tax_object_27_103_01" model="coretax.tax.object"><field name="code">27-103-01</field><field name="name">Royalti (PPh Pasal 26)</field><field name="jenis">BPNR</field><field name="pasal">26</field><field name="tarif">20</field></record>
+    <record id="tax_object_27_104_01" model="coretax.tax.object"><field name="code">27-104-01</field><field name="name">Imbalan jasa, pekerjaan, dan kegiatan (PPh Pasal 26)</field><field name="jenis">BPNR</field><field name="pasal">26</field><field name="tarif">20</field></record>
+</odoo>

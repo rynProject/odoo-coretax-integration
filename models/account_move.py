@@ -1,0 +1,282 @@
+import logging
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+
+from ..tools.client import AksaTaxError
+from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STATES
+
+_logger = logging.getLogger(__name__)
+
+# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-09). 07/08 butuh
+# keterangan tambahan yang belum bisa dipetakan; 10 belum didukung AksaTax.
+SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "09"}
+
+
+class AccountMove(models.Model):
+    _inherit = "account.move"
+
+    coretax_faktur_ids = fields.One2many("coretax.faktur", "move_id", string="e-Faktur Coretax")
+    coretax_faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur terakhir",
+                                        compute="_compute_coretax_faktur_id", store=True, index=True)
+    coretax_state = fields.Selection(string="Status e-Faktur", related="coretax_faktur_id.state", store=True)
+    coretax_nomor_faktur = fields.Char(related="coretax_faktur_id.nomor_faktur", string="Nomor Faktur Pajak")
+    coretax_last_error = fields.Text(related="coretax_faktur_id.last_error", string="Keterangan e-Faktur")
+    coretax_can_send = fields.Boolean(string="Bisa dikirim ke Coretax", compute="_compute_coretax_can_send")
+    coretax_faktur_count = fields.Integer(compute="_compute_coretax_faktur_id", store=True)
+
+    @api.depends("coretax_faktur_ids", "coretax_faktur_ids.active", "coretax_faktur_ids.version")
+    def _compute_coretax_faktur_id(self):
+        for move in self:
+            fakturs = move.coretax_faktur_ids.filtered("active").sorted("version", reverse=True)
+            move.coretax_faktur_id = fakturs[:1]
+            move.coretax_faktur_count = len(move.with_context(active_test=False).coretax_faktur_ids)
+
+    @api.depends("state", "move_type", "coretax_state", "line_ids.tax_ids")
+    def _compute_coretax_can_send(self):
+        for move in self:
+            move.coretax_can_send = (
+                move._coretax_is_candidate()
+                and (not move.coretax_faktur_id or move.coretax_state in RECREATE_STATES)
+            )
+
+    def _coretax_is_candidate(self):
+        self.ensure_one()
+        return (self.move_type == "out_invoice" and self.state == "posted" and self.country_code == "ID"
+                and bool(self.invoice_line_ids.tax_ids))
+
+    @api.model
+    def _coretax_ready_domain(self):
+        """Faktur pelanggan terposting ber-PPN yang belum punya e-Faktur aktif."""
+        return [
+            ("company_id", "=", self.env.company.id), ("move_type", "=", "out_invoice"), ("state", "=", "posted"),
+            ("invoice_line_ids.tax_ids", "!=", False),
+            "|", ("coretax_faktur_id", "=", False), ("coretax_state", "in", list(RECREATE_STATES)),
+        ]
+
+    # ── pemeriksaan sebelum kirim ─────────────────────────────────────
+    def _coretax_check(self, connection=None):
+        """Daftar (tingkat, pesan) untuk satu faktur. 'error' = tidak bisa
+        dikirim; 'warning' = boleh dikirim tapi sebaiknya diperbaiki."""
+        self.ensure_one()
+        issues = []
+        if self.move_type != "out_invoice":
+            return [("error", _("Hanya faktur pelanggan yang bisa dibuatkan e-Faktur."))]
+        if self.state != "posted":
+            issues.append(("error", _("Faktur belum diposting (masih draft atau dibatalkan).")))
+        if self.coretax_faktur_id and self.coretax_state not in RECREATE_STATES:
+            label = dict(STATES).get(self.coretax_state)
+            issues.append(("error", _("Sudah punya e-Faktur (%s). Tidak dikirim lagi.", label)))
+        if self.currency_id != self.env.ref("base.IDR"):
+            issues.append(("error", _("Mata uang faktur %s - e-Faktur harus dalam Rupiah (IDR).", self.currency_id.name)))
+        if not self.invoice_line_ids.tax_ids:
+            issues.append(("error", _("Tidak ada baris faktur yang dikenai PPN.")))
+        if not self.invoice_date:
+            issues.append(("error", _("Tanggal faktur belum diisi.")))
+        elif self.invoice_date > fields.Date.context_today(self):
+            issues.append(("error", _("Tanggal faktur di masa depan - DJP menolak faktur bertanggal ke depan.")))
+        code = self.l10n_id_kode_transaksi
+        if not code:
+            issues.append(("error", _("Kode transaksi e-Faktur belum dipilih (tab Lainnya / Other Info faktur).")))
+        elif code in ("07", "08"):
+            issues.append(("error", _("Kode transaksi %s (dengan keterangan tambahan/fasilitas) belum bisa dikirim "
+                                      "lewat integrasi. Buat e-Faktur ini langsung di AksaTax.", code)))
+        elif code not in SUPPORTED_TRX_CODES:
+            issues.append(("error", _("Kode transaksi %s belum didukung AksaTax. Buat e-Faktur ini langsung di AksaTax.", code)))
+        partner = self.commercial_partner_id
+        if not partner._coretax_identity():
+            issues.append(("error", _("Pelanggan %s belum punya NPWP atau NIK.", partner.display_name)))
+        elif not partner.with_company(self.company_id).coretax_counterparty_id:
+            if connection and connection.auto_register_partner:
+                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan AksaTax - Odoo akan mencarinya lewat "
+                                            "NPWP, atau mendaftarkannya sebagai lawan transaksi baru, saat mengirim.",
+                                            partner.display_name)))
+            else:
+                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan data di AksaTax - Odoo akan mencarinya "
+                                            "otomatis lewat NPWP saat mengirim.", partner.display_name)))
+        lines = self.invoice_line_ids.filtered(lambda l: l.display_type == "product" and l.tax_ids)
+        no_code = lines.filtered(lambda l: not l.product_id.l10n_id_product_code)
+        if no_code:
+            issues.append(("warning", _("%s baris tanpa Kode Barang/Jasa Coretax (produk: %s) - akan memakai kode "
+                                        "umum 000000.", len(no_code),
+                                        ", ".join(no_code.mapped("product_id.display_name")[:3]) or _("tanpa produk"))))
+        if hasattr(self, "_validate_tax_groups"):
+            for message in self._validate_tax_groups() or []:
+                issues.append(("error", message))
+        try:
+            self._coretax_line_vals()
+        except (UserError, ValidationError) as exc:
+            issues.append(("error", str(exc.args[0] if exc.args else exc)))
+        if connection is not None and not connection:
+            issues.insert(0, ("error", _("Koneksi AksaTax untuk perusahaan ini belum diatur.")))
+        return issues
+
+    # ── data yang dikirim ─────────────────────────────────────────────
+    def _coretax_line_vals(self):
+        """Baris e-Faktur memakai penyusun data e-Faktur bawaan Odoo
+        (l10n_id_efaktur_coretax), supaya angkanya sama dengan XML Coretax."""
+        self.ensure_one()
+        vals = {}
+        lines = self.invoice_line_ids.filtered(lambda l: l.display_type == "product" and l.tax_ids)
+        for line in lines:
+            line._l10n_id_coretax_build_invoice_line_vals(vals)
+        result = []
+        ChartTemplate = self.env["account.chart.template"].with_company(self.company_id)
+        luxury_groups = {ChartTemplate.ref(xmlid, raise_if_not_found=False)
+                         for xmlid in ("l10n_id_tax_group_luxury_goods", "l10n_id_tax_group_stlg")}
+        luxury_groups.discard(False)
+        for line, val in zip(lines, vals.get("lines", [])):
+            unit = val.get("Unit") or line.product_uom_id.name or "UNIT"
+            result.append({
+                "kodeObjek": (val.get("Code") or "000000")[:20],
+                "nama": (val.get("Name") or line.name or _("Barang/Jasa"))[:300],
+                "satuan": unit[:30],
+                "hargaSatuan": float(val["Price"]),
+                "jumlahBarang": float(val["Qty"]),
+                "diskon": float(val["TotalDiscount"]),
+                "tarifPpnbm": float(val.get("STLGRate") or 0),
+                "barangMewah": any(group in luxury_groups for group in line.tax_ids.tax_group_id),
+                "keterangan": (line.name or "")[:300] if line.name and line.name != val.get("Name") else "",
+            })
+        return result
+
+    def _coretax_payload(self, counterparty_id):
+        self.ensure_one()
+        payload = {
+            "counterpartyId": counterparty_id,
+            "kdJenisTransaksi": self.l10n_id_kode_transaksi or "01",
+            "fgPengganti": "0",
+            "fgUangMuka": "0",
+            "tanggalFaktur": fields.Date.to_string(self.invoice_date),
+            "referensi": (self.name or "")[:100],
+            "items": self._coretax_line_vals(),
+        }
+        if self.ref:
+            payload["nomorDokumenPendukung"] = self.ref[:100]
+        return payload
+
+    # ── pengiriman ────────────────────────────────────────────────────
+    def _coretax_create_faktur(self, mode="send", connection=None):
+        """Buat e-Faktur di AksaTax untuk satu faktur, lalu (bila mode 'send')
+        kirim ke DJP. Selalu menghasilkan dokumen coretax.faktur - yang gagal
+        berstatus 'Gagal - perlu tindakan' dengan pesan yang bisa dibaca."""
+        self.ensure_one()
+        connection = connection or self.env["coretax.connection"]._for_company(self.company_id)
+        errors = [msg for level, msg in self._coretax_check(connection) if level == "error"]
+        if errors:
+            raise UserError("\n".join(errors))
+        previous = self.coretax_faktur_id
+        if previous:
+            previous.active = False
+        version = max(self.with_context(active_test=False).coretax_faktur_ids.mapped("version") or [0]) + 1
+        faktur = self.env["coretax.faktur"].create({"move_id": self.id, "version": version, "send_mode": mode,
+                                                    "kd_jenis_transaksi": self.l10n_id_kode_transaksi})
+        client = connection._client(faktur)
+        try:
+            partner = self.commercial_partner_id.with_company(self.company_id)
+            counterparty = partner._coretax_counterparty_for(connection)
+            if not counterparty:
+                raise AksaTaxError(_(
+                    "Pelanggan %s (NPWP %s) belum terdaftar di AksaTax. Klik 'Daftarkan ke AksaTax' di "
+                    "Coretax › Data Master › Lawan Transaksi, lalu kirim ulang.",
+                    partner.display_name, partner._coretax_identity() or "-"), code="COUNTERPARTY_MISSING")
+            data = client.create_faktur(self._coretax_payload(counterparty), faktur._idempotency_base())
+            faktur._apply_remote(data)
+            if mode == "send":
+                result = client.send_faktur(faktur.aksatax_id, f"{faktur._idempotency_base()}-kirim-1")
+                faktur.write({"state": REMOTE_STATES.get(result.get("status"), "submitted"), "send_attempt": 1,
+                              "submitted_at": fields.Datetime.now()})
+        except AksaTaxError as exc:
+            if faktur.aksatax_id:
+                # draft sudah ada di AksaTax, hanya kirim ke DJP yang gagal:
+                # status tetap draft dan bisa dikirim ulang dari Odoo
+                faktur.write({"last_error": exc.full_message()})
+            else:
+                faktur.write({"state": "error", "last_error": exc.full_message()})
+            faktur.message_post(body=_("Gagal mengirim ke AksaTax: %s", exc.full_message()))
+            faktur.error_code = exc.code or ""
+            if self.env.context.get("coretax_auto"):
+                faktur._schedule_fix_activity(_("e-Faktur gagal dikirim otomatis"))
+            return faktur
+        self.message_post(body=_("e-Faktur dibuat di AksaTax (%s).", dict(STATES).get(faktur.state)))
+        return faktur
+
+    def action_coretax_send(self):
+        """Tombol 'Kirim e-Faktur' - buka wizard pemeriksaan & pengiriman."""
+        moves = self.filtered(lambda m: m.move_type == "out_invoice")
+        if not moves:
+            raise UserError(_("Pilih minimal satu faktur pelanggan."))
+        return {
+            "type": "ir.actions.act_window", "res_model": "coretax.send.wizard", "view_mode": "form",
+            "target": "new", "name": _("Kirim e-Faktur ke Coretax"),
+            "context": {"default_move_ids": [(6, 0, moves.ids)]},
+        }
+
+    def action_coretax_refresh(self):
+        self.coretax_faktur_id.action_refresh()
+        return True
+
+    def action_coretax_view_faktur(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_faktur")
+        action["domain"] = [("move_id", "=", self.id)]
+        action["context"] = {"active_test": False}
+        if self.coretax_faktur_count == 1:
+            action.update(views=[[False, "form"]], res_id=self.with_context(active_test=False).coretax_faktur_ids.id)
+        return action
+
+    def action_coretax_create_bupot(self):
+        """Dari tagihan vendor: siapkan Bukti Potong PPh (draft)."""
+        self.ensure_one()
+        bill_date = self.invoice_date or fields.Date.context_today(self)
+        return {
+            "type": "ir.actions.act_window", "res_model": "coretax.bupot", "view_mode": "form", "target": "current",
+            "name": _("Bukti Potong baru"),
+            "context": {
+                "default_move_id": self.id, "default_partner_id": self.commercial_partner_id.id,
+                "default_jumlah_bruto": round(self.amount_untaxed_signed and abs(self.amount_untaxed_signed) or 0),
+                "default_tanggal_pemotongan": fields.Date.to_string(bill_date),
+                "default_dok_jenis": "02", "default_dok_nomor": (self.ref or self.name or "")[:100],
+                "default_dok_tanggal": fields.Date.to_string(bill_date),
+            },
+        }
+
+    # ── otomatis saat posting & pengaman reset ────────────────────────
+    def _post(self, soft=True):
+        posted = super()._post(soft=soft)
+        candidates = posted.filtered(lambda m: m.move_type == "out_invoice")
+        if not candidates or self.env.context.get("coretax_no_auto"):
+            return posted
+        for company in candidates.company_id:
+            connection = self.env["coretax.connection"]._for_company(company, raise_if_missing=False)
+            if not connection or connection.auto_mode == "manual" or not connection.has_api_key:
+                continue
+            for move in candidates.filtered(lambda m: m.company_id == company and m.coretax_can_send):
+                if any(level == "error" for level, _msg in move._coretax_check(connection)):
+                    move.message_post(body=_("e-Faktur tidak dikirim otomatis: data belum lengkap. "
+                                             "Klik 'Kirim e-Faktur' untuk melihat yang perlu diperbaiki."))
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        move.with_context(coretax_auto=True)._coretax_create_faktur(
+                            mode=connection.auto_mode, connection=connection)
+                except Exception:  # pengiriman otomatis tidak boleh menggagalkan posting
+                    _logger.exception("Kirim e-Faktur otomatis gagal untuk %s", move.name)
+        return posted
+
+    def _coretax_guard(self, action_label):
+        locked = self.filtered(lambda m: m.coretax_state in LOCKING_STATES)
+        if locked:
+            raise UserError(_(
+                "Faktur %(moves)s sudah punya e-Faktur di DJP (%(state)s). Batalkan dulu e-Faktur-nya di AksaTax "
+                "sebelum %(action)s faktur ini.",
+                moves=", ".join(locked.mapped("name")), state=dict(STATES).get(locked[0].coretax_state),
+                action=action_label))
+
+    def button_draft(self):
+        self._coretax_guard(_("mengembalikan ke draft"))
+        return super().button_draft()
+
+    def button_cancel(self):
+        self._coretax_guard(_("membatalkan"))
+        return super().button_cancel()

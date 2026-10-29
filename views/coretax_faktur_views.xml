@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coretax_faktur_search" model="ir.ui.view">
+        <field name="name">coretax.faktur.search</field>
+        <field name="model">coretax.faktur</field>
+        <field name="arch" type="xml">
+            <search string="Cari e-Faktur">
+                <field name="name" string="e-Faktur / Nomor Faktur Pajak"/>
+                <field name="move_id"/>
+                <field name="partner_id"/>
+                <filter name="attention" string="Perlu tindakan" domain="[('attention', '=', True)]"/>
+                <filter name="in_progress" string="Sedang diproses" domain="[('in_progress', '=', True)]"/>
+                <filter name="approved" string="Disetujui DJP" domain="[('state', '=', 'approved')]"/>
+                <filter name="draft" string="Draft di AksaTax" domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="this_month" string="Bulan ini"
+                        domain="[('invoice_date', '&gt;=', (context_today() + relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <filter name="invoice_date" string="Tanggal faktur" date="invoice_date"/>
+                <field name="masa_pajak" string="Masa pajak"/>
+                <field name="tahun_pajak" string="Tahun pajak"/>
+                <separator/>
+                <filter name="archived" string="Riwayat versi lama" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_partner" string="Pelanggan" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_month" string="Bulan faktur" context="{'group_by': 'invoice_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_coretax_faktur_list" model="ir.ui.view">
+        <field name="name">coretax.faktur.list</field>
+        <field name="model">coretax.faktur</field>
+        <field name="arch" type="xml">
+            <list string="e-Faktur" create="0" decoration-danger="attention" decoration-success="state == 'approved'"
+                  decoration-info="in_progress" decoration-muted="state == 'cancelled'">
+                <field name="attention" column_invisible="1"/>
+                <field name="in_progress" column_invisible="1"/>
+                <field name="invoice_date"/>
+                <field name="move_id" string="Faktur Odoo"/>
+                <field name="partner_id"/>
+                <field name="nomor_faktur" optional="show"/>
+                <field name="total_dpp" sum="Total DPP" optional="show"/>
+                <field name="total_ppn" sum="Total PPN" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'"
+                       decoration-danger="state in ('rejected', 'error')" decoration-info="state in ('submitted', 'processing')"
+                       decoration-warning="state in ('draft', 'pending_approval', 'validated', 'cancel_requested')"/>
+                <field name="last_error" optional="show" string="Keterangan"/>
+                <field name="write_date" string="Diperbarui" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coretax_faktur_kanban" model="ir.ui.view">
+        <field name="name">coretax.faktur.kanban</field>
+        <field name="model">coretax.faktur</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" create="0" group_create="0" group_delete="0" group_edit="0"
+                    records_draggable="0" quick_create="0">
+                <field name="currency_id"/>
+                <field name="attention"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <field name="move_id" class="fw-bold"/>
+                            <field name="invoice_date" class="text-muted"/>
+                        </div>
+                        <field name="partner_id" class="text-truncate"/>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="text-muted">PPN <field name="total_ppn" widget="monetary"/></span>
+                            <field name="nomor_faktur" class="small"/>
+                        </div>
+                        <div t-if="record.attention.raw_value" class="text-danger small mt-1 text-truncate">
+                            <i title="Perhatian" class="fa fa-exclamation-circle"/> <field name="last_error"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_coretax_faktur_form" model="ir.ui.view">
+        <field name="name">coretax.faktur.form</field>
+        <field name="model">coretax.faktur</field>
+        <field name="arch" type="xml">
+            <form string="e-Faktur" create="0">
+                <header>
+                    <button name="action_send_to_djp" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
+                            invisible="state not in ('draft', 'validated') or not aksatax_id"
+                            confirm="Kirim e-Faktur ini ke DJP sekarang?"/>
+                    <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh"
+                            invisible="not aksatax_id"/>
+                    <button name="action_recreate" type="object" string="Buat ulang e-Faktur" class="btn-primary" icon="fa-repeat"
+                            invisible="state not in ('rejected', 'cancelled', 'error') or not active"/>
+                    <button name="action_open_aksatax" type="object" string="Buka di AksaTax" icon="fa-external-link"
+                            invisible="not aksatax_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,processing,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <div class="o_stat_info"><span class="o_stat_text">Faktur Odoo</span></div>
+                        </button>
+                        <button name="action_view_logs" type="object" class="oe_stat_button" icon="fa-history">
+                            <field name="log_count" widget="statinfo" string="Riwayat"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Versi lama" bg_color="text-bg-secondary" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <field name="aksatax_id" invisible="1"/>
+                    <field name="attention" invisible="1"/>
+
+                    <div class="alert alert-success d-flex gap-2" role="status" invisible="state != 'approved'">
+                        <i title="Berhasil" class="fa fa-check-circle fa-lg mt-1"/>
+                        <div>
+                            <strong>Disetujui DJP.</strong> Nomor Faktur Pajak <field name="nomor_faktur" class="d-inline fw-bold" readonly="1"/>.
+                            <div class="small">Untuk membatalkan atau mengunduh PDF faktur pajak, buka dokumen ini di AksaTax.</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info d-flex gap-2" role="status" invisible="state not in ('submitted', 'processing', 'cancel_requested')">
+                        <i title="Sedang diproses" class="fa fa-hourglass-half fa-lg mt-1"/>
+                        <div><strong>Sedang diproses DJP.</strong> Odoo memperbarui status otomatis setiap 5 menit - tidak perlu melakukan apa pun.</div>
+                    </div>
+                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="state not in ('draft', 'pending_approval', 'validated') or attention">
+                        <i title="Draft" class="fa fa-pencil-square-o fa-lg mt-1"/>
+                        <div>
+                            <strong>Masih draft di AksaTax.</strong> Klik <b>Kirim ke DJP</b>, atau setujui &amp; kirim dari AksaTax
+                            (bila perusahaan Anda memakai alur persetujuan internal).
+                        </div>
+                    </div>
+                    <div class="alert alert-danger d-flex gap-2" role="alert" invisible="not attention">
+                        <i title="Perlu tindakan" class="fa fa-exclamation-triangle fa-lg mt-1"/>
+                        <div>
+                            <strong>Perlu tindakan.</strong>
+                            <field name="last_error" class="d-block" readonly="1"/>
+                            <div class="small mt-1">
+                                Perbaiki datanya (di faktur, pelanggan, atau di AksaTax), lalu klik
+                                <b invisible="state not in ('rejected', 'cancelled', 'error')">Buat ulang e-Faktur</b>
+                                <b invisible="state in ('rejected', 'cancelled', 'error')">Kirim ke DJP</b>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="oe_title">
+                        <label for="name" string="e-Faktur"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Faktur">
+                            <field name="move_id" readonly="1"/>
+                            <field name="partner_id"/>
+                            <field name="invoice_date"/>
+                            <field name="amount_total"/>
+                            <field name="send_mode"/>
+                        </group>
+                        <group string="Faktur Pajak (DJP)">
+                            <field name="nomor_faktur"/>
+                            <field name="kd_jenis_transaksi"/>
+                            <label for="masa_pajak" string="Masa / tahun pajak"/>
+                            <div class="o_row"><field name="masa_pajak" options="{'format': false}"/> / <field name="tahun_pajak" options="{'format': false}"/></div>
+                            <field name="kode_approval"/>
+                            <field name="tanggal_approval"/>
+                        </group>
+                    </group>
+                    <group string="Nilai pajak (dihitung AksaTax)">
+                        <group>
+                            <field name="total_dpp"/>
+                            <field name="total_dpp_nilai_lain"/>
+                        </group>
+                        <group>
+                            <field name="total_ppn"/>
+                            <field name="total_ppnbm"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Info teknis" name="technical">
+                            <group>
+                                <group>
+                                    <field name="aksatax_id" string="ID AksaTax"/>
+                                    <field name="version"/>
+                                    <field name="send_attempt"/>
+                                </group>
+                                <group>
+                                    <field name="submitted_at"/>
+                                    <field name="last_sync"/>
+                                    <field name="company_id" groups="base.group_multi_company"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coretax_faktur" model="ir.actions.act_window">
+        <field name="name">Semua e-Faktur</field>
+        <field name="res_model">coretax.faktur</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_coretax_faktur_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada e-Faktur</p>
+            <p>Buka <b>e-Faktur › Siap dikirim</b>, pilih faktur pelanggan, lalu klik <b>Kirim e-Faktur</b>.
+                Status dari DJP akan muncul di sini secara otomatis.</p>
+        </field>
+    </record>
+
+    <record id="action_coretax_faktur_attention" model="ir.actions.act_window">
+        <field name="name">e-Faktur perlu tindakan</field>
+        <field name="res_model">coretax.faktur</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_coretax_faktur_search"/>
+        <field name="context">{'search_default_attention': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Tidak ada yang perlu diperbaiki</p>
+            <p>Semua e-Faktur berjalan lancar. e-Faktur yang ditolak DJP atau gagal dikirim akan muncul di sini.</p>
+        </field>
+    </record>
+</odoo>

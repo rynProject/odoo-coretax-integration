@@ -1,0 +1,616 @@
+// Ringkasan Coretax. Warna dari variabel SCSS Odoo (bukan var(--bs-*), yang
+// tidak didefinisikan di backend Odoo 19), jadi ikut tema dan mode gelap.
+$ctx-surface: $o-view-background-color;
+$ctx-page: $o-gray-100;
+$ctx-line: $border-color;
+$ctx-muted: $o-gray-600;
+$ctx-tones: (
+    "primary": $primary,
+    "success": $o-success,
+    "info": $o-info,
+    "warning": $o-warning,
+    "danger": $o-danger,
+    "muted": $o-gray-500,
+);
+
+@function ctx-tint($color, $amount: 14%) {
+    @return mix($color, $ctx-surface, $amount);
+}
+
+// teks berwarna di atas latar berwarna tipis: lebih gelap di tema terang, lebih terang di tema gelap
+@function ctx-ink($color, $amount: 14%) {
+    @if lightness($ctx-surface) > 50% {
+        @return darken($color, $amount);
+    }
+    @return lighten($color, $amount);
+}
+
+.o_coretax_dashboard {
+    background: $ctx-page;
+    color: $o-main-text-color;
+
+    h1, h2 {
+        margin: 0;
+        color: $o-main-text-color;
+    }
+
+    .o_ctx_wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 16px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+
+        @include media-breakpoint-up(lg) {
+            padding: 28px 32px 40px;
+        }
+    }
+
+    // ── kepala ────────────────────────────────────────────────────────
+    .o_ctx_header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px 24px;
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+    }
+
+    .o_ctx_meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
+        margin-top: 6px;
+        color: $ctx-muted;
+    }
+
+    .o_ctx_status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        color: $o-main-text-color;
+
+        &.is-ok .o_ctx_dot { background: $o-success; box-shadow: 0 0 0 3px ctx-tint($o-success, 25%); }
+        &.is-error .o_ctx_dot { background: $o-danger; box-shadow: 0 0 0 3px ctx-tint($o-danger, 25%); }
+    }
+
+    .o_ctx_env {
+        font-size: .75rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        padding: 1px 8px;
+        border-radius: 999px;
+        color: ctx-ink($o-warning, 22%);
+        background: ctx-tint($o-warning, 22%);
+    }
+
+    .o_ctx_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .o_ctx_count {
+        display: inline-block;
+        min-width: 22px;
+        margin-left: 6px;
+        padding: 0 6px;
+        border-radius: 999px;
+        font-size: .8em;
+        font-weight: 600;
+        background: rgba(255, 255, 255, .25);
+    }
+
+    // label tombol disembunyikan di layar sempit, ikon tetap
+    .o_ctx_btn_label {
+        @include media-breakpoint-down(md) {
+            display: none;
+        }
+    }
+
+    // ── titik status ─────────────────────────────────────────────────
+    .o_ctx_dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: $o-gray-400;
+
+        @each $name, $color in $ctx-tones {
+            &.is-#{$name} { background: $color; }
+        }
+    }
+
+    // ── perlu tindakan ───────────────────────────────────────────────
+    .o_ctx_alert {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 16px;
+        padding: 12px 16px;
+        border: 1px solid ctx-tint($o-danger, 40%);
+        border-radius: $o-border-radius-lg;
+        background: ctx-tint($o-danger, 9%);
+    }
+
+    .o_ctx_alert_icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        color: $o-danger;
+        background: ctx-tint($o-danger, 18%);
+    }
+
+    .o_ctx_alert_text {
+        flex: 1 1 260px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 10px;
+
+        span { color: $ctx-muted; }
+    }
+
+    // ── kartu ────────────────────────────────────────────────────────
+    .o_ctx_card {
+        background: $ctx-surface;
+        border: 1px solid $ctx-line;
+        border-radius: $o-border-radius-lg;
+        padding: 16px 18px;
+        min-width: 0;
+    }
+
+    .o_ctx_card_head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px 12px;
+        margin-bottom: 12px;
+
+        h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 4px 0 0;
+            color: $ctx-muted;
+        }
+    }
+
+    .o_ctx_section_title {
+        font-size: .8rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: $ctx-muted;
+        margin-bottom: 10px;
+    }
+
+    .o_ctx_note {
+        margin: 12px 0 0;
+        font-size: .85rem;
+        color: $ctx-muted;
+    }
+
+    .o_ctx_empty {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        padding: 24px 4px;
+        color: $ctx-muted;
+
+        .fa { font-size: 1.4rem; opacity: .6; }
+    }
+
+    .o_ctx_empty_sm {
+        padding: 8px 0 0;
+    }
+
+    // ── panduan awal ─────────────────────────────────────────────────
+    .o_ctx_onboarding {
+        border-color: ctx-tint($primary, 45%);
+        background: linear-gradient(180deg, ctx-tint($primary, 6%), $ctx-surface 70%);
+
+        .o_ctx_card_head h2 .fa { color: $primary; }
+    }
+
+    .o_ctx_steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px 20px;
+        grid-template-columns: 1fr;
+
+        @include media-breakpoint-up(md) { grid-template-columns: repeat(2, 1fr); }
+        @include media-breakpoint-up(xl) { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .o_ctx_step {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .o_ctx_step_mark {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 2px solid $ctx-line;
+        font-size: .85rem;
+        font-weight: 600;
+        color: $ctx-muted;
+        background: $ctx-surface;
+    }
+
+    .o_ctx_step.is-done .o_ctx_step_mark {
+        border-color: $o-success;
+        background: $o-success;
+        color: #fff;
+    }
+
+    .o_ctx_step_text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+
+        small { color: $ctx-muted; }
+    }
+
+    .o_ctx_step.is-done .o_ctx_step_text b {
+        color: $ctx-muted;
+        text-decoration: line-through;
+        text-decoration-color: ctx-tint($o-main-text-color, 35%);
+    }
+
+    // ── alur e-Faktur ────────────────────────────────────────────────
+    .o_ctx_flow {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        @include media-breakpoint-up(md) {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 22px;
+        }
+    }
+
+    .o_ctx_stage {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 14px 16px;
+        text-align: left;
+        color: inherit;
+        background: $ctx-surface;
+        border: 1px solid $ctx-line;
+        border-radius: $o-border-radius-lg;
+        transition: border-color .15s, box-shadow .15s;
+
+        &:hover {
+            border-color: ctx-tint($o-main-text-color, 40%);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, .07);
+        }
+
+        &:focus-visible {
+            outline: 2px solid $primary;
+            outline-offset: 2px;
+        }
+
+        // panah ke tahap berikutnya, hanya bila keempat tahap sebaris
+        @include media-breakpoint-up(md) {
+            &:not(:last-child)::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                right: -15px;
+                width: 8px;
+                height: 8px;
+                border-top: 2px solid $o-gray-400;
+                border-right: 2px solid $o-gray-400;
+                transform: translateY(-50%) rotate(45deg);
+            }
+        }
+
+        @each $name, $color in $ctx-tones {
+            &.is-#{$name} {
+                box-shadow: inset 0 3px 0 $color;
+
+                &:hover { box-shadow: inset 0 3px 0 $color, 0 4px 14px rgba(0, 0, 0, .07); }
+
+                .o_ctx_stage_icon {
+                    color: $color;
+                    background: ctx-tint($color, 14%);
+                }
+            }
+        }
+
+        &.is-empty {
+            .o_ctx_stage_value { color: $o-gray-400; }
+            .o_ctx_stage_icon { filter: grayscale(1); opacity: .6; }
+        }
+    }
+
+    .o_ctx_stage_top {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .o_ctx_stage_icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    .o_ctx_stage_value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .o_ctx_stage_label {
+        margin-top: 6px;
+        font-weight: 600;
+    }
+
+    .o_ctx_stage_hint {
+        font-size: .82rem;
+        color: $ctx-muted;
+    }
+
+    // ── isi utama: aktivitas + samping ───────────────────────────────
+    .o_ctx_main {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1fr);
+
+        @include media-breakpoint-up(lg) {
+            grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+            align-items: start;
+        }
+    }
+
+    .o_ctx_aside {
+        display: grid;
+        gap: 20px;
+        min-width: 0;
+
+        // di layar sedang kedua kartu samping sejajar
+        @include media-breakpoint-only(md) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+        }
+    }
+
+    // ── aktivitas terbaru ────────────────────────────────────────────
+    .o_ctx_recent {
+        padding-bottom: 6px;
+    }
+
+    .o_ctx_rows {
+        list-style: none;
+        margin: 0 -18px;
+        padding: 0;
+
+        li + li { border-top: 1px solid $ctx-line; }
+    }
+
+    .o_ctx_row {
+        display: grid;
+        // kolom status selebar label terpanjang, supaya nomor dokumen sejajar
+        grid-template-columns: 10rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 14px;
+        width: 100%;
+        padding: 10px 18px;
+        text-align: left;
+        color: inherit;
+        background: transparent;
+        border: 0;
+
+        &:hover { background: ctx-tint($o-main-text-color, 4%); }
+
+        &:focus-visible {
+            outline: 2px solid $primary;
+            outline-offset: -2px;
+        }
+
+        @include media-breakpoint-down(sm) {
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            .o_ctx_chip { grid-column: 1 / -1; justify-self: start; }
+        }
+    }
+
+    .o_ctx_row_main {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .o_ctx_row_title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+
+        b { font-variant-numeric: tabular-nums; }
+    }
+
+    .o_ctx_row_partner {
+        margin-left: 8px;
+        color: $ctx-muted;
+    }
+
+    .o_ctx_row_error {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: .82rem;
+        color: $o-danger;
+    }
+
+    .o_ctx_row_time {
+        font-size: .82rem;
+        color: $ctx-muted;
+        white-space: nowrap;
+    }
+
+    .o_ctx_chip {
+        justify-self: start;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+
+        @each $name, $color in $ctx-tones {
+            &.is-#{$name} {
+                color: ctx-ink($color, 12%);
+                background: ctx-tint($color, 16%);
+            }
+        }
+    }
+
+    // ── masa pajak ───────────────────────────────────────────────────
+    .o_ctx_metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin: 0 0 14px;
+
+        dt {
+            font-size: .8rem;
+            font-weight: 500;
+            color: $ctx-muted;
+        }
+
+        dd {
+            margin: 2px 0 0;
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .o_ctx_bar {
+        display: flex;
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: $o-gray-200;
+
+        span {
+            height: 100%;
+
+            & + span { border-left: 2px solid $ctx-surface; }
+
+            @each $name, $color in $ctx-tones {
+                &.is-#{$name} { background: $color; }
+            }
+        }
+    }
+
+    .o_ctx_legend {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        margin: 10px 0 0;
+        padding: 0;
+        font-size: .82rem;
+        color: $ctx-muted;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        b { color: $o-main-text-color; }
+    }
+
+    // ── perlu dirapikan ──────────────────────────────────────────────
+    .o_ctx_todo {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+
+            & + li { border-top: 1px solid $ctx-line; }
+        }
+
+        li.is-done {
+            .o_ctx_todo_icon { color: $o-success; background: ctx-tint($o-success, 14%); }
+            .o_ctx_todo_count { color: $o-gray-400; }
+        }
+    }
+
+    .o_ctx_todo_icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        color: $o-warning;
+        background: ctx-tint($o-warning, 16%);
+    }
+
+    .o_ctx_todo_text {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 0;
+        text-align: left;
+        color: inherit;
+        background: transparent;
+        border: 0;
+
+        small { color: $ctx-muted; }
+
+        &:hover b { text-decoration: underline; }
+    }
+
+    .o_ctx_todo_count {
+        font-size: 1.15rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+}

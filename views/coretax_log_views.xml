@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coretax_log_search" model="ir.ui.view">
+        <field name="name">coretax.log.search</field>
+        <field name="model">coretax.log</field>
+        <field name="arch" type="xml">
+            <search string="Riwayat">
+                <field name="operation"/>
+                <field name="document_name"/>
+                <field name="request_id"/>
+                <filter name="failed" string="Gagal" domain="[('success', '=', False)]"/>
+                <filter name="ok" string="Berhasil" domain="[('success', '=', True)]"/>
+                <separator/>
+                <filter name="today" string="Hari ini"
+                        domain="[('create_date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
+                <group>
+                    <filter name="group_operation" string="Kegiatan" context="{'group_by': 'operation'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_coretax_log_list" model="ir.ui.view">
+        <field name="name">coretax.log.list</field>
+        <field name="model">coretax.log</field>
+        <field name="arch" type="xml">
+            <list string="Riwayat Sinkronisasi" create="0" edit="0" decoration-danger="not success">
+                <field name="create_date" string="Waktu"/>
+                <field name="operation"/>
+                <field name="document_name" optional="show"/>
+                <field name="success" widget="boolean"/>
+                <field name="status_code" optional="hide"/>
+                <field name="duration_ms" optional="hide"/>
+                <field name="message" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coretax_log_form" model="ir.ui.view">
+        <field name="name">coretax.log.form</field>
+        <field name="model">coretax.log</field>
+        <field name="arch" type="xml">
+            <form string="Riwayat" create="0" edit="0">
+                <header>
+                    <button name="action_open_document" type="object" string="Buka dokumen" icon="fa-file-o"
+                            invisible="not res_id"/>
+                </header>
+                <sheet>
+                    <field name="res_id" invisible="1"/>
+                    <div class="oe_title"><h1><field name="operation" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="create_date" string="Waktu"/>
+                            <field name="success"/>
+                            <field name="document_name"/>
+                        </group>
+                        <group>
+                            <field name="status_code"/>
+                            <field name="request_id"/>
+                            <field name="duration_ms"/>
+                        </group>
+                    </group>
+                    <group string="Pesan" invisible="not message">
+                        <field name="message" nolabel="1" colspan="2"/>
+                    </group>
+                    <notebook>
+                        <page string="Data dikirim" name="payload">
+                            <field name="payload" widget="code" options="{'mode': 'javascript'}" readonly="1"/>
+                        </page>
+                        <page string="Jawaban AksaTax" name="response">
+                            <field name="response" widget="code" options="{'mode': 'javascript'}" readonly="1"/>
+                        </page>
+                        <page string="Rincian teknis" name="technical">
+                            <group>
+                                <field name="method"/>
+                                <field name="path"/>
+                                <field name="technical"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coretax_log" model="ir.actions.act_window">
+        <field name="name">Riwayat Sinkronisasi</field>
+        <field name="res_model">coretax.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coretax_log_search"/>
+        <field name="help" type="html">
+            <p>Setiap komunikasi Odoo dengan AksaTax tercatat di sini (disimpan 90 hari).
+                Sebutkan <b>ID Permintaan</b> saat menghubungi dukungan AksaTax.</p>
+        </field>
+    </record>
+</odoo>

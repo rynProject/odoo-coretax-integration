@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_coretax" model="ir.ui.view">
+        <field name="name">res.partner.form.coretax</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Coretax" name="coretax" groups="coretax_integration.group_coretax_user"
+                      invisible="not is_company and parent_id">
+                    <field name="coretax_match_state" invisible="1"/>
+                    <div class="alert alert-success" role="status" invisible="coretax_match_state != 'matched'">
+                        <i title="Berhasil" class="fa fa-check-circle"/> Sudah tertaut ke lawan transaksi AksaTax
+                        <b><field name="coretax_counterparty_name" class="d-inline" readonly="1"/></b>.
+                    </div>
+                    <div class="alert alert-warning" role="status" invisible="coretax_match_state != 'unmatched'">
+                        <i title="Belum dicocokkan" class="fa fa-link"/> Belum ada di AksaTax. Klik <b>Cocokkan dengan AksaTax</b>
+                        bila sudah terdaftar, atau <b>Daftarkan ke AksaTax</b> untuk membuatnya sebagai lawan transaksi baru.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="coretax_match_state != 'no_id'">
+                        <i title="Identitas" class="fa fa-id-card-o"/> Isi <b>NPWP</b> (kolom Tax ID) atau NIK kontak ini dulu agar bisa dibuatkan e-Faktur/bukti potong.
+                    </div>
+                    <group>
+                        <group string="AksaTax">
+                            <field name="coretax_counterparty_name" readonly="1"/>
+                            <field name="coretax_vswp_status" readonly="1"/>
+                            <field name="coretax_counterparty_id" readonly="1" groups="base.group_no_one"/>
+                        </group>
+                        <group>
+                            <div class="d-flex flex-column gap-2" colspan="2">
+                                <button name="action_coretax_register" type="object" string="Daftarkan ke AksaTax"
+                                        class="btn-primary" icon="fa-user-plus" invisible="coretax_match_state != 'unmatched'"/>
+                                <button name="action_coretax_match" type="object" string="Cocokkan dengan AksaTax"
+                                        icon="fa-search" invisible="coretax_match_state == 'no_id'"/>
+                                <button name="action_coretax_unlink" type="object" string="Lepas tautan" class="btn-link"
+                                        invisible="coretax_match_state != 'matched'"
+                                        confirm="Lepas tautan kontak ini dari AksaTax?"/>
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_list_coretax" model="ir.ui.view">
+        <field name="name">res.partner.list.coretax</field>
+        <field name="model">res.partner</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Lawan Transaksi" create="0">
+                <header>
+                    <button name="action_coretax_register" type="object" string="Daftarkan ke AksaTax" class="btn-primary"
+                            icon="fa-user-plus"/>
+                    <button name="action_coretax_match_all" type="object" string="Cocokkan yang dipilih" icon="fa-link"/>
+                </header>
+                <field name="name" string="Nama"/>
+                <field name="vat" string="NPWP"/>
+                <field name="coretax_match_state" widget="badge" string="Status AksaTax"
+                       decoration-success="coretax_match_state == 'matched'"
+                       decoration-warning="coretax_match_state == 'unmatched'"
+                       decoration-danger="coretax_match_state == 'no_id'"/>
+                <field name="coretax_counterparty_name" string="Nama di AksaTax" optional="show"/>
+                <field name="coretax_vswp_status" optional="show"/>
+                <field name="email" optional="hide"/>
+                <button name="action_coretax_register" type="object" string="Daftarkan" icon="fa-user-plus"
+                        invisible="coretax_match_state != 'unmatched'"/>
+                <button name="action_coretax_match" type="object" string="Cocokkan" icon="fa-search"
+                        invisible="coretax_match_state == 'no_id'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_partner_search_coretax" model="ir.ui.view">
+        <field name="name">res.partner.search.coretax</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="coretax_unmatched" string="Belum ada di AksaTax"
+                        domain="[('coretax_match_state', '=', 'unmatched')]"/>
+                <filter name="coretax_matched" string="Sudah cocok dengan AksaTax"
+                        domain="[('coretax_match_state', '=', 'matched')]"/>
+                <filter name="coretax_no_npwp" string="Belum ada NPWP/NIK" domain="[('coretax_match_state', '=', 'no_id')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_server_coretax_match_all" model="ir.actions.server">
+        <field name="name">Cocokkan dengan AksaTax</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_view_types">list</field>
+        <field name="group_ids" eval="[(4, ref('coretax_integration.group_coretax_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_coretax_match_all()</field>
+    </record>
+
+    <record id="action_coretax_partner" model="ir.actions.act_window">
+        <field name="name">Lawan Transaksi</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_partner_list_coretax"/>
+        <field name="domain">[('parent_id', '=', False), '|', ('customer_rank', '>', 0), ('supplier_rank', '>', 0)]</field>
+        <field name="context">{'search_default_coretax_unmatched': 1, 'default_is_company': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Semua pelanggan dan vendor ber-NPWP sudah ada di AksaTax</p>
+            <p>Pelanggan (untuk e-Faktur) dan vendor (untuk bukti potong) harus terdaftar sebagai <b>Lawan Transaksi</b>
+                di AksaTax. Klik <b>Cocokkan</b> bila sudah terdaftar, atau <b>Daftarkan</b> untuk membuatnya dari Odoo.</p>
+        </field>
+    </record>
+</odoo>

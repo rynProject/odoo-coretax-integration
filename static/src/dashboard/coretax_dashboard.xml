@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="coretax_integration.Dashboard">
+        <div class="o_coretax_dashboard h-100 overflow-auto">
+            <div t-if="d" class="o_ctx_wrap">
+                <!-- kepala -->
+                <header class="o_ctx_header">
+                    <div class="o_ctx_title">
+                        <h1>Ringkasan Coretax</h1>
+                        <div class="o_ctx_meta">
+                            <span class="o_ctx_company" t-esc="d.company"/>
+                            <span t-attf-class="o_ctx_status is-{{ connectionTone }}">
+                                <span class="o_ctx_dot"/>
+                                <t t-if="d.connection" t-esc="d.connection.state_label"/>
+                                <t t-else="">Koneksi belum diatur</t>
+                            </span>
+                            <span t-if="d.connection and d.connection.has_api_key and d.connection.environment === 'sandbox'"
+                                  class="o_ctx_env">Sandbox</span>
+                            <span t-if="d.connection and d.connection.last_sync" class="o_ctx_sync"
+                                  t-att-title="'Sinkronisasi terakhir: ' + when(d.connection.last_sync)">
+                                <i class="fa fa-clock-o me-1"/>Sinkron <t t-esc="ago(d.connection.last_sync)"/>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="o_ctx_actions">
+                        <button t-if="connected and d.counts.ready" type="button" class="btn btn-primary" t-on-click="openReady">
+                            <i class="fa fa-paper-plane me-1"/>Kirim e-Faktur
+                            <span class="o_ctx_count" t-esc="d.counts.ready"/>
+                        </button>
+                        <button t-if="d.connection and d.connection.has_api_key" type="button" class="btn btn-secondary"
+                                t-on-click="syncNow" t-att-disabled="state.syncing" title="Ambil status terbaru dari AksaTax">
+                            <i t-attf-class="fa fa-refresh {{ state.syncing ? 'fa-spin' : '' }}"/>
+                            <span class="o_ctx_btn_label ms-1">Ambil status terbaru</span>
+                        </button>
+                        <button t-if="d.connection" type="button" class="btn btn-secondary" t-on-click="openAksaTax"
+                                title="Buka AksaTax di tab baru">
+                            <i class="fa fa-external-link"/><span class="o_ctx_btn_label ms-1">AksaTax</span>
+                        </button>
+                        <button t-if="d.is_manager" type="button" class="btn btn-secondary" t-on-click="openConnection"
+                                title="Pengaturan koneksi AksaTax" aria-label="Pengaturan koneksi AksaTax">
+                            <i class="fa fa-cog"/>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- perlu tindakan -->
+                <div t-if="d.counts.attention" class="o_ctx_alert" role="alert">
+                    <span class="o_ctx_alert_icon"><i class="fa fa-exclamation-triangle"/></span>
+                    <div class="o_ctx_alert_text">
+                        <b><t t-esc="d.counts.attention"/> e-Faktur perlu tindakan</b>
+                        <span t-esc="attentionDetail"/>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" t-on-click="() => this.openFaktur('attention')">
+                        Tinjau sekarang
+                    </button>
+                </div>
+
+                <!-- panduan awal -->
+                <section t-if="showOnboarding" class="o_ctx_card o_ctx_onboarding">
+                    <div class="o_ctx_card_head">
+                        <div>
+                            <h2><i class="fa fa-flag-checkered me-2"/>Mulai di sini</h2>
+                            <p>Empat langkah agar e-Faktur dari Odoo terkirim ke DJP lewat AksaTax.</p>
+                        </div>
+                        <button t-if="d.is_manager and !connected" type="button" class="btn btn-primary" t-on-click="openConnection">
+                            <i class="fa fa-plug me-1"/>Atur koneksi AksaTax
+                        </button>
+                    </div>
+                    <ol class="o_ctx_steps">
+                        <li t-foreach="steps" t-as="s" t-key="s_index" t-attf-class="o_ctx_step {{ s.done ? 'is-done' : '' }}">
+                            <span class="o_ctx_step_mark">
+                                <i t-if="s.done" class="fa fa-check" title="Selesai"/>
+                                <t t-else="" t-esc="s_index + 1"/>
+                            </span>
+                            <span class="o_ctx_step_text"><b t-esc="s.title"/><small t-esc="s.sub"/></span>
+                        </li>
+                    </ol>
+                    <p t-if="!d.is_manager and !connected" class="o_ctx_note">
+                        Minta Administrator Coretax untuk mengatur koneksi AksaTax.
+                    </p>
+                    <p class="o_ctx_note">Pembatalan, PDF faktur pajak, dan retur dilakukan langsung di AksaTax.</p>
+                </section>
+
+                <!-- alur e-Faktur -->
+                <section class="o_ctx_flow_section" aria-label="Alur e-Faktur">
+                    <h2 class="o_ctx_section_title">Alur e-Faktur</h2>
+                    <div class="o_ctx_flow">
+                        <button t-foreach="flow" t-as="s" t-key="s.key" type="button"
+                                t-attf-class="o_ctx_stage is-{{ s.tone }} {{ s.value ? '' : 'is-empty' }}" t-on-click="() => s.open()">
+                            <span class="o_ctx_stage_top">
+                                <span class="o_ctx_stage_icon"><i t-attf-class="fa {{ s.icon }}"/></span>
+                                <span class="o_ctx_stage_value" t-esc="s.value"/>
+                            </span>
+                            <span class="o_ctx_stage_label" t-esc="s.label"/>
+                            <span class="o_ctx_stage_hint" t-esc="s.hint"/>
+                        </button>
+                    </div>
+                </section>
+
+                <div class="o_ctx_main">
+                    <!-- aktivitas terbaru -->
+                    <section class="o_ctx_card o_ctx_recent">
+                        <div class="o_ctx_card_head">
+                            <h2>Aktivitas terbaru</h2>
+                            <button type="button" class="btn btn-link btn-sm p-0" t-on-click="() => this.openFaktur()">
+                                Lihat semua e-Faktur
+                            </button>
+                        </div>
+                        <p t-if="!d.recent.length" class="o_ctx_empty">
+                            <i class="fa fa-inbox"/>
+                            Belum ada e-Faktur. Buka <b>e-Faktur › Siap dikirim</b> untuk mengirim yang pertama.
+                        </p>
+                        <ul t-else="" class="o_ctx_rows">
+                            <li t-foreach="d.recent" t-as="r" t-key="r.id">
+                                <button type="button" class="o_ctx_row" t-on-click="() => this.openFakturRecord(r.id)">
+                                    <span t-attf-class="o_ctx_chip is-{{ tone(r.state) }}" t-esc="r.state_label"/>
+                                    <span class="o_ctx_row_main">
+                                        <span class="o_ctx_row_title">
+                                            <b t-esc="r.name"/><span class="o_ctx_row_partner" t-esc="r.partner"/>
+                                        </span>
+                                        <span t-if="r.error and tone(r.state) === 'danger'" class="o_ctx_row_error"
+                                              t-att-title="r.error" t-esc="r.error"/>
+                                    </span>
+                                    <span class="o_ctx_row_time" t-att-title="when(r.date)" t-esc="ago(r.date)"/>
+                                </button>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <aside class="o_ctx_aside">
+                        <!-- masa pajak berjalan -->
+                        <section class="o_ctx_card">
+                            <div class="o_ctx_card_head">
+                                <h2>Masa pajak <t t-esc="monthLabel"/></h2>
+                                <small class="text-muted">menurut tanggal faktur</small>
+                            </div>
+                            <dl class="o_ctx_metrics">
+                                <div>
+                                    <dt>e-Faktur disetujui</dt>
+                                    <dd t-esc="d.month.approved"/>
+                                </div>
+                                <div>
+                                    <dt>DPP disetujui</dt>
+                                    <dd t-esc="money(d.month.dpp)"/>
+                                </div>
+                                <div>
+                                    <dt>PPN disetujui</dt>
+                                    <dd t-esc="money(d.month.ppn)"/>
+                                </div>
+                            </dl>
+                            <t t-if="d.month.by_state.length">
+                                <div class="o_ctx_bar" role="img" aria-label="Komposisi status e-Faktur masa ini">
+                                    <span t-foreach="monthBar" t-as="seg" t-key="seg.state" t-attf-class="is-{{ seg.tone }}"
+                                          t-attf-style="width: {{ seg.width }}%" t-att-title="seg.label + ': ' + seg.count"/>
+                                </div>
+                                <ul class="o_ctx_legend">
+                                    <li t-foreach="monthBar" t-as="seg" t-key="seg.state">
+                                        <span t-attf-class="o_ctx_dot is-{{ seg.tone }}"/>
+                                        <t t-esc="seg.label"/> <b t-esc="seg.count"/>
+                                    </li>
+                                </ul>
+                            </t>
+                            <p t-else="" class="o_ctx_empty o_ctx_empty_sm">Belum ada e-Faktur untuk masa ini.</p>
+                        </section>
+
+                        <!-- perlu dirapikan -->
+                        <section class="o_ctx_card">
+                            <div class="o_ctx_card_head"><h2>Perlu dirapikan</h2></div>
+                            <ul class="o_ctx_todo">
+                                <li t-attf-class="{{ d.counts.partners_unmatched ? '' : 'is-done' }}">
+                                    <span class="o_ctx_todo_icon"><i class="fa fa-users"/></span>
+                                    <button type="button" class="o_ctx_todo_text" t-on-click="openPartners">
+                                        <b>Pelanggan belum dicocokkan</b>
+                                        <small>Ditautkan ke AksaTax lewat NPWP</small>
+                                    </button>
+                                    <span class="o_ctx_todo_count" t-esc="d.counts.partners_unmatched"/>
+                                    <button t-if="connected and d.counts.partners_unmatched" type="button"
+                                            class="btn btn-sm btn-secondary" t-on-click="matchAll" t-att-disabled="state.syncing"
+                                            title="Cari semua lewat NPWP di AksaTax">
+                                        Cocokkan
+                                    </button>
+                                </li>
+                                <li t-attf-class="{{ d.counts.bupot_open ? '' : 'is-done' }}">
+                                    <span class="o_ctx_todo_icon"><i class="fa fa-file-text-o"/></span>
+                                    <button type="button" class="o_ctx_todo_text" t-on-click="openBupot">
+                                        <b>Bukti potong belum dikirim</b>
+                                        <small>Dari tagihan vendor, belum ada di AksaTax</small>
+                                    </button>
+                                    <span class="o_ctx_todo_count" t-esc="d.counts.bupot_open"/>
+                                </li>
+                                <li t-foreach="readiness" t-as="r" t-key="r.kind" t-attf-class="{{ r.count ? '' : 'is-done' }}">
+                                    <span class="o_ctx_todo_icon"><i t-attf-class="fa {{ r.icon }}"/></span>
+                                    <button type="button" class="o_ctx_todo_text" t-on-click="() => this.openReadiness(r.kind)">
+                                        <b t-esc="r.label"/>
+                                        <small t-esc="r.hint"/>
+                                    </button>
+                                    <span class="o_ctx_todo_count" t-esc="r.count"/>
+                                </li>
+                            </ul>
+                        </section>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

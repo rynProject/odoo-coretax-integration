@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_coretax_connection_user,coretax.connection user,model_coretax_connection,group_coretax_user,1,0,0,0
+access_coretax_connection_manager,coretax.connection manager,model_coretax_connection,group_coretax_manager,1,1,1,1
+access_coretax_faktur_user,coretax.faktur user,model_coretax_faktur,group_coretax_user,1,1,1,0
+access_coretax_faktur_manager,coretax.faktur manager,model_coretax_faktur,group_coretax_manager,1,1,1,1
+access_coretax_bupot_user,coretax.bupot user,model_coretax_bupot,group_coretax_user,1,1,1,1
+access_coretax_tax_object_user,coretax.tax.object user,model_coretax_tax_object,group_coretax_user,1,0,0,0
+access_coretax_tax_object_manager,coretax.tax.object manager,model_coretax_tax_object,group_coretax_manager,1,1,1,1
+access_coretax_log_user,coretax.log user,model_coretax_log,group_coretax_user,1,0,0,0
+access_coretax_log_manager,coretax.log manager,model_coretax_log,group_coretax_manager,1,0,0,1
+access_coretax_send_wizard_user,coretax.send.wizard user,model_coretax_send_wizard,group_coretax_user,1,1,1,1
+access_coretax_send_wizard_line_user,coretax.send.wizard.line user,model_coretax_send_wizard_line,group_coretax_user,1,1,1,1
+access_coretax_partner_match_wizard_user,coretax.partner.match.wizard user,model_coretax_partner_match_wizard,group_coretax_user,1,1,1,1
+access_coretax_partner_match_line_user,coretax.partner.match.line user,model_coretax_partner_match_line,group_coretax_user,1,1,1,1
+access_coretax_partner_register_wizard_user,coretax.partner.register.wizard user,model_coretax_partner_register_wizard,group_coretax_user,1,1,1,1
+access_coretax_partner_register_line_user,coretax.partner.register.line user,model_coretax_partner_register_line,group_coretax_user,1,1,1,1

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_coretax_dashboard" model="ir.actions.client">
+        <field name="name">Ringkasan Coretax</field>
+        <field name="tag">coretax_dashboard</field>
+    </record>
+
+    <menuitem id="menu_coretax_root" name="Coretax" sequence="46"
+              web_icon="coretax_integration,static/description/icon.png"
+              groups="coretax_integration.group_coretax_user"/>
+
+    <menuitem id="menu_coretax_dashboard" name="Ringkasan" parent="menu_coretax_root" sequence="1"
+              action="action_coretax_dashboard"/>
+
+    <menuitem id="menu_coretax_efaktur" name="e-Faktur" parent="menu_coretax_root" sequence="10"/>
+    <menuitem id="menu_coretax_invoice_ready" name="Siap dikirim" parent="menu_coretax_efaktur" sequence="1"
+              action="action_coretax_invoice_ready"/>
+    <menuitem id="menu_coretax_faktur" name="Semua e-Faktur" parent="menu_coretax_efaktur" sequence="2"
+              action="action_coretax_faktur"/>
+    <menuitem id="menu_coretax_faktur_attention" name="Perlu tindakan" parent="menu_coretax_efaktur" sequence="3"
+              action="action_coretax_faktur_attention"/>
+
+    <menuitem id="menu_coretax_bupot" name="Bukti Potong" parent="menu_coretax_root" sequence="20"
+              action="action_coretax_bupot"/>
+
+    <menuitem id="menu_coretax_master" name="Data Master" parent="menu_coretax_root" sequence="30"/>
+    <menuitem id="menu_coretax_partner" name="Lawan Transaksi" parent="menu_coretax_master" sequence="1"
+              action="action_coretax_partner"/>
+    <menuitem id="menu_coretax_tax_object" name="Kode Objek Pajak PPh" parent="menu_coretax_master" sequence="2"
+              action="action_coretax_tax_object"/>
+    <menuitem id="menu_coretax_product_code" name="Kode Barang/Jasa" parent="menu_coretax_master" sequence="3"
+              action="action_coretax_product_code"/>
+    <menuitem id="menu_coretax_uom_code" name="Kode Satuan" parent="menu_coretax_master" sequence="4"
+              action="action_coretax_uom_code"/>
+
+    <menuitem id="menu_coretax_readiness" name="Kesiapan data" parent="menu_coretax_master" sequence="10"/>
+    <menuitem id="menu_coretax_ready_products" name="Produk berkode umum" parent="menu_coretax_readiness" sequence="1"
+              action="action_coretax_ready_products"/>
+    <menuitem id="menu_coretax_ready_uoms" name="Satuan tanpa kode Coretax" parent="menu_coretax_readiness" sequence="2"
+              action="action_coretax_ready_uoms"/>
+    <menuitem id="menu_coretax_ready_partners" name="Pelanggan tanpa NPWP/NIK" parent="menu_coretax_readiness" sequence="3"
+              action="action_coretax_ready_partners"/>
+
+    <menuitem id="menu_coretax_config" name="Pengaturan" parent="menu_coretax_root" sequence="90"
+              groups="coretax_integration.group_coretax_manager"/>
+    <menuitem id="menu_coretax_connection" name="Koneksi AksaTax" parent="menu_coretax_config" sequence="1"
+              action="action_coretax_connection_open"/>
+    <menuitem id="menu_coretax_log" name="Riwayat Sinkronisasi" parent="menu_coretax_config" sequence="2"
+              action="action_coretax_log"/>
+</odoo>

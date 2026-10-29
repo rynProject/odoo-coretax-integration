@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coretax_send_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.send.wizard.form</field>
+        <field name="model">coretax.send.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Kirim e-Faktur">
+                <field name="step" invisible="1"/>
+                <field name="connection_ready" invisible="1"/>
+
+                <!-- langkah 1: periksa -->
+                <div invisible="step != 'check'">
+                    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert"
+                         invisible="connection_ready">
+                        <span><i title="Koneksi" class="fa fa-plug"/> <field name="connection_message" class="d-inline" readonly="1"/></span>
+                        <button name="action_open_connection" type="object" string="Atur koneksi" class="btn-secondary btn-sm"
+                                groups="coretax_integration.group_coretax_manager"/>
+                    </div>
+                    <div class="alert alert-warning" role="status" invisible="not connection_ready or not connection_message">
+                        <i title="Perhatian" class="fa fa-exclamation-circle"/> <field name="connection_message" class="d-inline" readonly="1"/>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge rounded-pill text-bg-success fs-6" invisible="not ready_count">
+                            <i title="Siap" class="fa fa-check"/> <field name="ready_count" class="d-inline"/> siap
+                        </span>
+                        <span class="badge rounded-pill text-bg-warning fs-6" invisible="not warning_count">
+                            <i title="Catatan" class="fa fa-exclamation"/> <field name="warning_count" class="d-inline"/> siap, ada catatan
+                        </span>
+                        <span class="badge rounded-pill text-bg-danger fs-6" invisible="not blocked_count">
+                            <i title="Belum bisa dikirim" class="fa fa-ban"/> <field name="blocked_count" class="d-inline"/> belum bisa dikirim
+                        </span>
+                    </div>
+                    <group>
+                        <field name="mode" widget="radio"/>
+                    </group>
+                </div>
+
+                <!-- langkah 2: hasil -->
+                <div invisible="step != 'done'">
+                    <div class="alert alert-success" role="status" invisible="not sent_count">
+                        <i title="Berhasil" class="fa fa-check-circle"/> <field name="sent_count" class="d-inline fw-bold"/> e-Faktur berhasil dikirim.
+                        Hasil dari DJP akan diperbarui otomatis.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not failed_count">
+                        <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <field name="failed_count" class="d-inline fw-bold"/> e-Faktur gagal -
+                        lihat keterangannya di bawah. Setelah diperbaiki, kirim ulang dari faktur atau menu <b>Perlu tindakan</b>.
+                    </div>
+                </div>
+
+                <field name="line_ids" readonly="1" nolabel="1">
+                    <list create="0" delete="0" decoration-danger="level == 'error' or result == 'failed'"
+                          decoration-warning="level == 'warning' and not result" decoration-success="result in ('sent', 'draft')">
+                        <field name="move_id"/>
+                        <field name="partner_id"/>
+                        <field name="invoice_date" optional="show"/>
+                        <field name="amount_total"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="level" widget="badge" column_invisible="parent.step == 'done'"
+                               decoration-success="level == 'ok'" decoration-warning="level == 'warning'" decoration-danger="level == 'error'"/>
+                        <field name="messages" column_invisible="parent.step == 'done'"/>
+                        <field name="result" widget="badge" column_invisible="parent.step != 'done'"
+                               decoration-success="result in ('sent', 'draft')" decoration-danger="result == 'failed'"/>
+                        <field name="result_message" column_invisible="parent.step != 'done'"/>
+                        <field name="needs_match" column_invisible="1"/>
+                        <button name="action_match_partner" type="object" string="Cocokkan pelanggan" icon="fa-link"
+                                class="btn-link" invisible="not needs_match" column_invisible="parent.step != 'done'"/>
+                        <button name="action_open_move" type="object" icon="fa-external-link" title="Buka faktur"/>
+                    </list>
+                </field>
+
+                <footer>
+                    <button name="action_send" type="object" string="Kirim sekarang" class="btn-primary" icon="fa-paper-plane"
+                            invisible="step != 'check'"/>
+                    <button special="cancel" string="Batal" invisible="step != 'check'"/>
+                    <button name="action_view_results" type="object" string="Lihat e-Faktur" class="btn-primary"
+                            invisible="step != 'done'"/>
+                    <button special="cancel" string="Tutup" invisible="step != 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coretax_partner_match_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.partner.match.wizard.form</field>
+        <field name="model">coretax.partner.match.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cocokkan dengan AksaTax">
+                <group>
+                    <group>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="partner_identity"/>
+                    </group>
+                    <group>
+                        <field name="current_counterparty" invisible="not current_counterparty"/>
+                    </group>
+                </group>
+                <div class="d-flex gap-2 align-items-center mb-3">
+                    <field name="search_term" placeholder="NPWP atau nama di AksaTax" class="flex-grow-1"/>
+                    <button name="action_search" type="object" string="Cari" class="btn-primary" icon="fa-search"/>
+                </div>
+                <div class="alert alert-warning" role="status" invisible="not message">
+                    <field name="message" readonly="1"/>
+                </div>
+                <field name="line_ids" readonly="1" nolabel="1" invisible="not line_ids">
+                    <list create="0" delete="0" decoration-success="same_id">
+                        <field name="nama"/>
+                        <field name="npwp"/>
+                        <field name="jenis_id" optional="hide"/>
+                        <field name="vswp_status"/>
+                        <field name="same_id" widget="boolean" string="NPWP sama"/>
+                        <button name="action_choose" type="object" string="Pilih ini" class="btn-primary btn-sm" icon="fa-link"/>
+                    </list>
+                </field>
+                <footer>
+                    <field name="searched" invisible="1"/>
+                    <button name="action_register" type="object" string="Daftarkan dari Odoo" icon="fa-user-plus"
+                            class="btn-primary" invisible="not searched or line_ids"/>
+                    <button name="action_register" type="object" string="Daftarkan dari Odoo" icon="fa-user-plus"
+                            invisible="not searched or not line_ids"/>
+                    <button special="cancel" string="Tutup"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_coretax_partner_register_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.partner.register.wizard.form</field>
+        <field name="model">coretax.partner.register.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Daftarkan ke AksaTax">
+                <field name="step" invisible="1"/>
+
+                <!-- langkah 1: periksa -->
+                <div invisible="step != 'check'">
+                    <p class="text-muted">Kontak yang datanya lengkap didaftarkan sebagai <b>Lawan Transaksi</b> di AksaTax.
+                        NPWP yang ternyata sudah terdaftar langsung ditautkan ke data yang ada.</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge rounded-pill text-bg-success fs-6" invisible="not ready_count">
+                            <i title="Siap" class="fa fa-check"/> <field name="ready_count" class="d-inline"/> siap
+                        </span>
+                        <span class="badge rounded-pill text-bg-secondary fs-6" invisible="not matched_count">
+                            <i title="Sudah tertaut" class="fa fa-link"/> <field name="matched_count" class="d-inline"/> sudah tertaut
+                        </span>
+                        <span class="badge rounded-pill text-bg-danger fs-6" invisible="not blocked_count">
+                            <i title="Belum lengkap" class="fa fa-ban"/> <field name="blocked_count" class="d-inline"/> data belum lengkap
+                        </span>
+                    </div>
+                </div>
+
+                <!-- langkah 2: hasil -->
+                <div invisible="step != 'done'">
+                    <div class="alert alert-success" role="status" invisible="not registered_count">
+                        <i title="Berhasil" class="fa fa-check-circle"/> <field name="registered_count" class="d-inline fw-bold"/>
+                        kontak kini tertaut ke Lawan Transaksi AksaTax.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not failed_count">
+                        <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <field name="failed_count" class="d-inline fw-bold"/>
+                        kontak gagal didaftarkan - lihat keterangannya di bawah.
+                    </div>
+                </div>
+
+                <field name="line_ids" readonly="1" nolabel="1">
+                    <list create="0" delete="0" decoration-danger="level == 'error' or result == 'failed'"
+                          decoration-muted="level == 'matched'" decoration-success="result in ('created', 'linked')">
+                        <field name="partner_id"/>
+                        <field name="identity"/>
+                        <field name="level" widget="badge" column_invisible="parent.step == 'done'"
+                               decoration-success="level == 'ok'" decoration-danger="level == 'error'"/>
+                        <field name="messages" column_invisible="parent.step == 'done'"/>
+                        <field name="result" widget="badge" column_invisible="parent.step != 'done'"
+                               decoration-success="result in ('created', 'linked')" decoration-danger="result == 'failed'"/>
+                        <field name="result_message" column_invisible="parent.step != 'done'"/>
+                        <button name="action_open_partner" type="object" icon="fa-external-link" title="Buka kontak"/>
+                    </list>
+                </field>
+
+                <footer>
+                    <button name="action_register" type="object" string="Daftarkan sekarang" class="btn-primary"
+                            icon="fa-user-plus" invisible="step != 'check'"/>
+                    <button special="cancel" string="Batal" invisible="step != 'check'"/>
+                    <button special="cancel" string="Tutup" invisible="step != 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

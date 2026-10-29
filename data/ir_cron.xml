@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Ambil kabar terbaru dari AksaTax (status DJP) setiap 5 menit. Tetap
+         berjalan walau webhook dipakai, sebagai pengaman bila ada kiriman
+         webhook yang terlewat. -->
+    <record id="ir_cron_coretax_sync" model="ir.cron">
+        <field name="name">Coretax: ambil status terbaru dari AksaTax</field>
+        <field name="model_id" ref="model_coretax_connection"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

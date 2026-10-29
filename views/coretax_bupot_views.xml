@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_coretax_bupot_search" model="ir.ui.view">
+        <field name="name">coretax.bupot.search</field>
+        <field name="model">coretax.bupot</field>
+        <field name="arch" type="xml">
+            <search string="Cari bukti potong">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="tax_object_id"/>
+                <field name="move_id"/>
+                <filter name="todo" string="Belum dikirim / gagal" domain="[('state', 'in', ('new', 'error'))]"/>
+                <filter name="in_aksatax" string="Di AksaTax" domain="[('state', 'not in', ('new', 'error'))]"/>
+                <filter name="approved" string="Disetujui DJP" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="date" string="Tanggal pemotongan" date="tanggal_pemotongan"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_object" string="Kode objek" context="{'group_by': 'tax_object_id'}"/>
+                    <filter name="group_month" string="Bulan" context="{'group_by': 'tanggal_pemotongan:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_coretax_bupot_list" model="ir.ui.view">
+        <field name="name">coretax.bupot.list</field>
+        <field name="model">coretax.bupot</field>
+        <field name="arch" type="xml">
+            <list string="Bukti Potong" decoration-danger="state in ('error', 'rejected')" decoration-success="state == 'approved'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="tanggal_pemotongan"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="tax_object_id"/>
+                <field name="jumlah_bruto" sum="Total bruto"/>
+                <field name="pph_estimasi" sum="Total PPh"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'"
+                       decoration-danger="state in ('error', 'rejected')" decoration-info="state in ('submitted', 'processing')"
+                       decoration-warning="state in ('new', 'draft', 'pending_approval', 'validated')"/>
+                <field name="last_error" optional="hide" string="Keterangan"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coretax_bupot_form" model="ir.ui.view">
+        <field name="name">coretax.bupot.form</field>
+        <field name="model">coretax.bupot</field>
+        <field name="arch" type="xml">
+            <form string="Bukti Potong">
+                <header>
+                    <button name="action_send_draft" type="object" string="Kirim draft ke AksaTax" class="btn-primary"
+                            icon="fa-paper-plane" invisible="state not in ('new', 'error')"/>
+                    <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh" invisible="not aksatax_id"/>
+                    <button name="action_open_aksatax" type="object" string="Buka di AksaTax" icon="fa-external-link"
+                            invisible="not aksatax_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="new,draft,pending_approval,approved"/>
+                </header>
+                <sheet>
+                    <field name="aksatax_id" invisible="1"/>
+                    <div class="alert alert-info" role="status" invisible="state != 'new'">
+                        <i title="Info" class="fa fa-info-circle"/> Bukti potong dikirim ke AksaTax sebagai <b>draft</b>.
+                        Penandatanganan dan pengiriman ke DJP dilakukan di AksaTax (menu Bukti Potong Unifikasi).
+                    </div>
+                    <div class="alert alert-warning" role="status" invisible="state not in ('draft', 'pending_approval', 'validated')">
+                        <i title="Draft" class="fa fa-pencil-square-o"/> Draft sudah ada di AksaTax. Lanjutkan penandatanganan &amp; kirim ke DJP dari
+                        AksaTax - statusnya akan muncul di sini otomatis.
+                    </div>
+                    <div class="alert alert-success" role="status" invisible="state != 'approved'">
+                        <i title="Berhasil" class="fa fa-check-circle"/> Disetujui DJP · Nomor bukti potong
+                        <field name="nomor_bupot" class="d-inline fw-bold" readonly="1"/>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state not in ('error', 'rejected')">
+                        <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <b>Perlu tindakan:</b>
+                        <field name="last_error" class="d-block" readonly="1"/>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Bukti Potong"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Penerima penghasilan">
+                            <field name="partner_id" readonly="state not in ('new', 'error')"
+                                   options="{'no_create': True}"/>
+                            <field name="partner_match_state" widget="badge" readonly="1"
+                                   decoration-success="partner_match_state == 'matched'"
+                                   decoration-warning="partner_match_state == 'unmatched'"
+                                   decoration-danger="partner_match_state == 'no_id'"/>
+                            <field name="jenis" widget="radio" readonly="state not in ('new', 'error')"/>
+                        </group>
+                        <group string="Objek pajak">
+                            <field name="tax_object_id" readonly="state not in ('new', 'error')" options="{'no_create': True}"/>
+                            <field name="tarif"/>
+                            <field name="tanggal_pemotongan" readonly="state not in ('new', 'error')"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Nilai">
+                            <field name="jumlah_bruto" readonly="state not in ('new', 'error')"/>
+                            <field name="kira_netto" invisible="jenis != 'BPNR'" readonly="state not in ('new', 'error')"/>
+                            <field name="pph_estimasi"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Fasilitas pajak">
+                            <field name="fasilitas" readonly="state not in ('new', 'error')"/>
+                            <field name="nomor_fasilitas" invisible="fasilitas == 'NONE'" required="fasilitas != 'NONE'"
+                                   readonly="state not in ('new', 'error')"/>
+                            <field name="tarif_fasilitas" invisible="fasilitas != 'SKD'" required="fasilitas == 'SKD'"
+                                   readonly="state not in ('new', 'error')"/>
+                        </group>
+                    </group>
+                    <group string="Dokumen dasar">
+                        <group>
+                            <field name="dok_jenis" readonly="state not in ('new', 'error')"/>
+                            <field name="dok_nomor" readonly="state not in ('new', 'error')"/>
+                            <field name="dok_tanggal" readonly="state not in ('new', 'error')"/>
+                        </group>
+                        <group>
+                            <field name="move_id" readonly="state not in ('new', 'error')"/>
+                            <field name="ajukan" readonly="state not in ('new', 'error')"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_coretax_bupot" model="ir.actions.act_window">
+        <field name="name">Bukti Potong PPh</field>
+        <field name="res_model">coretax.bupot</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_coretax_bupot_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Buat bukti potong PPh pertama</p>
+            <p>Dari tagihan vendor yang sudah diposting, klik <b>Buat Bukti Potong</b>, atau klik <b>Baru</b> di sini.
+                Bukti potong dikirim ke AksaTax sebagai draft untuk ditandatangani di sana.</p>
+        </field>
+    </record>
+
+    <record id="view_coretax_tax_object_list" model="ir.ui.view">
+        <field name="name">coretax.tax.object.list</field>
+        <field name="model">coretax.tax.object</field>
+        <field name="arch" type="xml">
+            <list string="Kode Objek Pajak" editable="bottom">
+                <field name="code" placeholder="24-104-01"/>
+                <field name="name"/>
+                <field name="jenis"/>
+                <field name="pasal"/>
+                <field name="tarif"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coretax_tax_object" model="ir.actions.act_window">
+        <field name="name">Kode Objek Pajak PPh</field>
+        <field name="res_model">coretax.tax.object</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <record id="action_coretax_product_code" model="ir.actions.act_window">
+        <field name="name">Kode Barang/Jasa Coretax</field>
+        <field name="res_model">l10n_id_efaktur_coretax.product.code</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p>Kode barang/jasa resmi Coretax. Pasang kodenya di setiap produk (tab Akuntansi › Kode Barang/Jasa e-Faktur).</p>
+        </field>
+    </record>
+
+    <record id="action_coretax_uom_code" model="ir.actions.act_window">
+        <field name="name">Kode Satuan Coretax</field>
+        <field name="res_model">l10n_id_efaktur_coretax.uom.code</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

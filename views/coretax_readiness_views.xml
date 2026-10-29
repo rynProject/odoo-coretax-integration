@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Kesiapan data: daftar yang bisa diperbaiki langsung di baris. -->
+    <record id="view_coretax_product_code_list" model="ir.ui.view">
+        <field name="name">product.template.list.coretax.code</field>
+        <field name="model">product.template</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Kode Barang/Jasa produk" editable="bottom" create="0" delete="0">
+                <field name="name" readonly="1"/>
+                <field name="default_code" string="Kode internal" optional="show" readonly="1"/>
+                <field name="type" optional="show" readonly="1"/>
+                <field name="uom_id" string="Satuan" optional="hide" readonly="1"/>
+                <field name="l10n_id_product_code" string="Kode Barang/Jasa Coretax" options="{'no_create': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_coretax_uom_code_list" model="ir.ui.view">
+        <field name="name">uom.uom.list.coretax.code</field>
+        <field name="model">uom.uom</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Kode Satuan" editable="bottom" create="0" delete="0">
+                <field name="name" readonly="1"/>
+                <field name="l10n_id_uom_code" string="Kode Satuan Coretax" options="{'no_create': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coretax_ready_products" model="ir.actions.server">
+        <field name="name">Produk berkode umum</field>
+        <field name="model_id" ref="model_coretax_faktur"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_readiness("products_generic")</field>
+    </record>
+    <record id="action_coretax_ready_uoms" model="ir.actions.server">
+        <field name="name">Satuan tanpa kode Coretax</field>
+        <field name="model_id" ref="model_coretax_faktur"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_readiness("uoms_no_code")</field>
+    </record>
+    <record id="action_coretax_ready_partners" model="ir.actions.server">
+        <field name="name">Pelanggan tanpa NPWP/NIK</field>
+        <field name="model_id" ref="model_coretax_faktur"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_readiness("partners_no_id")</field>
+    </record>
+</odoo>

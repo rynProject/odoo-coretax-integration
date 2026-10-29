@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_move_form_coretax" model="ir.ui.view">
+        <field name="name">account.move.form.coretax</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="coretax_can_send" invisible="1"/>
+                <field name="coretax_state" invisible="1"/>
+                <button name="action_coretax_send" type="object" string="Kirim e-Faktur" class="btn-primary"
+                        icon="fa-paper-plane" invisible="not coretax_can_send"
+                        groups="coretax_integration.group_coretax_user"
+                        help="Kirim faktur ini ke DJP lewat AksaTax (Coretax)."/>
+                <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
+                        invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
+                        groups="coretax_integration.group_coretax_user"/>
+                <button name="action_coretax_create_bupot" type="object" string="Buat Bukti Potong" icon="fa-file-text"
+                        invisible="move_type not in ('in_invoice', 'in_receipt') or state != 'posted'"
+                        groups="coretax_integration.group_coretax_user"
+                        help="Siapkan bukti potong PPh (mis. PPh 23) untuk tagihan vendor ini."/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="coretax_faktur_count" invisible="1"/>
+                <button name="action_coretax_view_faktur" type="object" class="oe_stat_button" icon="fa-university"
+                        invisible="not coretax_faktur_count" groups="coretax_integration.group_coretax_user">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">e-Faktur</span>
+                        <span class="o_stat_value"><field name="coretax_state" readonly="1"/></span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <div class="alert alert-success py-2" role="status" invisible="coretax_state != 'approved'"
+                     groups="coretax_integration.group_coretax_user">
+                    <i title="Berhasil" class="fa fa-check-circle"/> e-Faktur disetujui DJP · Nomor Faktur Pajak
+                    <field name="coretax_nomor_faktur" class="d-inline fw-bold" readonly="1"/>
+                </div>
+                <div class="alert alert-info py-2" role="status"
+                     invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested')"
+                     groups="coretax_integration.group_coretax_user">
+                    <i title="Sedang diproses" class="fa fa-hourglass-half"/> e-Faktur sedang diproses DJP. Status diperbarui otomatis.
+                </div>
+                <div class="alert alert-danger py-2" role="alert" invisible="coretax_state not in ('rejected', 'error')"
+                     groups="coretax_integration.group_coretax_user">
+                    <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <b>e-Faktur perlu tindakan:</b>
+                    <field name="coretax_last_error" class="d-inline" readonly="1"/>
+                    <div class="small">Perbaiki datanya lalu klik <b>Kirim e-Faktur</b> untuk membuat ulang.</div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_out_invoice_tree_coretax" model="ir.ui.view">
+        <field name="name">account.out.invoice.list.coretax</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_out_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="coretax_state" string="e-Faktur" widget="badge" optional="show"
+                       decoration-success="coretax_state == 'approved'"
+                       decoration-danger="coretax_state in ('rejected', 'error')"
+                       decoration-info="coretax_state in ('submitted', 'processing')"
+                       decoration-warning="coretax_state in ('draft', 'pending_approval', 'validated', 'cancel_requested')"
+                       groups="coretax_integration.group_coretax_user"/>
+                <field name="coretax_nomor_faktur" string="Nomor Faktur Pajak" optional="hide"
+                       groups="coretax_integration.group_coretax_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_coretax" model="ir.ui.view">
+        <field name="name">account.move.search.coretax</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="coretax_ready" string="e-Faktur: siap dikirim"
+                        domain="[('move_type', '=', 'out_invoice'), ('state', '=', 'posted'), ('invoice_line_ids.tax_ids', '!=', False),
+                                 '|', ('coretax_faktur_id', '=', False), ('coretax_state', 'in', ('rejected', 'cancelled', 'error'))]"/>
+                <filter name="coretax_attention" string="e-Faktur: perlu tindakan"
+                        domain="[('coretax_state', 'in', ('rejected', 'error'))]"/>
+                <filter name="coretax_approved" string="e-Faktur: disetujui DJP" domain="[('coretax_state', '=', 'approved')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Daftar faktur pelanggan yang siap dibuatkan e-Faktur: centang lalu
+         klik "Kirim e-Faktur" di kepala daftar, atau tombol per baris. -->
+    <record id="view_coretax_invoice_ready_list" model="ir.ui.view">
+        <field name="name">account.move.list.coretax.ready</field>
+        <field name="model">account.move</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="Faktur siap dikirim" create="0" edit="0">
+                <header>
+                    <button name="action_coretax_send" type="object" string="Kirim e-Faktur" class="btn-primary"
+                            icon="fa-paper-plane"/>
+                </header>
+                <field name="name" string="Nomor faktur"/>
+                <field name="partner_id" string="Pelanggan"/>
+                <field name="invoice_date" string="Tanggal"/>
+                <field name="l10n_id_kode_transaksi" string="Kode transaksi" optional="show"/>
+                <field name="amount_untaxed" string="DPP" sum="Total DPP"/>
+                <field name="amount_tax" string="PPN" sum="Total PPN"/>
+                <field name="amount_total" string="Total" sum="Total"/>
+                <field name="coretax_state" string="e-Faktur" widget="badge" optional="show"
+                       decoration-danger="coretax_state in ('rejected', 'error')"/>
+                <field name="currency_id" column_invisible="1"/>
+                <button name="action_coretax_send" type="object" string="Kirim" icon="fa-paper-plane" class="btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_coretax_invoice_ready" model="ir.actions.act_window">
+        <field name="name">Faktur siap dikirim</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_coretax_invoice_ready_list"/>
+        <field name="search_view_id" ref="account.view_account_invoice_filter"/>
+        <field name="domain">[('move_type', '=', 'out_invoice')]</field>
+        <field name="context">{'default_move_type': 'out_invoice', 'search_default_coretax_ready': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Semua faktur sudah dibuatkan e-Faktur</p>
+            <p>Faktur pelanggan yang sudah diposting dan dikenai PPN akan muncul di sini.
+                Klik <b>Kirim</b> di baris faktur, atau centang beberapa faktur lalu klik <b>Kirim e-Faktur</b>.</p>
+        </field>
+    </record>
+
+    <!-- Tindakan massal dari daftar faktur -->
+    <record id="action_server_coretax_send" model="ir.actions.server">
+        <field name="name">Kirim e-Faktur</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('coretax_integration.group_coretax_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_coretax_send()</field>
+    </record>
+</odoo>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Hak akses Coretax: Pengguna mengirim e-Faktur & bukti potong;
+         Administrator mengatur koneksi (API key, webhook) dan data master.
+         Semua pengguna Invoicing otomatis menjadi Pengguna Coretax, dan
+         Administrator Akuntansi menjadi Administrator Coretax. -->
+    <record id="res_groups_privilege_coretax" model="res.groups.privilege">
+        <field name="name">Coretax (AksaTax)</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="group_coretax_user" model="res.groups">
+        <field name="name">Pengguna</field>
+        <field name="sequence">10</field>
+        <field name="comment">Mengirim e-Faktur dan bukti potong ke AksaTax, melihat status DJP.</field>
+        <field name="privilege_id" ref="res_groups_privilege_coretax"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_coretax_manager" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">20</field>
+        <field name="comment">Mengatur koneksi AksaTax (API key, webhook) dan data master pajak.</field>
+        <field name="privilege_id" ref="res_groups_privilege_coretax"/>
+        <field name="implied_ids" eval="[(4, ref('group_coretax_user'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="account.group_account_invoice" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_coretax_user'))]"/>
+    </record>
+    <record id="account.group_account_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_coretax_manager'))]"/>
+    </record>
+
+    <!-- multi-perusahaan: setiap data hanya terlihat di perusahaannya -->
+    <record id="rule_coretax_connection_company" model="ir.rule">
+        <field name="name">Koneksi AksaTax: perusahaan sendiri</field>
+        <field name="model_id" ref="model_coretax_connection"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_coretax_faktur_company" model="ir.rule">
+        <field name="name">e-Faktur Coretax: perusahaan sendiri</field>
+        <field name="model_id" ref="model_coretax_faktur"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_coretax_bupot_company" model="ir.rule">
+        <field name="name">Bukti Potong Coretax: perusahaan sendiri</field>
+        <field name="model_id" ref="model_coretax_bupot"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_coretax_log_company" model="ir.rule">
+        <field name="name">Riwayat AksaTax: perusahaan sendiri</field>
+        <field name="model_id" ref="model_coretax_log"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+</odoo>
