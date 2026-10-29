@@ -18,6 +18,7 @@ const STATE_TONE = {
     validated: "warning",
     cancel_requested: "muted",
     cancelled: "muted",
+    replaced: "muted",
 };
 
 export class CoretaxDashboard extends Component {

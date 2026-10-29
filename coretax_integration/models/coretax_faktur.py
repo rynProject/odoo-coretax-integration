@@ -19,6 +19,7 @@ STATES = [
     ("rejected", "Ditolak DJP"),
     ("cancel_requested", "Pembatalan diajukan"),
     ("cancelled", "Dibatalkan"),
+    ("replaced", "Diganti"),
     ("error", "Gagal - perlu tindakan"),
 ]
 REMOTE_STATES = {
@@ -104,6 +105,11 @@ class CoretaxFaktur(models.Model):
     last_error = fields.Text(string="Keterangan dari AksaTax/DJP", readonly=True)
     error_code = fields.Char(string="Kode galat", readonly=True, copy=False)
     cancel_attempt = fields.Integer(string="Percobaan batal", default=0, readonly=True, copy=False)
+    replace_requested = fields.Boolean(string="Penggantian dibuka", default=False, copy=False, tracking=True)
+    replaces_id = fields.Many2one("coretax.faktur", string="Mengganti e-Faktur", copy=False, readonly=True,
+                                  index=True, ondelete="set null")
+    replaced_by_id = fields.Many2one("coretax.faktur", string="Diganti oleh", copy=False, readonly=True,
+                                     ondelete="set null")
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     submitted_at = fields.Datetime(string="Dikirim ke DJP pada", readonly=True, copy=False)
     last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
@@ -123,6 +129,18 @@ class CoretaxFaktur(models.Model):
             rec.attention = rec.state in ATTENTION_STATES or bool(
                 rec.state in SENDABLE_STATES and rec.send_mode == "send" and rec.last_error)
             rec.in_progress = rec.state in IN_PROGRESS_STATES
+
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get("state") == "approved":
+            for rec in self:
+                old = rec.replaces_id
+                if old and old.state != "replaced":
+                    old.write({"state": "replaced", "replaced_by_id": rec.id, "replace_requested": False})
+                    rec.move_id.message_post(body=_("e-Faktur %(old)s diganti oleh %(new)s.",
+                                                    old=old.nomor_faktur or old.display_name,
+                                                    new=rec.nomor_faktur or rec.display_name))
+        return result
 
     def _compute_aksatax_url(self):
         for rec in self:
@@ -146,7 +164,7 @@ class CoretaxFaktur(models.Model):
         self.ensure_one()
         vals = {"last_sync": fields.Datetime.now()}
         state = REMOTE_STATES.get((data.get("status") or "").upper())
-        if state:
+        if state and not (self.state == "replaced" and state == "approved"):
             vals["state"] = state
         mapping = {
             "id": "aksatax_id", "nomorFaktur": "nomor_faktur", "kodeApproval": "kode_approval",
@@ -175,6 +193,8 @@ class CoretaxFaktur(models.Model):
             "faktur.submitted": "submitted", "faktur.approved": "approved",
             "faktur.rejected": "rejected", "faktur.cancelled": "cancelled",
         }.get(event.get("type"))
+        if self.state == "replaced" and state == "approved":
+            state = None  # AksaTax tidak tahu e-Faktur ini sudah diganti; tetap Diganti
         if state:
             vals["state"] = state
         if data.get("nomor"):
@@ -230,6 +250,26 @@ class CoretaxFaktur(models.Model):
         return {"type": "ir.actions.act_window", "res_model": "coretax.faktur.cancel.wizard",
                 "view_mode": "form", "target": "new", "name": _("Batalkan e-Faktur"),
                 "context": {"default_faktur_id": self.id}}
+
+    def action_request_replacement(self):
+        """Buka penggantian: faktur Odoo boleh di-reset ke draft, diperbaiki, lalu dikirim sebagai faktur pengganti."""
+        for rec in self:
+            if rec.state != "approved" or rec.replace_requested:
+                raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP dan belum dibuka penggantiannya yang bisa diganti."))
+            rec.replace_requested = True
+            rec.move_id.message_post(body=_(
+                "Penggantian e-Faktur dibuka. Reset faktur ke draft, perbaiki, lalu kirim lagi sebagai faktur pengganti."))
+        return True
+
+    def action_cancel_replacement(self):
+        for rec in self:
+            if not rec.replace_requested:
+                raise UserError(_("Penggantian e-Faktur ini belum dibuka."))
+            if self.with_context(active_test=False).search_count([("replaces_id", "=", rec.id)]):
+                raise UserError(_("e-Faktur pengganti sudah dibuat, penggantian tidak bisa dibatalkan lagi."))
+            rec.replace_requested = False
+            rec.move_id.message_post(body=_("Penggantian e-Faktur dibatalkan."))
+        return True
 
     def action_refresh(self):
         for rec in self.filtered("aksatax_id"):

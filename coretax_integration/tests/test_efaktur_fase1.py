@@ -211,3 +211,100 @@ class TestEfakturFase1(CoretaxTestCommon):
         keys = self._keys(fake)
         self.assertEqual(len(set(keys)), 1)
         self.assertEqual(faktur.cancel_attempt, 0)
+
+    # ── faktur pengganti ──────────────────────────────────────────────
+    NEW_ID = "00000000-0000-4000-8000-0000000000b2"
+    OLD_NUMBER = "0400260000000001"
+
+    def _approved_with_number(self):
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = self.OLD_NUMBER
+        return move, faktur
+
+    def _resend_routes(self, extra=None):
+        return {
+            ("POST", "/faktur"): (201, faktur_body(id=self.NEW_ID)),
+            ("POST", f"/faktur/{self.NEW_ID}/kirim"): (202, {"id": self.NEW_ID, "status": "SUBMITTED"}),
+            **(extra or {}),
+        }
+
+    def _event(self, kind, status, seq):
+        return {"id": f"evt_{seq}", "sequence": seq, "type": kind,
+                "object": {"type": "faktur", "id": self.NEW_ID}, "data": {"id": self.NEW_ID, "status": status}}
+
+    def _faktur_posts(self, fake):
+        return [c for c in fake.calls if c["method"] == "POST" and c["path"] == "/faktur"]
+
+    def test_replacement_flow(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        self.assertTrue(old.replace_requested)
+        move.button_draft()
+        move.invoice_line_ids.price_unit = 60000
+        move.action_post()
+        self.assertTrue(move.coretax_can_send)
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body("APPROVED", id=self.NEW_ID,
+                                                                    nomorFaktur="0400260000000002"))}))
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+            payload = self._faktur_posts(fake)[0]["json"]
+            self.assertEqual(payload["fgPengganti"], "1")
+            self.assertEqual(payload["nomorFakturDiganti"], self.OLD_NUMBER)
+            self.assertEqual(new.replaces_id, old)
+            self.connection._process_event(self._event("faktur.approved", "APPROVED", 100))
+        self.assertEqual(old.state, "replaced")
+        self.assertEqual(old.replaced_by_id, new)
+        self.assertFalse(old.replace_requested)
+        self.assertEqual(new.state, "approved")
+        self.assertEqual(move.coretax_faktur_id, new)
+        self.assertFalse(move.coretax_can_send)
+        # event lama untuk e-Faktur yang diganti tidak mengembalikan statusnya
+        old._apply_remote(faktur_body("APPROVED"))
+        self.assertEqual(old.state, "replaced")
+
+    def test_cancel_replacement(self):
+        move, old = self._approved_with_number()
+        with self.assertRaises(UserError):
+            move.button_draft()
+        old.action_request_replacement()
+        old.action_cancel_replacement()
+        self.assertFalse(old.replace_requested)
+        with self.assertRaises(UserError):
+            move.button_draft()
+        self.assertFalse(move.coretax_can_send)
+
+    def test_cancel_blocked_while_replacing(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        with self.assertRaises(UserError):
+            move.button_cancel()
+
+    def test_replacement_rejected_then_resent(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body("REJECTED", id=self.NEW_ID,
+                                                                    lastError="Ditolak"))}))
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+            self.connection._process_event(self._event("faktur.rejected", "REJECTED", 101))
+            self.assertEqual(new.state, "rejected")
+            self.assertEqual(old.state, "approved")
+            self.assertTrue(move.coretax_can_send)
+            newer = move._coretax_create_faktur(mode="send", connection=self.connection)
+        posts = self._faktur_posts(fake)
+        self.assertEqual(len(posts), 2)
+        self.assertEqual(posts[1]["json"]["fgPengganti"], "1")
+        self.assertEqual(posts[1]["json"]["nomorFakturDiganti"], self.OLD_NUMBER)
+        self.assertEqual(newer.replaces_id, old)
+
+    def test_request_replacement_only_from_approved(self):
+        move, faktur = self._approved_faktur()
+        faktur.state = "processing"
+        with self.assertRaises(UserError):
+            faktur.action_request_replacement()
+        faktur.state = "approved"
+        faktur.action_request_replacement()
+        with self.assertRaises(UserError):
+            faktur.action_request_replacement()

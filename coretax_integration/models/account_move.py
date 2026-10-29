@@ -32,13 +32,21 @@ class AccountMove(models.Model):
             move.coretax_faktur_id = fakturs[:1]
             move.coretax_faktur_count = len(move.with_context(active_test=False).coretax_faktur_ids)
 
-    @api.depends("state", "move_type", "coretax_state", "line_ids.tax_ids")
+    @api.depends("state", "move_type", "coretax_state", "coretax_faktur_id.replace_requested", "line_ids.tax_ids")
     def _compute_coretax_can_send(self):
         for move in self:
             move.coretax_can_send = (
                 move._coretax_is_candidate()
-                and (not move.coretax_faktur_id or move.coretax_state in RECREATE_STATES)
+                and (not move.coretax_faktur_id or move.coretax_state in RECREATE_STATES
+                     or move.coretax_faktur_id == move._coretax_replacing())
             )
+
+    def _coretax_replacing(self):
+        """e-Faktur (termasuk yang diarsipkan) yang disetujui dan penggantiannya dibuka, maksimal satu.
+        Dicari di semua versi: bila pengganti ditolak, versi terakhir adalah yang ditolak."""
+        self.ensure_one()
+        return self.with_context(active_test=False).coretax_faktur_ids.filtered(
+            lambda f: f.state == "approved" and f.replace_requested)[:1]
 
     def _coretax_is_candidate(self):
         self.ensure_one()
@@ -51,7 +59,8 @@ class AccountMove(models.Model):
         return [
             ("company_id", "=", self.env.company.id), ("move_type", "=", "out_invoice"), ("state", "=", "posted"),
             ("invoice_line_ids.tax_ids", "!=", False),
-            "|", ("coretax_faktur_id", "=", False), ("coretax_state", "in", list(RECREATE_STATES)),
+            "|", "|", ("coretax_faktur_id", "=", False), ("coretax_state", "in", list(RECREATE_STATES)),
+            "&", ("coretax_state", "=", "approved"), ("coretax_faktur_id.replace_requested", "=", True),
         ]
 
     # ── pemeriksaan sebelum kirim ─────────────────────────────────────
@@ -64,7 +73,8 @@ class AccountMove(models.Model):
             return [("error", _("Hanya faktur pelanggan yang bisa dibuatkan e-Faktur."))]
         if self.state != "posted":
             issues.append(("error", _("Faktur belum diposting (masih draft atau dibatalkan).")))
-        if self.coretax_faktur_id and self.coretax_state not in RECREATE_STATES:
+        if (self.coretax_faktur_id and self.coretax_state not in RECREATE_STATES
+                and self.coretax_faktur_id != self._coretax_replacing()):
             label = dict(STATES).get(self.coretax_state)
             issues.append(("error", _("Sudah punya e-Faktur (%s). Tidak dikirim lagi.", label)))
         if self.currency_id != self.env.ref("base.IDR"):
@@ -159,6 +169,10 @@ class AccountMove(models.Model):
             "referensi": (self.name or "")[:100],
             "items": self._coretax_line_vals(),
         }
+        replacing = self._coretax_replacing()
+        if replacing:
+            payload["fgPengganti"] = "1"
+            payload["nomorFakturDiganti"] = replacing.nomor_faktur
         keterangan = self._coretax_keterangan_tambahan()
         if keterangan:
             payload["idKeteranganTambahan"] = keterangan
@@ -176,12 +190,14 @@ class AccountMove(models.Model):
         errors = [msg for level, msg in self._coretax_check(connection) if level == "error"]
         if errors:
             raise UserError("\n".join(errors))
+        replacing = self._coretax_replacing()
         previous = self.coretax_faktur_id
         if previous:
             previous.active = False
         version = max(self.with_context(active_test=False).coretax_faktur_ids.mapped("version") or [0]) + 1
         faktur = self.env["coretax.faktur"].create({"move_id": self.id, "version": version, "send_mode": mode,
-                                                    "kd_jenis_transaksi": self.l10n_id_kode_transaksi})
+                                                    "kd_jenis_transaksi": self.l10n_id_kode_transaksi,
+                                                    "replaces_id": replacing.id})
         client = connection._client(faktur)
         try:
             partner = self.commercial_partner_id.with_company(self.company_id)
@@ -233,6 +249,12 @@ class AccountMove(models.Model):
             raise UserError(_("Faktur ini belum punya e-Faktur."))
         return self.coretax_faktur_id.action_open_cancel_wizard()
 
+    def action_coretax_request_replacement(self):
+        self.ensure_one()
+        if not self.coretax_faktur_id:
+            raise UserError(_("Faktur ini belum punya e-Faktur."))
+        return self.coretax_faktur_id.action_request_replacement()
+
     def action_coretax_view_faktur(self):
         self.ensure_one()
         action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_faktur")
@@ -281,8 +303,9 @@ class AccountMove(models.Model):
                     _logger.exception("Kirim e-Faktur otomatis gagal untuk %s", move.name)
         return posted
 
-    def _coretax_guard(self, action_label):
-        locked = self.filtered(lambda m: m.coretax_state in LOCKING_STATES)
+    def _coretax_guard(self, action_label, allow_replacing=False):
+        locked = self.filtered(lambda m: m.coretax_state in LOCKING_STATES
+                               and not (allow_replacing and m.coretax_faktur_id == m._coretax_replacing()))
         if locked:
             raise UserError(_(
                 "Faktur %(moves)s sudah punya e-Faktur di DJP (%(state)s). Batalkan dulu e-Faktur-nya di AksaTax "
@@ -291,7 +314,7 @@ class AccountMove(models.Model):
                 action=action_label))
 
     def button_draft(self):
-        self._coretax_guard(_("mengembalikan ke draft"))
+        self._coretax_guard(_("mengembalikan ke draft"), allow_replacing=True)
         return super().button_draft()
 
     def button_cancel(self):
