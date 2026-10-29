@@ -160,7 +160,7 @@
                             <field name="nomor_faktur"/>
                             <field name="kd_jenis_transaksi"/>
                             <label for="masa_pajak" string="Masa / tahun pajak"/>
-                            <div class="o_row"><field name="masa_pajak" options="{'format': false}"/> / <field name="tahun_pajak" options="{'format': false}"/></div>
+                            <div class="o_row"><field name="masa_pajak" options="{'enable_formatting': false}"/> / <field name="tahun_pajak" options="{'enable_formatting': false}"/></div>
                             <field name="kode_approval"/>
                             <field name="tanggal_approval"/>
                         </group>

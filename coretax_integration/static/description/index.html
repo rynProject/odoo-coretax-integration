@@ -1,106 +1,229 @@
-<section class="oe_container" style="padding: 32px 0;">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto;">
-        <h2 class="oe_slogan" style="color: #4c48db; font-weight: 700;">Coretax Integration (AksaTax)</h2>
-        <h3 class="oe_slogan" style="color: #555;">Kirim e-Faktur Keluaran &amp; Bukti Potong PPh dari Odoo ke DJP (Coretax) lewat AksaTax</h3>
-        <p style="font-size: 16px; color: #444; text-align: center; max-width: 760px; margin: 16px auto 0;">
-            Faktur pelanggan di Odoo dikirim ke DJP melalui Public API AksaTax. Hasilnya (status DJP, Nomor Faktur
-            Pajak, kode persetujuan, dan alasan penolakan) kembali ke Odoo secara otomatis, tanpa ekspor-impor file.
+<!-- Hero -->
+<section style="background: linear-gradient(135deg, #5641d7 0%, #3f51e0 55%, #2960e9 100%); padding: 56px 16px 0; border-radius: 16px; overflow: hidden;">
+    <div style="max-width: 1100px; margin: 0 auto; text-align: center;">
+        <span style="display: inline-block; background: rgba(255,255,255,0.18); color: #fff; font-weight: 700; font-size: 13px; letter-spacing: 1px; padding: 6px 16px; border-radius: 20px;">ODOO 19 &middot; e-FAKTUR &middot; BUKTI POTONG PPh</span>
+        <h1 style="color: #fff; font-weight: 800; font-size: 40px; line-height: 1.2; margin: 20px auto 12px; max-width: 820px;">Kirim e-Faktur ke Coretax langsung dari Odoo</h1>
+        <p style="color: rgba(255,255,255,0.92); font-size: 18px; line-height: 1.6; max-width: 760px; margin: 0 auto;">
+            Faktur pelanggan Odoo dikirim ke DJP melalui AksaTax. Status DJP, Nomor Faktur Pajak, dan kode persetujuan
+            kembali ke Odoo secara otomatis, tanpa ekspor-impor file XML.
         </p>
-        <div style="text-align: center; margin-top: 24px;">
-            <img src="banner.png" alt="Coretax Integration" style="max-width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgba(40, 40, 120, 0.18);"/>
+        <div style="margin: 28px 0 36px;">
+            <span style="display: inline-block; background: #fff; color: #3f51e0; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Status DJP otomatis</span>
+            <span style="display: inline-block; background: #fff; color: #3f51e0; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Diperiksa sebelum dikirim</span>
+            <span style="display: inline-block; background: #fff; color: #3f51e0; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Angka sama dengan XML Coretax</span>
         </div>
+        <img src="dashboard_screenshot.png" alt="Ringkasan Coretax di Odoo" style="display: block; width: 100%; max-width: 1040px; margin: 0 auto; border-radius: 12px 12px 0 0; box-shadow: 0 -4px 40px rgba(10, 10, 60, 0.35);"/>
     </div>
 </section>
 
-<section class="oe_container" style="padding: 32px 0; background: #f6f7fb;">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto;">
-        <h3 style="text-align: center; color: #333; font-weight: 700; margin-bottom: 24px;">Alur kerja</h3>
+<!-- Why -->
+<section style="padding: 56px 16px 24px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="text-align: center; font-weight: 800; color: #1f2340; margin-bottom: 8px;">Kenapa Coretax Integration?</h2>
+        <p style="text-align: center; color: #5b6075; font-size: 16px; max-width: 700px; margin: 0 auto 32px;">Tim keuangan cukup bekerja di Odoo. Modul ini mengurus pengiriman, pemantauan status, dan tindak lanjutnya.</p>
         <div class="row">
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="background: #fff; border-radius: 10px; padding: 20px; height: 100%; border-top: 4px solid #5641d7;">
-                    <h4 style="color: #5641d7; font-weight: 700;">1. Odoo</h4>
-                    <p style="color: #555;">Faktur pelanggan ber-PPN yang sudah diposting diperiksa dulu (NPWP/NIK, kode transaksi, kode barang/jasa, mata uang, kelompok pajak, tanggal), lalu dikirim.</p>
+            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
+                <div style="background: #f4f3fd; border-radius: 12px; padding: 22px; height: 100%;">
+                    <div style="font-size: 28px; line-height: 1; color: #5641d7; font-weight: 800;">01</div>
+                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Tanpa ekspor-impor</h4>
+                    <p style="color: #5b6075; margin: 0;">Kirim satu faktur atau puluhan sekaligus dengan satu klik. Tidak perlu lagi mengunduh XML lalu mengunggahnya ke Coretax.</p>
                 </div>
             </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="background: #fff; border-radius: 10px; padding: 20px; height: 100%; border-top: 4px solid #3f51e0;">
-                    <h4 style="color: #3f51e0; font-weight: 700;">2. AksaTax</h4>
-                    <p style="color: #555;">e-Faktur dibuat sebagai draft di AksaTax, lalu langsung dikirim ke DJP atau disimpan dulu untuk disetujui di AksaTax.</p>
+            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
+                <div style="background: #f4f3fd; border-radius: 12px; padding: 22px; height: 100%;">
+                    <div style="font-size: 28px; line-height: 1; color: #5641d7; font-weight: 800;">02</div>
+                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Kesalahan ketahuan lebih awal</h4>
+                    <p style="color: #5b6075; margin: 0;">NPWP/NIK, kode transaksi, kode barang/jasa, mata uang, dan tanggal diperiksa sebelum dikirim, dengan pesan yang mudah dipahami.</p>
                 </div>
             </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="background: #fff; border-radius: 10px; padding: 20px; height: 100%; border-top: 4px solid #2960e9;">
-                    <h4 style="color: #2960e9; font-weight: 700;">3. DJP &rarr; Odoo</h4>
-                    <p style="color: #555;">Odoo mengambil hasil dari AksaTax setiap 5 menit, atau langsung lewat webhook bertanda tangan HMAC. Status dan nomor faktur pajak tampil di faktur.</p>
+            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
+                <div style="background: #f4f3fd; border-radius: 12px; padding: 22px; height: 100%;">
+                    <div style="font-size: 28px; line-height: 1; color: #5641d7; font-weight: 800;">03</div>
+                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Hasil DJP kembali sendiri</h4>
+                    <p style="color: #5b6075; margin: 0;">Odoo mengambil status terbaru setiap 5 menit, atau langsung lewat webhook bertanda tangan HMAC. Nomor Faktur Pajak tampil di faktur.</p>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
-
-<section class="oe_container" style="padding: 32px 0;">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto;">
-        <h3 style="text-align: center; color: #333; font-weight: 700; margin-bottom: 24px;">Fitur</h3>
-        <div class="row">
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Kirim e-Faktur</h4>
-                <p style="color: #555;">Dari tombol <b>Kirim e-Faktur</b> di faktur pelanggan, per baris, atau banyak sekaligus dari daftar <b>Siap dikirim</b>. Bisa juga otomatis saat faktur diposting.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Pemeriksaan sebelum kirim</h4>
-                <p style="color: #555;">Setiap faktur diperiksa sebelum dikirim, dan pesan kesalahannya ditulis dalam bahasa yang mudah dipahami tim keuangan.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Perlu tindakan</h4>
-                <p style="color: #555;">e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasan dan tombol <b>Buat ulang e-Faktur</b>. Penanggung jawab faktur menerima aktivitas "Perbaiki e-Faktur".</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Lawan transaksi</h4>
-                <p style="color: #555;">Pelanggan dan vendor dicocokkan dengan Lawan Transaksi AksaTax lewat NPWP. Yang belum terdaftar bisa didaftarkan langsung dari Odoo, satu per satu atau massal.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Pemetaan field</h4>
-                <p style="color: #555;">NPWP, NIK, paspor, NITKU/TKU, nama, alamat, dan email diambil dari field kontak standar Odoo, dan bisa diganti dengan field kustom atau Studio.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Kesiapan data</h4>
-                <p style="color: #555;">Menampilkan produk yang masih berkode umum 000000, satuan tanpa kode Coretax, dan pelanggan tanpa NPWP/NIK, dan semuanya bisa diperbaiki langsung dari daftarnya.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Bukti Potong PPh</h4>
-                <p style="color: #555;">Dibuat dari tagihan vendor dengan tombol <b>Buat Bukti Potong</b>, lalu dikirim ke AksaTax sebagai draft untuk ditandatangani di sana.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Ringkasan &amp; riwayat</h4>
-                <p style="color: #555;">Satu layar ringkasan (siap dikirim, diproses, disetujui, perlu tindakan) dan Riwayat Sinkronisasi 90 hari lengkap dengan ID Permintaan. API key tidak pernah ikut dicatat.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Angka sama dengan XML Coretax</h4>
-                <p style="color: #555;">Data baris disusun dengan penyusun data bawaan Odoo (<code>l10n_id_efaktur_coretax</code>), jadi angkanya sama dengan XML Coretax resmi.</p>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h4 style="color: #4c48db; font-weight: 600;">Aman dari dokumen ganda</h4>
-                <p style="color: #555;">Setiap pengiriman memakai Idempotency-Key per faktur dan versi. Faktur yang e-Faktur-nya sedang diproses atau sudah disetujui tidak bisa dibatalkan di Odoo begitu saja.</p>
+            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
+                <div style="background: #f4f3fd; border-radius: 12px; padding: 22px; height: 100%;">
+                    <div style="font-size: 28px; line-height: 1; color: #5641d7; font-weight: 800;">04</div>
+                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Angka yang konsisten</h4>
+                    <p style="color: #5b6075; margin: 0;">Baris e-Faktur disusun dengan penyusun data bawaan Odoo (<code>l10n_id_efaktur_coretax</code>), jadi angkanya sama dengan XML Coretax resmi.</p>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
-<section class="oe_container" style="padding: 32px 0; background: #f6f7fb;">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto;">
+<!-- Flow -->
+<section style="padding: 8px 16px 40px;">
+    <div style="max-width: 1100px; margin: 0 auto; background: #1f2340; border-radius: 16px; padding: 32px 24px;">
+        <h3 style="color: #fff; text-align: center; font-weight: 700; margin-bottom: 24px;">Alur kerja</h3>
+        <div class="row" style="text-align: center;">
+            <div class="col-md-3" style="margin-bottom: 16px;">
+                <div style="color: #b9b2ff; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 1</div>
+                <div style="color: #fff; font-weight: 700; font-size: 18px; margin: 6px 0;">Faktur Odoo</div>
+                <div style="color: #c9cbe0; font-size: 14px;">Faktur ber-PPN diposting lalu diperiksa</div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 16px;">
+                <div style="color: #b9b2ff; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 2</div>
+                <div style="color: #fff; font-weight: 700; font-size: 18px; margin: 6px 0;">AksaTax</div>
+                <div style="color: #c9cbe0; font-size: 14px;">e-Faktur dibuat, lalu langsung dikirim atau disetujui dulu di AksaTax</div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 16px;">
+                <div style="color: #b9b2ff; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 3</div>
+                <div style="color: #fff; font-weight: 700; font-size: 18px; margin: 6px 0;">DJP</div>
+                <div style="color: #c9cbe0; font-size: 14px;">e-Faktur diproses lalu disetujui atau ditolak</div>
+            </div>
+            <div class="col-md-3" style="margin-bottom: 16px;">
+                <div style="color: #b9b2ff; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 4</div>
+                <div style="color: #fff; font-weight: 700; font-size: 18px; margin: 6px 0;">Kembali ke Odoo</div>
+                <div style="color: #c9cbe0; font-size: 14px;">Status, nomor faktur pajak, dan alasan penolakan tercatat di faktur</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features with screenshots -->
+<section style="padding: 16px 16px 8px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+
+        <div class="row" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PEMERIKSAAN SEBELUM KIRIM</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Tahu mana yang siap, sebelum DJP menolak</h3>
+                <p style="color: #5b6075; font-size: 16px;">Pilih banyak faktur sekaligus dari daftar <b>Siap dikirim</b>. Setiap faktur langsung diberi tanda <b>Siap</b>, <b>Siap, ada catatan</b>, atau <b>Belum bisa dikirim</b> beserta alasannya. Faktur yang belum lengkap tidak ikut terkirim.</p>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Pilih cara kirim: langsung ke DJP, atau simpan sebagai draft untuk disetujui di AksaTax.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="send_wizard.png" alt="Wizard Kirim e-Faktur dengan hasil pemeriksaan" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">STATUS DI FAKTUR</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Nomor Faktur Pajak langsung di faktur Odoo</h3>
+                <p style="color: #5b6075; font-size: 16px;">Setelah DJP menyetujui, faktur Odoo menampilkan status dan Nomor Faktur Pajak. Setiap langkah, termasuk penolakan dan pengiriman ulang, tercatat di chatter faktur.</p>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Faktur yang e-Faktur-nya sedang diproses atau sudah disetujui DJP tidak bisa dikembalikan ke draft atau dibatalkan begitu saja di Odoo.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="invoice_efaktur.png" alt="Faktur Odoo dengan status e-Faktur disetujui DJP" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">SEMUA e-FAKTUR</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Semua e-Faktur, dikelompokkan per status</h3>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Lihat dalam bentuk daftar atau kanban: disetujui DJP, draft di AksaTax, menunggu persetujuan, diproses DJP, sampai yang gagal. Filter per bulan, masa pajak, atau pelanggan.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="efaktur_kanban.png" alt="Kanban e-Faktur per status" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #d63a4a; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PERLU TINDAKAN</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Penolakan DJP tidak akan terlewat</h3>
+                <p style="color: #5b6075; font-size: 16px;">e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasannya. Penanggung jawab faktur juga mendapat aktivitas "Perbaiki e-Faktur" di Odoo.</p>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Perbaiki datanya, lalu klik <b>Buat ulang e-Faktur</b>. Versi lama tetap tersimpan sebagai riwayat.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="efaktur_rejected.png" alt="e-Faktur ditolak DJP dengan tombol Buat ulang" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LAWAN TRANSAKSI</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Pelanggan dan vendor tertaut ke AksaTax</h3>
+                <p style="color: #5b6075; font-size: 16px;">Kontak dicocokkan dengan Lawan Transaksi AksaTax lewat NPWP: semua sekaligus, satu per satu, atau otomatis saat mengirim. Yang belum terdaftar bisa didaftarkan langsung dari Odoo.</p>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">NPWP, NIK, paspor, NITKU/TKU, alamat, dan email diambil dari field kontak standar, dan bisa diganti field kustom atau Studio.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="lawan_transaksi.png" alt="Daftar Lawan Transaksi dengan status pencocokan" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">BUKTI POTONG PPh</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Bukti Potong dari tagihan vendor</h3>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Klik <b>Buat Bukti Potong</b> di tagihan vendor. Penerima, jumlah bruto, dan dokumen dasar terisi otomatis, dan perkiraan PPh dihitung dari kode objek pajak. Bukti potong dikirim ke AksaTax sebagai draft untuk ditandatangani di sana.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="bukti_potong.png" alt="Form Bukti Potong PPh" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row" style="align-items: center; margin-bottom: 56px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PENGATURAN</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Siap dalam beberapa menit</h3>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Isi alamat AksaTax dan API key, lalu klik <b>Uji koneksi</b>. Tentukan apakah e-Faktur dikirim manual, disimpan sebagai draft, atau dikirim otomatis saat faktur diposting. Setiap perusahaan di Odoo punya koneksi sendiri.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="koneksi.png" alt="Pengaturan Koneksi AksaTax" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+
+        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 40px;">
+            <div class="col-lg-5" style="margin-bottom: 20px;">
+                <div style="color: #5641d7; font-weight: 800; font-size: 13px; letter-spacing: 1px;">RIWAYAT SINKRONISASI</div>
+                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Setiap panggilan tercatat</h3>
+                <p style="color: #5b6075; font-size: 16px; margin: 0;">Semua komunikasi dengan AksaTax disimpan selama 90 hari, lengkap dengan ID Permintaan untuk tim dukungan AksaTax. API key tidak pernah ikut dicatat. Saat AksaTax sibuk, Odoo mencoba ulang sekali, dan setiap pengiriman memakai Idempotency-Key sehingga tidak ada dokumen ganda.</p>
+            </div>
+            <div class="col-lg-7">
+                <img src="riwayat.png" alt="Riwayat Sinkronisasi dengan AksaTax" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- More features -->
+<section style="padding: 8px 16px 40px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <h3 style="text-align: center; font-weight: 800; color: #1f2340; margin-bottom: 24px;">Juga termasuk</h3>
         <div class="row">
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h3 style="color: #333; font-weight: 700;">Syarat</h3>
-                <ul style="color: #555; padding-left: 20px;">
+            <div class="col-md-4" style="margin-bottom: 16px;">
+                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
+                    <h5 style="font-weight: 700; color: #1f2340;">Ringkasan satu layar</h5>
+                    <p style="color: #5b6075; margin: 0;">Jumlah siap dikirim, sedang diproses, disetujui bulan ini, perlu tindakan, serta DPP dan PPN masa pajak berjalan.</p>
+                </div>
+            </div>
+            <div class="col-md-4" style="margin-bottom: 16px;">
+                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
+                    <h5 style="font-weight: 700; color: #1f2340;">Kesiapan data</h5>
+                    <p style="color: #5b6075; margin: 0;">Produk berkode umum 000000, satuan tanpa kode Coretax, dan pelanggan tanpa NPWP/NIK, yang bisa langsung diperbaiki dari daftarnya.</p>
+                </div>
+            </div>
+            <div class="col-md-4" style="margin-bottom: 16px;">
+                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
+                    <h5 style="font-weight: 700; color: #1f2340;">Hak akses dua tingkat</h5>
+                    <p style="color: #5b6075; margin: 0;">Pengguna Invoicing otomatis menjadi Pengguna Coretax, dan Administrator Akuntansi otomatis menjadi Administrator Coretax.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Requirements & setup -->
+<section style="padding: 0 16px 40px;">
+    <div style="max-width: 1100px; margin: 0 auto; background: #f6f7fb; border-radius: 16px; padding: 32px 28px;">
+        <div class="row">
+            <div class="col-md-6" style="margin-bottom: 16px;">
+                <h3 style="font-weight: 800; color: #1f2340;">Syarat</h3>
+                <ul style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
                     <li>Odoo 19 dengan modul <code>account</code> dan <code>l10n_id_efaktur_coretax</code> (bawaan Odoo, ikut terpasang otomatis).</li>
                     <li>Akun <a href="https://aksatax.id" target="_blank">AksaTax</a> paket <b>Business</b> atau lebih tinggi, karena paket Starter tidak mencakup Public API.</li>
-                    <li>API key AksaTax dari Owner/Admin Pajak dengan izin <code>faktur:baca</code>, <code>faktur:tulis</code>, <code>faktur:kirim</code>, <code>bupot:*</code>, dan <code>status:baca</code>.</li>
-                    <li>Satu API key mewakili satu NPWP, jadi tiap perusahaan di Odoo butuh API key sendiri.</li>
+                    <li>API key dari Owner/Admin Pajak dengan izin <code>faktur:baca</code>, <code>faktur:tulis</code>, <code>faktur:kirim</code>, <code>bupot:*</code>, dan <code>status:baca</code>.</li>
+                    <li>Satu API key mewakili satu NPWP, jadi setiap perusahaan di Odoo butuh API key sendiri.</li>
                 </ul>
             </div>
-            <div class="col-md-6" style="margin-bottom: 20px;">
-                <h3 style="color: #333; font-weight: 700;">Mulai dalam 5 langkah</h3>
-                <ol style="color: #555; padding-left: 20px;">
+            <div class="col-md-6" style="margin-bottom: 16px;">
+                <h3 style="font-weight: 800; color: #1f2340;">Mulai dalam 5 langkah</h3>
+                <ol style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
                     <li>Pasang modul <b>Coretax Integration (AksaTax)</b>.</li>
                     <li>Buka <b>Coretax &rsaquo; Pengaturan &rsaquo; Koneksi AksaTax</b>, isi alamat dan API key, lalu klik <b>Uji koneksi</b>.</li>
                     <li>Pilih cara kirim: manual dari faktur atau otomatis saat diposting. Webhook bersifat opsional.</li>
@@ -112,23 +235,27 @@
     </div>
 </section>
 
-<section class="oe_container" style="padding: 32px 0;">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto;">
-        <h3 style="color: #333; font-weight: 700;">Batasan saat ini</h3>
-        <p style="color: #555;">Hal berikut belum tersedia di Public API AksaTax, jadi dilakukan langsung di aplikasi AksaTax (tombol <b>Buka di AksaTax</b> membuka dokumennya):</p>
-        <ul style="color: #555; padding-left: 20px;">
+<!-- Limitations -->
+<section style="padding: 0 16px 40px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <h3 style="font-weight: 800; color: #1f2340;">Batasan saat ini</h3>
+        <p style="color: #5b6075; font-size: 15px;">Hal berikut belum tersedia di Public API AksaTax, jadi dilakukan langsung di aplikasi AksaTax. Tombol <b>Buka di AksaTax</b> membuka dokumennya.</p>
+        <ul style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
             <li>mengubah Lawan Transaksi yang sudah ada;</li>
             <li>membatalkan atau mengganti e-Faktur, nota retur, dan unduh PDF faktur pajak;</li>
             <li>penandatanganan dan pengiriman Bukti Potong ke DJP;</li>
             <li>Faktur Masukan dan SPT;</li>
             <li>kode transaksi 07/08 dan 10.</li>
         </ul>
+        <p style="color: #8a8fa3; font-size: 13px; margin: 16px 0 0;">Screenshot di halaman ini memakai data contoh fiktif.</p>
     </div>
 </section>
 
-<section class="oe_container" style="padding: 32px 0; background: linear-gradient(135deg, #5641d7, #2960e9);">
-    <div class="oe_row" style="max-width: 1000px; margin: 0 auto; text-align: center;">
-        <h3 style="color: #fff; font-weight: 700;">Butuh bantuan?</h3>
-        <p style="color: #fff; font-size: 16px;">Kunjungi <a href="https://aksatax.id" target="_blank" style="color: #fff; text-decoration: underline;">aksatax.id</a> untuk informasi akun dan dukungan.</p>
+<!-- CTA -->
+<section style="padding: 0 16px 24px;">
+    <div style="max-width: 1100px; margin: 0 auto; background: linear-gradient(135deg, #5641d7, #2960e9); border-radius: 16px; padding: 36px 24px; text-align: center;">
+        <h3 style="color: #fff; font-weight: 800; margin-bottom: 8px;">Ada pertanyaan?</h3>
+        <p style="color: rgba(255,255,255,0.92); font-size: 16px; margin-bottom: 20px;">Hubungi kami untuk informasi tentang Coretax Integration.</p>
+        <a href="https://www.aksa.id" target="_blank" style="display: inline-block; background: #fff; color: #3f51e0; font-weight: 700; padding: 12px 28px; border-radius: 8px; text-decoration: none;">Kunjungi www.aksa.id</a>
     </div>
 </section>

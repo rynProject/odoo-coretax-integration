@@ -22,7 +22,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
     "version": "19.0.1.0.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
-    "website": "https://aksatax.id",
+    "website": "https://www.aksa.id",
     "license": "LGPL-3",
     "depends": ["account", "mail", "l10n_id_efaktur_coretax"],
     "external_dependencies": {"python": ["requests"]},
@@ -49,7 +49,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
             "coretax_integration/static/src/dashboard/coretax_dashboard.scss",
         ],
     },
-    "images": ["static/description/banner.png"],
+    "images": ["static/description/banner.png", "static/description/dashboard_screenshot.png"],
     "application": True,
     "installable": True,
 }
