@@ -102,3 +102,63 @@ class TestPphBupot(PphTestCommon):
         bill.button_draft()
         bill.action_post()
         self.assertRecordValues(bupot, [{"fasilitas": "SKD", "nomor_fasilitas": "SKD-1"}])
+
+    def _teknik(self, bill):
+        return bill.coretax_bupot_ids.filtered(lambda b: b.tax_object_id == self.obj_teknik and b.state != "rejected")
+
+    def test_repost_updates_same_bupot(self):
+        bill = self._three_lines()
+        before = self._teknik(bill)
+        bill.button_draft()
+        bill.invoice_line_ids[0].price_unit = 20_000_000
+        bill.action_post()
+        self.assertEqual(self._teknik(bill), before)
+        self.assertEqual(before.jumlah_bruto, 25_000_000)
+
+    def test_reset_and_cancel_blocked_when_bupot_at_aksatax(self):
+        bill = self._three_lines()
+        self._teknik(bill).write({"aksatax_id": "x-1", "state": "draft"})
+        with self.assertRaisesRegex(UserError, "AksaTax"):
+            bill.button_draft()
+        with self.assertRaisesRegex(UserError, "AksaTax"):
+            bill.button_cancel()
+
+    def test_cancel_and_unlink_delete_new_bupots(self):
+        bill = self._three_lines()
+        bill.button_draft()
+        bill.button_cancel()
+        self.assertFalse(bill.coretax_bupot_ids)
+        other = self._three_lines()
+        other.button_draft()
+        bupot_ids = other.coretax_bupot_ids.ids
+        other.unlink()
+        self.assertFalse(self.env["coretax.bupot"].browse(bupot_ids).exists())
+
+    def test_repost_after_rejected_creates_new_bupot(self):
+        bill = self._three_lines()
+        old = self._teknik(bill)
+        old.write({"aksatax_id": "x-1", "state": "rejected"})
+        bill.button_draft()
+        bill.action_post()
+        new = self._teknik(bill)
+        self.assertTrue(new and new != old)
+        self.assertEqual(old.state, "rejected")
+
+    def test_partial_credit_note_nets_dpp_and_reset_restores(self):
+        bill = self._three_lines()
+        refund = bill._reverse_moves([{"invoice_date": bill.invoice_date}])
+        refund.invoice_line_ids[1:].unlink()
+        refund.invoice_line_ids.price_unit = 4_000_000
+        refund.action_post()
+        self.assertRecordValues(self._teknik(bill), [{"jumlah_bruto": 11_000_000, "pph_gl": 220_000}])
+        self.assertEqual(bill.coretax_bupot_ids.filtered(lambda b: b.tax_object_id == self.obj_sewa).jumlah_bruto, 20_000_000)
+        refund.button_draft()
+        self.assertEqual(self._teknik(bill).jumlah_bruto, 15_000_000)
+
+    def test_credit_note_on_sent_bupot_schedules_activity(self):
+        bill = self._three_lines()
+        sent = self._teknik(bill)
+        sent.write({"aksatax_id": "x-1", "state": "approved"})
+        bill._reverse_moves([{"invoice_date": bill.invoice_date}], cancel=True)
+        self.assertEqual(sent.jumlah_bruto, 15_000_000)
+        self.assertTrue(bill.activity_ids.filtered(lambda a: sent.name in (a.summary or "")))

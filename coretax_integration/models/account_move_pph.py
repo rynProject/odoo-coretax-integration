@@ -35,6 +35,8 @@ class AccountMove(models.Model):
     def _coretax_sync_bupot(self):
         """Samakan bukti potong otomatis (satu per kode objek) dengan baris PPh tagihan terposting."""
         Bupot = self.env["coretax.bupot"].with_context(coretax_bupot_sync=True)
+        # state yang baru berubah (mis. ditolak) harus sudah di DB sebelum INSERT, agar unique index melihatnya
+        Bupot.flush_model(["state"])
         for bill in self.filtered(lambda m: m.state == "posted"):
             groups = bill._coretax_pph_groups()
             rates = {}
@@ -69,13 +71,73 @@ class AccountMove(models.Model):
                     else:
                         to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena DPP-nya menjadi 0 "
                                                    "setelah nota kredit.", tax_object.code)))
-                # sudah di AksaTax dan DPP berubah: ditangani Task 4 (peringatan + aktivitas)
+                elif bupot.jumlah_bruto != dpp:
+                    # sudah di AksaTax: jangan diubah, beri peringatan dan aktivitas pembetulan
+                    bill._coretax_warn_sent_bupot(bupot, dpp)
             for bupot in active.filtered(lambda b: b.state in EDITABLE_STATES and b.tax_object_id not in groups):
                 to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena tagihan tidak lagi memuat "
                                            "PPh tersebut.", bupot.tax_object_id.code)))
             for bupot, note in to_delete:
                 bupot.with_context(coretax_bupot_sync=True).unlink()
                 bill.message_post(body=note)
+
+    def _coretax_warn_sent_bupot(self, bupot, new_dpp):
+        """Catat dan jadwalkan aktivitas saat DPP bupot yang sudah di AksaTax berubah."""
+        self.ensure_one()
+        old_dpp = bupot.jumlah_bruto
+        bupot.message_post(body=_(
+            "DPP tagihan berubah dari %(old)s menjadi %(new)s, tetapi bukti potong ini sudah ada di AksaTax "
+            "dan tidak diubah otomatis.", old=old_dpp, new=new_dpp))
+        user = self.invoice_user_id or self.create_uid
+        if not user or user == self.env.ref("base.user_root"):
+            return
+        note = _("DPP tagihan %(bill)s berubah dari %(old)s menjadi %(new)s, sedangkan bukti potong %(bupot)s "
+                 "sudah ada di AksaTax. Lakukan pembetulan atau pembatalan bukti potong di AksaTax.",
+                 bill=self.name, old=old_dpp, new=new_dpp, bupot=bupot.name)
+        self.activity_schedule("mail.mail_activity_data_todo", user_id=user.id,
+                               summary=_("Pembetulan bukti potong %s", bupot.name), note=note)
+
+    def _coretax_bupot_guard(self, action_label):
+        sent = self.coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b._coretax_is_at_aksatax())
+        if sent:
+            raise UserError(_(
+                "Tagihan %(moves)s punya bukti potong yang sudah ada di AksaTax (%(bupots)s). Batalkan dulu "
+                "bukti potongnya di AksaTax sebelum %(action)s tagihan ini.",
+                moves=", ".join(sent.move_id.mapped("name")), bupots=", ".join(sent.mapped("name")),
+                action=action_label))
+
+    def _coretax_refund_parents(self):
+        """Tagihan induk terposting dari nota kredit/debit pembelian di `self`."""
+        parents = self.filtered(lambda m: m.move_type == "in_refund").reversed_entry_id
+        return parents.filtered(lambda m: m.state == "posted" and m.move_type in ("in_invoice", "in_receipt"))
+
+    def _coretax_delete_editable_bupots(self, note=None):
+        editable = self.coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b.state in EDITABLE_STATES)
+        moves = editable.move_id
+        editable.with_context(coretax_bupot_sync=True).unlink()
+        if note:
+            for move in moves:
+                move.message_post(body=note)
+
+    def button_draft(self):
+        self._coretax_bupot_guard(_("mengembalikan ke draft"))
+        parents = self._coretax_refund_parents()
+        res = super().button_draft()
+        parents._coretax_sync_bupot()
+        return res
+
+    def button_cancel(self):
+        self._coretax_bupot_guard(_("membatalkan"))
+        parents = self._coretax_refund_parents()
+        res = super().button_cancel()
+        self._coretax_delete_editable_bupots(_("Bukti potong yang belum dikirim dihapus karena tagihan dibatalkan."))
+        parents._coretax_sync_bupot()
+        return res
+
+    def unlink(self):
+        self._coretax_bupot_guard(_("menghapus"))
+        self._coretax_delete_editable_bupots()
+        return super().unlink()
 
     def _post(self, soft=True):
         posted = super()._post(soft=soft)
