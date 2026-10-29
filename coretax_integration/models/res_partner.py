@@ -266,6 +266,40 @@ class ResPartner(models.Model):
                        "next": {"type": "ir.actions.client", "tag": "soft_reload"}},
         }
 
+    def action_coretax_update_counterparty(self):
+        """Kirim data kontak terbaru ke lawan transaksi AksaTax yang sudah tertaut."""
+        connection = self.env["coretax.connection"]._for_company(self.env.company)
+        partners = self.commercial_partner_id
+        if not partners:
+            raise UserError(_("Pilih minimal satu kontak."))
+        done, problems = [], []
+        for partner in partners:
+            if not partner.coretax_counterparty_id:
+                problems.append(_("Cocokkan dulu kontak %s dengan AksaTax.", partner.display_name))
+                continue
+            try:
+                row = connection._client(partner).update_counterparty(
+                    partner.coretax_counterparty_id, partner._coretax_counterparty_payload(connection))
+            except AksaTaxError as exc:
+                problems.append(f"{partner.display_name}: {exc.full_message()}")
+                continue
+            partner._coretax_set_counterparty(row)
+            partner.message_post(body=_("Data kontak diperbarui di AksaTax (%s).", row.get("nama") or partner.name))
+            done.append(partner.display_name)
+        if len(partners) == 1:
+            if problems:
+                raise UserError(problems[0])
+            return True
+        message = _("%s kontak diperbarui di AksaTax.", len(done))
+        if problems:
+            message += " " + _("Gagal (%s): %s", len(problems), " ".join(problems[:5]))
+        return {
+            "type": "ir.actions.client", "tag": "display_notification",
+            "params": {"title": _("Perbarui di AksaTax"), "message": message, "sticky": bool(problems),
+                       "type": "success" if not problems else "warning",
+                       "next": {"type": "ir.actions.client", "tag": "soft_reload"}},
+        }
+
     def action_coretax_match(self):
         self.ensure_one()
         return {
