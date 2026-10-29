@@ -183,4 +183,23 @@
             </form>
         </field>
     </record>
+    <record id="view_coretax_faktur_cancel_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.faktur.cancel.wizard.form</field>
+        <field name="model">coretax.faktur.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Batalkan e-Faktur">
+                <div class="alert alert-warning" role="status">
+                    Pembatalan diajukan ke DJP dan tidak bisa ditarik kembali. Tulis alasan yang jelas (minimal 5 karakter).
+                </div>
+                <group>
+                    <field name="faktur_id" readonly="1" options="{'no_open': True}"/>
+                    <field name="alasan" placeholder="Contoh: Salah harga satuan"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Ajukan pembatalan" class="btn-primary"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 </odoo>

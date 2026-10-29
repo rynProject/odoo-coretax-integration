@@ -30,6 +30,8 @@
                             <div class="d-flex flex-column gap-2" colspan="2">
                                 <button name="action_coretax_register" type="object" string="Daftarkan ke AksaTax"
                                         class="btn-primary" icon="fa-user-plus" invisible="coretax_match_state != 'unmatched'"/>
+                                <button name="action_coretax_update_counterparty" type="object" string="Perbarui di AksaTax"
+                                        icon="fa-refresh" invisible="coretax_match_state != 'matched'"/>
                                 <button name="action_coretax_match" type="object" string="Cocokkan dengan AksaTax"
                                         icon="fa-search" invisible="coretax_match_state == 'no_id'"/>
                                 <button name="action_coretax_unlink" type="object" string="Lepas tautan" class="btn-link"
@@ -53,6 +55,8 @@
                     <button name="action_coretax_register" type="object" string="Daftarkan ke AksaTax" class="btn-primary"
                             icon="fa-user-plus"/>
                     <button name="action_coretax_match_all" type="object" string="Cocokkan yang dipilih" icon="fa-link"/>
+                    <button name="action_coretax_update_counterparty" type="object" string="Perbarui di AksaTax"
+                            icon="fa-refresh"/>
                 </header>
                 <field name="name" string="Nama"/>
                 <field name="vat" string="NPWP"/>

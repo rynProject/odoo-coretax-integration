@@ -8,15 +8,19 @@ CP_ID = "22222222-2222-4222-8222-222222222222"
 
 
 class FakeResponse:
-    def __init__(self, status, body=None, headers=None):
+    def __init__(self, status, body=None, headers=None, raw=None):
         self.status_code = status
         self._body = body
         self.headers = {"X-Request-Id": "req-test", **(headers or {})}
-        self.content = json.dumps(body).encode() if body is not None else b""
-        self.text = self.content.decode()
+        self._raw = raw
+        if raw is not None:
+            self.content = raw
+        else:
+            self.content = json.dumps(body).encode() if body is not None else b""
+        self.text = self.content.decode(errors="replace")
 
     def json(self):
-        if self._body is None:
+        if self._raw is not None or self._body is None:
             raise ValueError("no json")
         return self._body
 
@@ -35,9 +39,14 @@ class FakeAksaTax:
                            "json": json.loads(data) if data else None})
         for (route_method, route_path), answer in self.routes.items():
             if route_method == method and route_path == path:
-                status, body = answer(params, json.loads(data) if data else None) if callable(answer) else answer
+                if callable(answer):
+                    answer = answer(params, json.loads(data) if data else None)
+                if isinstance(answer, FakeResponse):
+                    return answer
+                status, body = answer
                 return FakeResponse(status, body)
-        return FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": "Tidak ditemukan"}})
+        # Rute tidak dikenal: amplop AksaTax asli (AllExceptionsFilter atas NotFoundException NestJS).
+        return FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": f"Cannot {method} /api/v1/public{path}"}})
 
 
 def faktur_body(status="DRAFT", **extra):

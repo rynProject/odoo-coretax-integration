@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timezone
 
 from dateutil.relativedelta import relativedelta
@@ -19,6 +20,7 @@ STATES = [
     ("rejected", "Ditolak DJP"),
     ("cancel_requested", "Pembatalan diajukan"),
     ("cancelled", "Dibatalkan"),
+    ("replaced", "Diganti"),
     ("error", "Gagal - perlu tindakan"),
 ]
 REMOTE_STATES = {
@@ -33,6 +35,8 @@ LOCKING_STATES = ("submitted", "processing", "approved", "cancel_requested")
 SENDABLE_STATES = ("draft", "validated")
 # Boleh dibuat ulang dari Odoo (dokumen lama diarsipkan).
 RECREATE_STATES = ("rejected", "cancelled", "error")
+# PDF resmi faktur pajak tersedia setelah disetujui DJP (juga untuk yang sudah diminta batal/diganti).
+PDF_STATES = ("approved", "cancel_requested", "cancelled", "replaced")
 ATTENTION_STATES = ("rejected", "error")
 IN_PROGRESS_STATES = ("pending_approval", "validated", "submitted", "processing", "cancel_requested")
 # Kode barang/jasa umum 000000 yang diberikan Odoo ke produk baru (l10n_id_efaktur_coretax).
@@ -103,6 +107,12 @@ class CoretaxFaktur(models.Model):
     total_ppnbm = fields.Monetary(string="PPnBM", readonly=True)
     last_error = fields.Text(string="Keterangan dari AksaTax/DJP", readonly=True)
     error_code = fields.Char(string="Kode galat", readonly=True, copy=False)
+    cancel_attempt = fields.Integer(string="Percobaan batal", default=0, readonly=True, copy=False)
+    replace_requested = fields.Boolean(string="Penggantian dibuka", default=False, copy=False, tracking=True)
+    replaces_id = fields.Many2one("coretax.faktur", string="Mengganti e-Faktur", copy=False, readonly=True,
+                                  index=True, ondelete="set null")
+    replaced_by_id = fields.Many2one("coretax.faktur", string="Diganti oleh", copy=False, readonly=True,
+                                     ondelete="set null")
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     submitted_at = fields.Datetime(string="Dikirim ke DJP pada", readonly=True, copy=False)
     last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
@@ -122,6 +132,28 @@ class CoretaxFaktur(models.Model):
             rec.attention = rec.state in ATTENTION_STATES or bool(
                 rec.state in SENDABLE_STATES and rec.send_mode == "send" and rec.last_error)
             rec.in_progress = rec.state in IN_PROGRESS_STATES
+
+    def write(self, vals):
+        state = vals.get("state")
+        # Kembali ke "approved" dari "cancel_requested" = DJP menolak pembatalan (AksaTax tidak mengirim event).
+        cancel_rejected = self.filtered(lambda r: r.state == "cancel_requested") if state == "approved" else self.browse()
+        if state in ("cancel_requested", "cancelled") and "replace_requested" not in vals:
+            # Pembatalan (juga dari AksaTax web) menutup penggantian yang masih dibuka.
+            vals = {**vals, "replace_requested": False}
+        result = super().write(vals)
+        if state == "approved":
+            for rec in self:
+                old = rec.replaces_id
+                if old and old.state == "approved":
+                    old.write({"state": "replaced", "replaced_by_id": rec.id, "replace_requested": False})
+                    rec.move_id.message_post(body=_("e-Faktur %(old)s diganti oleh %(new)s.",
+                                                    old=old.nomor_faktur or old.display_name,
+                                                    new=rec.nomor_faktur or rec.display_name))
+            for rec in cancel_rejected:
+                reason = re.sub(r"^Pembatalan ditolak:\s*", "", rec.last_error or "").strip().rstrip(".")
+                rec.move_id.message_post(body=_("Pembatalan e-Faktur tidak berhasil: %s. e-Faktur tetap berlaku.",
+                                                reason or _("tanpa keterangan")))
+        return result
 
     def _compute_aksatax_url(self):
         for rec in self:
@@ -145,7 +177,7 @@ class CoretaxFaktur(models.Model):
         self.ensure_one()
         vals = {"last_sync": fields.Datetime.now()}
         state = REMOTE_STATES.get((data.get("status") or "").upper())
-        if state:
+        if state and not (self.state == "replaced" and state == "approved"):
             vals["state"] = state
         mapping = {
             "id": "aksatax_id", "nomorFaktur": "nomor_faktur", "kodeApproval": "kode_approval",
@@ -174,6 +206,8 @@ class CoretaxFaktur(models.Model):
             "faktur.submitted": "submitted", "faktur.approved": "approved",
             "faktur.rejected": "rejected", "faktur.cancelled": "cancelled",
         }.get(event.get("type"))
+        if self.state == "replaced" and state == "approved":
+            state = None  # AksaTax tidak tahu e-Faktur ini sudah diganti; tetap Diganti
         if state:
             vals["state"] = state
         if data.get("nomor"):
@@ -222,6 +256,41 @@ class CoretaxFaktur(models.Model):
                        "send_attempt": rec.send_attempt + 1, "submitted_at": fields.Datetime.now(), "last_error": False})
         return True
 
+    def action_open_cancel_wizard(self):
+        self.ensure_one()
+        if self.state != "approved" or not self.aksatax_id:
+            raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP yang bisa dibatalkan."))
+        return {"type": "ir.actions.act_window", "res_model": "coretax.faktur.cancel.wizard",
+                "view_mode": "form", "target": "new", "name": _("Batalkan e-Faktur"),
+                "context": {"default_faktur_id": self.id}}
+
+    def action_request_replacement(self):
+        """Buka penggantian: faktur Odoo boleh di-reset ke draft, diperbaiki, lalu dikirim sebagai faktur pengganti."""
+        for rec in self:
+            if rec.replaces_id:
+                # AksaTax memakai ulang NSFP faktur asal dengan fgPengganti=1: satu faktur hanya diganti sekali.
+                raise UserError(_("e-Faktur ini sudah merupakan pengganti. "
+                                  "Penggantian berikutnya lakukan di AksaTax atau DJP."))
+            if rec.state != "approved" or rec.replace_requested:
+                raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP dan belum dibuka penggantiannya yang bisa diganti."))
+            rec.replace_requested = True
+            rec.move_id.message_post(body=_(
+                "Penggantian e-Faktur dibuka. Reset faktur ke draft, perbaiki, lalu kirim lagi sebagai faktur pengganti."))
+        return True
+
+    def action_cancel_replacement(self):
+        for rec in self:
+            if not rec.replace_requested:
+                raise UserError(_("Penggantian e-Faktur ini belum dibuka."))
+            if self.with_context(active_test=False).search_count([("replaces_id", "=", rec.id)]):
+                raise UserError(_("Penggantian sudah dikirim. Perbaiki lalu kirim ulang faktur pengganti dari faktur Odoo."))
+            if rec.move_id.state != "posted":
+                # faktur draft tanpa penggantian terbuka tidak lagi cocok dengan e-Faktur yang berlaku di DJP
+                raise UserError(_("Posting faktur dulu, lalu batalkan penggantian."))
+            rec.replace_requested = False
+            rec.move_id.message_post(body=_("Penggantian e-Faktur dibatalkan."))
+        return True
+
     def action_refresh(self):
         for rec in self.filtered("aksatax_id"):
             connection = self.env["coretax.connection"]._for_company(rec.company_id)
@@ -230,6 +299,37 @@ class CoretaxFaktur(models.Model):
             except AksaTaxError as exc:
                 raise UserError(exc.full_message()) from exc
         return True
+
+    def action_download_pdf(self):
+        """Unduh PDF faktur pajak dari AksaTax, simpan sebagai lampiran faktur Odoo
+        (satu lampiran per nomor faktur, ditimpa bila diunduh ulang)."""
+        self.ensure_one()
+        if self.state not in PDF_STATES or not self.aksatax_id:
+            raise UserError(_("PDF faktur pajak baru tersedia setelah e-Faktur disetujui DJP. "
+                              "Perbarui status e-Faktur lalu coba lagi."))
+        connection = self.env["coretax.connection"]._for_company(self.company_id)
+        try:
+            content = connection._client(self).faktur_pdf(self.aksatax_id)
+        except AksaTaxError as exc:
+            raise UserError(exc.full_message()) from exc
+        if not content:
+            raise UserError(_("PDF dari AksaTax kosong. Coba lagi nanti atau periksa dokumennya di AksaTax."))
+        if not content.startswith(b"%PDF-"):
+            raise UserError(_("Berkas dari AksaTax bukan PDF. Coba lagi nanti atau unduh dari AksaTax."))
+        name = f"Faktur Pajak {self.nomor_faktur or self.aksatax_id}.pdf"
+        # Pengguna sudah lolos hak akses coretax.faktur; PDF milik faktur ini, jadi lampiran ditulis sebagai sudo
+        # (hak baca faktur saja tidak cukup untuk membuat lampiran). Unduhan tetap memeriksa hak baca faktur.
+        Attachment = self.env["ir.attachment"].sudo()
+        attachment = Attachment.search([
+            ("res_model", "=", "account.move"), ("res_id", "=", self.move_id.id), ("name", "=", name)], limit=1)
+        if attachment:
+            attachment.write({"raw": content, "mimetype": "application/pdf"})
+        else:
+            attachment = Attachment.create({
+                "name": name, "raw": content, "mimetype": "application/pdf",
+                "res_model": "account.move", "res_id": self.move_id.id})
+        return {"type": "ir.actions.act_url", "url": f"/web/content/{attachment.id}?download=true",
+                "target": "self"}
 
     def action_recreate(self):
         """Buat ulang e-Faktur dari faktur Odoo (setelah ditolak/dibatalkan/gagal)."""
