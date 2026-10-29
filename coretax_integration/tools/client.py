@@ -37,6 +37,7 @@ FRIENDLY_ERRORS = {
     "IDEMPOTENCY_CONFLICT": "Dokumen ini pernah dikirim dengan isi berbeda. Buat ulang e-Faktur dari Odoo.",
     "IDEMPOTENCY_IN_PROGRESS": "Kiriman sebelumnya masih diproses AksaTax. Coba lagi beberapa detik lagi.",
     "NOT_FOUND": "Dokumen tidak ditemukan di AksaTax (mungkin sudah dihapus di sana).",
+    "NOT_SUPPORTED": "Fitur ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server.",
     "UNAVAILABLE": "Layanan AksaTax sedang tidak tersedia. Coba lagi nanti.",
 }
 STATUS_ERRORS = {
@@ -87,12 +88,12 @@ class AksaTaxClient:
         self.timeout = timeout
 
     # ── inti ──────────────────────────────────────────────────────────
-    def request(self, method, path, params=None, payload=None, idempotency_key=None, operation=""):
+    def request(self, method, path, params=None, payload=None, idempotency_key=None, operation="", raw=False):
         if not self.base_url or not self.api_key:
             raise AksaTaxError("Koneksi AksaTax belum diatur. Isi alamat dan API key di Coretax › Pengaturan › Koneksi AksaTax.",
                                code="NOT_CONFIGURED")
         url = f"{self.base_url}{API_PREFIX}{path}"
-        headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/json",
+        headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/pdf, application/json" if raw else "application/json",
                    "User-Agent": "Odoo-Coretax-Integration/1.0"}
         if payload is not None:
             headers["Content-Type"] = "application/json"
@@ -116,6 +117,11 @@ class AksaTaxClient:
             raise error from exc
 
         request_id = response.headers.get("X-Request-Id")
+        if raw and response.status_code < 400:
+            content = response.content or b""
+            self._log(method, path, operation, response, started, payload=payload,
+                      body={"binary": True, "bytes": len(content)})
+            return content
         body = None
         if response.content:
             try:
@@ -142,9 +148,13 @@ class AksaTaxClient:
         return response
 
     def _error_from_response(self, response, body, request_id):
-        err = (body or {}).get("error") if isinstance(body, dict) else None
+        err = body.get("error") if isinstance(body, dict) else None
+        if not isinstance(err, dict):  # NestJS 404 bawaan: "error" berupa string
+            err = None
         code = (err or {}).get("code") or STATUS_ERRORS.get(response.status_code) or (
             "UNAVAILABLE" if response.status_code >= 500 else "HTTP_%s" % response.status_code)
+        if response.status_code == 404 and not err:
+            code = "NOT_SUPPORTED"  # rute belum ada di AksaTax versi lama
         if response.status_code == 403 and err and "paket" in (err.get("message") or "").lower():
             code = "PLAN_FEATURE"
         friendly = FRIENDLY_ERRORS.get(code)
@@ -221,3 +231,14 @@ class AksaTaxClient:
     def create_bupot_unifikasi(self, payload, idempotency_key):
         return self.request("POST", "/bupot-unifikasi", payload=payload, idempotency_key=idempotency_key,
                             operation="Buat bukti potong (draft)")
+
+    def update_counterparty(self, counterparty_id, payload):
+        return self.request("PUT", f"/lawan-transaksi/{counterparty_id}", payload=payload,
+                            operation="Perbarui lawan transaksi")
+
+    def cancel_faktur(self, faktur_id, alasan, idempotency_key):
+        return self.request("POST", f"/faktur/{faktur_id}/batal", payload={"alasan": alasan},
+                            idempotency_key=idempotency_key, operation="Batalkan e-Faktur")
+
+    def faktur_pdf(self, faktur_id):
+        return self.request("GET", f"/faktur/{faktur_id}/pdf", operation="Unduh PDF e-Faktur", raw=True)
