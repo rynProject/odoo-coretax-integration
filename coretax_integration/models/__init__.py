@@ -3,6 +3,7 @@ from . import coretax_connection
 from . import coretax_faktur
 from . import coretax_bupot
 from . import account_move
+from . import account_move_pph
 from . import res_partner
 from . import account_tax
 from . import account_move_line
