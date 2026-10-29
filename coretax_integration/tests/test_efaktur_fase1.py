@@ -53,3 +53,52 @@ class TestEfakturFase1(CoretaxTestCommon):
             "code": "COUNTERPARTY_EXISTS", "message": "NPWP sudah dipakai lawan transaksi lain"}})})
         with patcher, self.assertRaisesRegex(UserError, "NPWP sudah dipakai lawan transaksi lain"):
             self.partner_a.action_coretax_update_counterparty()
+
+    # ── kode transaksi 07/08 ──────────────────────────────────────────
+    def _zero_tax(self):
+        # Kode 07/08 mewajibkan PPN 0%, jadi buat pajak 0% dari grup pajak 0 l10n_id.
+        group = self.env["account.chart.template"].with_company(self.company_data["company"]).ref(
+            "l10n_id_tax_group_0")
+        return self.tax_sale_a.copy({"name": "PPN 0% uji", "amount": 0.0, "tax_group_id": group.id})
+
+    def _invoice_code(self, code, add_info=None):
+        move = self._invoice(invoice_line_ids=[(0, 0, {
+            "product_id": self.product_a.id, "quantity": 2, "price_unit": 50000,
+            "tax_ids": [(6, 0, self._zero_tax().ids)]})])
+        move.l10n_id_kode_transaksi = code
+        if add_info:
+            move["l10n_id_coretax_add_info_%s" % code] = add_info
+        return move
+
+    def _errors(self, move):
+        return [msg for level, msg in move._coretax_check() if level == "error"]
+
+    def test_code_07_sends_keterangan(self):
+        move = self._invoice_code("07", "TD.00505")
+        payload = move._coretax_payload(CP_ID)
+        self.assertEqual(payload["idKeteranganTambahan"], "5")
+        self.assertEqual(payload["kdJenisTransaksi"], "07")
+        self.assertEqual(self._errors(move), [])
+
+    def test_code_07_two_digit_keterangan(self):
+        move = self._invoice_code("07", "TD.00530")
+        self.assertEqual(move._coretax_payload(CP_ID)["idKeteranganTambahan"], "30")
+
+    def test_code_08_sends_keterangan(self):
+        move = self._invoice_code("08", "TD.00510")
+        payload = move._coretax_payload(CP_ID)
+        self.assertEqual(payload["idKeteranganTambahan"], "10")
+        self.assertEqual(payload["kdJenisTransaksi"], "08")
+        self.assertEqual(self._errors(move), [])
+
+    def test_code_07_requires_keterangan(self):
+        move = self._invoice_code("07")
+        self.assertTrue(any("keterangan tambahan" in e for e in self._errors(move)))
+
+    def test_code_10_still_unsupported(self):
+        move = self._invoice_code("10")
+        self.assertTrue(any("belum didukung" in e for e in self._errors(move)))
+
+    def test_code_01_has_no_keterangan(self):
+        move = self._invoice_code("01")
+        self.assertNotIn("idKeteranganTambahan", move._coretax_payload(CP_ID))

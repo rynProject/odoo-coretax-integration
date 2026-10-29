@@ -8,9 +8,9 @@ from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STAT
 
 _logger = logging.getLogger(__name__)
 
-# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-09). 07/08 butuh
-# keterangan tambahan yang belum bisa dipetakan; 10 belum didukung AksaTax.
-SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "09"}
+# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-09). 07/08 ikut
+# mengirim keterangan tambahan; 10 belum didukung AksaTax.
+SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09"}
 
 
 class AccountMove(models.Model):
@@ -78,11 +78,10 @@ class AccountMove(models.Model):
         code = self.l10n_id_kode_transaksi
         if not code:
             issues.append(("error", _("Kode transaksi e-Faktur belum dipilih (tab Lainnya / Other Info faktur).")))
-        elif code in ("07", "08"):
-            issues.append(("error", _("Kode transaksi %s (dengan keterangan tambahan/fasilitas) belum bisa dikirim "
-                                      "lewat integrasi. Buat e-Faktur ini langsung di AksaTax.", code)))
         elif code not in SUPPORTED_TRX_CODES:
             issues.append(("error", _("Kode transaksi %s belum didukung AksaTax. Buat e-Faktur ini langsung di AksaTax.", code)))
+        elif code in ("07", "08") and not self._coretax_keterangan_tambahan():
+            issues.append(("error", _("Pilih keterangan tambahan untuk kode transaksi %s (tab Info Lainnya).", code)))
         partner = self.commercial_partner_id
         if not partner._coretax_identity():
             issues.append(("error", _("Pelanggan %s belum punya NPWP atau NIK.", partner.display_name)))
@@ -140,6 +139,15 @@ class AccountMove(models.Model):
             })
         return result
 
+    def _coretax_keterangan_tambahan(self):
+        """ID keterangan tambahan (mis. 'TD.00530' -> '30') untuk kode 07/08, '' bila tidak ada."""
+        self.ensure_one()
+        code = self.l10n_id_kode_transaksi
+        if code not in ("07", "08"):
+            return ""
+        value = self["l10n_id_coretax_add_info_%s" % code]
+        return str(int(value[-2:])) if value else ""
+
     def _coretax_payload(self, counterparty_id):
         self.ensure_one()
         payload = {
@@ -151,6 +159,9 @@ class AccountMove(models.Model):
             "referensi": (self.name or "")[:100],
             "items": self._coretax_line_vals(),
         }
+        keterangan = self._coretax_keterangan_tambahan()
+        if keterangan:
+            payload["idKeteranganTambahan"] = keterangan
         if self.ref:
             payload["nomorDokumenPendukung"] = self.ref[:100]
         return payload
