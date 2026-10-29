@@ -251,6 +251,9 @@ class TestEfakturFase1(CoretaxTestCommon):
             self.assertEqual(payload["fgPengganti"], "1")
             self.assertEqual(payload["nomorFakturDiganti"], self.OLD_NUMBER)
             self.assertEqual(new.replaces_id, old)
+            self.assertEqual(new.state, "submitted")
+            self.assertFalse(move.coretax_can_send)
+            self.assertTrue(any("Sudah punya" in e for e in self._errors(move)))
             self.connection._process_event(self._event("faktur.approved", "APPROVED", 100))
         self.assertEqual(old.state, "replaced")
         self.assertEqual(old.replaced_by_id, new)
@@ -260,6 +263,11 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertFalse(move.coretax_can_send)
         # event lama untuk e-Faktur yang diganti tidak mengembalikan statusnya
         old._apply_remote(faktur_body("APPROVED"))
+        self.assertEqual(old.state, "replaced")
+        with patcher:
+            self.connection._process_event({
+                "id": "evt_101", "sequence": 101, "type": "faktur.approved",
+                "object": {"type": "faktur", "id": FAKTUR_ID}, "data": {"id": FAKTUR_ID, "status": "APPROVED"}})
         self.assertEqual(old.state, "replaced")
 
     def test_cancel_replacement(self):
@@ -308,3 +316,63 @@ class TestEfakturFase1(CoretaxTestCommon):
         faktur.action_request_replacement()
         with self.assertRaises(UserError):
             faktur.action_request_replacement()
+
+    def test_cancel_blocked_after_rejected_replacement(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body(
+            "REJECTED", id=self.NEW_ID, lastError="Ditolak"))}))
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+            self.connection._process_event(self._event("faktur.rejected", "REJECTED", 102))
+        self.assertEqual(new.state, "rejected")
+        with self.assertRaises(UserError):
+            move.button_cancel()
+        with self.assertRaisesRegex(UserError, "kirim ulang faktur pengganti"):
+            old.action_cancel_replacement()
+        move.button_draft()
+
+    def test_cancel_blocked_after_errored_replacement(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch({("POST", "/faktur"): (422, {"error": {"code": "INVALID", "message": "Data salah"}})})
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+        self.assertEqual(new.state, "error")
+        with self.assertRaises(UserError):
+            move.button_cancel()
+
+    def test_old_cancelled_stays_cancelled_when_replacement_approved(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body(
+            "APPROVED", id=self.NEW_ID, nomorFaktur="0400260000000002"))}))
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+            old.state = "cancelled"
+            self.connection._process_event(self._event("faktur.approved", "APPROVED", 103))
+        self.assertEqual(new.state, "approved")
+        self.assertEqual(old.state, "cancelled")
+        self.assertFalse(old.replaced_by_id)
+
+    def test_replacement_needs_old_number(self):
+        move, old = self._approved_faktur()
+        old.action_request_replacement()
+        self.assertTrue(any("Nomor Faktur Pajak e-Faktur lama belum ada" in e for e in self._errors(move)))
+        old.nomor_faktur = self.OLD_NUMBER
+        self.assertFalse(any("e-Faktur lama belum ada" in e for e in self._errors(move)))
+
+    def test_cancel_clears_replace_requested(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        fake, patcher = self._patch(self._cancel_routes())
+        with patcher:
+            self._cancel(old, "Salah harga satuan")
+        self.assertFalse(old.replace_requested)
+        self.assertEqual(old.state, "cancel_requested")

@@ -135,7 +135,7 @@ class CoretaxFaktur(models.Model):
         if vals.get("state") == "approved":
             for rec in self:
                 old = rec.replaces_id
-                if old and old.state != "replaced":
+                if old and old.state == "approved":
                     old.write({"state": "replaced", "replaced_by_id": rec.id, "replace_requested": False})
                     rec.move_id.message_post(body=_("e-Faktur %(old)s diganti oleh %(new)s.",
                                                     old=old.nomor_faktur or old.display_name,
@@ -266,7 +266,7 @@ class CoretaxFaktur(models.Model):
             if not rec.replace_requested:
                 raise UserError(_("Penggantian e-Faktur ini belum dibuka."))
             if self.with_context(active_test=False).search_count([("replaces_id", "=", rec.id)]):
-                raise UserError(_("e-Faktur pengganti sudah dibuat, penggantian tidak bisa dibatalkan lagi."))
+                raise UserError(_("Penggantian sudah dikirim. Perbaiki lalu kirim ulang faktur pengganti dari faktur Odoo."))
             rec.replace_requested = False
             rec.move_id.message_post(body=_("Penggantian e-Faktur dibatalkan."))
         return True

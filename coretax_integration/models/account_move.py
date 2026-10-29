@@ -45,7 +45,7 @@ class AccountMove(models.Model):
         """e-Faktur (termasuk yang diarsipkan) yang disetujui dan penggantiannya dibuka, maksimal satu.
         Dicari di semua versi: bila pengganti ditolak, versi terakhir adalah yang ditolak."""
         self.ensure_one()
-        return self.with_context(active_test=False).coretax_faktur_ids.filtered(
+        return self.sudo().with_context(active_test=False).coretax_faktur_ids.filtered(
             lambda f: f.state == "approved" and f.replace_requested)[:1]
 
     def _coretax_is_candidate(self):
@@ -77,6 +77,10 @@ class AccountMove(models.Model):
                 and self.coretax_faktur_id != self._coretax_replacing()):
             label = dict(STATES).get(self.coretax_state)
             issues.append(("error", _("Sudah punya e-Faktur (%s). Tidak dikirim lagi.", label)))
+        replacing = self._coretax_replacing()
+        if replacing and not replacing.nomor_faktur:
+            issues.append(("error", _("Nomor Faktur Pajak e-Faktur lama belum ada. "
+                                      "Klik Perbarui status di e-Faktur lama dulu.")))
         if self.currency_id != self.env.ref("base.IDR"):
             issues.append(("error", _("Mata uang faktur %s - e-Faktur harus dalam Rupiah (IDR).", self.currency_id.name)))
         if not self.invoice_line_ids.tax_ids:
@@ -304,8 +308,14 @@ class AccountMove(models.Model):
         return posted
 
     def _coretax_guard(self, action_label, allow_replacing=False):
-        locked = self.filtered(lambda m: m.coretax_state in LOCKING_STATES
-                               and not (allow_replacing and m.coretax_faktur_id == m._coretax_replacing()))
+        def is_locked(move):
+            replacing = move._coretax_replacing()
+            if move.coretax_state in LOCKING_STATES and not (allow_replacing and move.coretax_faktur_id == replacing):
+                return True
+            # e-Faktur lama masih hidup di DJP walau versi terakhir (pengganti) ditolak/gagal
+            return bool(replacing) and not allow_replacing
+
+        locked = self.filtered(is_locked)
         if locked:
             raise UserError(_(
                 "Faktur %(moves)s sudah punya e-Faktur di DJP (%(state)s). Batalkan dulu e-Faktur-nya di AksaTax "

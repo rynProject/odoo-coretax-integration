@@ -37,7 +37,7 @@ class CoretaxFakturCancelWizard(models.TransientModel):
             faktur.write({"last_error": exc.full_message()})
             raise UserError(exc.full_message()) from exc
         faktur.write({"state": REMOTE_STATES.get(result.get("status"), "cancel_requested"), "last_error": False,
-                      "cancel_attempt": faktur.cancel_attempt + 1})
+                      "cancel_attempt": faktur.cancel_attempt + 1, "replace_requested": False})
         message = _("Pembatalan e-Faktur diajukan ke DJP. Alasan: %s", alasan)
         faktur.message_post(body=message)
         faktur.move_id.message_post(body=message)
