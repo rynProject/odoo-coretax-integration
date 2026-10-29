@@ -1,3 +1,7 @@
+from unittest.mock import patch
+
+from lxml import etree
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 
@@ -21,12 +25,41 @@ class TestEfakturFase1(CoretaxTestCommon):
         with patcher, self.assertRaisesRegex(AksaTaxError, "setelah faktur disetujui DJP"):
             self.connection._client(self.connection).faktur_pdf(FAKTUR_ID)
 
+    NOT_SUPPORTED_MESSAGE = "Fitur ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."
+
     def test_route_missing_means_old_aksatax(self):
         fake, patcher = self._patch({})
         with patcher, self.assertRaises(AksaTaxError) as ctx:
             self.connection._client(self.connection).cancel_faktur(FAKTUR_ID, "Salah harga satuan", "k-1")
         self.assertEqual(ctx.exception.code, "NOT_SUPPORTED")
         self.assertIn("AksaTax versi terbaru", ctx.exception.full_message())
+
+    def test_route_not_found_envelope_is_not_supported(self):
+        """Amplop asli AksaTax lama untuk rute yang belum ada: error.code NOT_FOUND + "Cannot <METHOD> …"."""
+        for method, call in (
+            ("GET", lambda client: client.faktur_pdf(FAKTUR_ID)),
+            ("POST", lambda client: client.cancel_faktur(FAKTUR_ID, "Salah harga satuan", "k-1")),
+            ("PUT", lambda client: client.update_counterparty(CP_ID, {"nama": "PT Baru"})),
+        ):
+            path = "/api/v1/public/faktur/%s/x" % FAKTUR_ID
+            response = FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": f"Cannot {method} {path}"}})
+            with patch("requests.Session.request", return_value=response), self.assertRaises(AksaTaxError) as ctx:
+                call(self.connection._client(self.connection))
+            self.assertEqual(ctx.exception.code, "NOT_SUPPORTED", method)
+            self.assertEqual(ctx.exception.user_message, self.NOT_SUPPORTED_MESSAGE)
+
+    def test_404_without_error_object_is_not_supported(self):
+        response = FakeResponse(404, {"statusCode": 404, "message": "Cannot GET /x", "error": "Not Found"})
+        with patch("requests.Session.request", return_value=response), self.assertRaises(AksaTaxError) as ctx:
+            self.connection._client(self.connection).get_faktur(FAKTUR_ID)
+        self.assertEqual(ctx.exception.code, "NOT_SUPPORTED")
+
+    def test_domain_404_stays_not_found(self):
+        response = FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": "Faktur tidak ditemukan"}})
+        with patch("requests.Session.request", return_value=response), self.assertRaises(AksaTaxError) as ctx:
+            self.connection._client(self.connection).get_faktur(FAKTUR_ID)
+        self.assertEqual(ctx.exception.code, "NOT_FOUND")
+        self.assertNotEqual(ctx.exception.user_message, self.NOT_SUPPORTED_MESSAGE)
 
     def test_update_counterparty_sends_put(self):
         self.partner_a.coretax_counterparty_id = CP_ID
@@ -368,6 +401,129 @@ class TestEfakturFase1(CoretaxTestCommon):
         old.nomor_faktur = self.OLD_NUMBER
         self.assertFalse(any("e-Faktur lama belum ada" in e for e in self._errors(move)))
 
+    def test_cancel_replacement_needs_posted_invoice(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        with self.assertRaisesRegex(UserError, "Posting faktur dulu, lalu batalkan penggantian."):
+            old.action_cancel_replacement()
+        self.assertTrue(old.replace_requested)
+        move.action_post()
+        old.action_cancel_replacement()
+        self.assertFalse(old.replace_requested)
+
+    def _approved_replacement(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body(
+            "APPROVED", id=self.NEW_ID, nomorFaktur="0400260000000002"))}))
+        with patcher:
+            new = move._coretax_create_faktur(mode="send", connection=self.connection)
+            self.connection._process_event(self._event("faktur.approved", "APPROVED", 104))
+        self.assertEqual(new.state, "approved")
+        self.assertEqual(new.replaces_id, old)
+        return move, old, new
+
+    def test_replacement_cannot_be_replaced_again(self):
+        move, _old, new = self._approved_replacement()
+        message = "e-Faktur ini sudah merupakan pengganti. Penggantian berikutnya lakukan di AksaTax atau DJP."
+        with self.assertRaisesRegex(UserError, message):
+            new.action_request_replacement()
+        with self.assertRaisesRegex(UserError, message):
+            move.action_coretax_request_replacement()
+        self.assertFalse(new.replace_requested)
+        self.assertTrue(move.coretax_is_replacement)
+        self.assertFalse(move._coretax_replacing())
+
+    def test_replace_buttons_hidden_for_replacement(self):
+        move_arch = etree.fromstring(self.env["account.move"].get_view(
+            self.env.ref("account.view_move_form").id, "form")["arch"])
+        [button] = move_arch.xpath("//button[@name='action_coretax_request_replacement']")
+        self.assertIn("coretax_is_replacement", button.get("invisible"))
+        self.assertEqual(button.get("confirm"),
+                         "Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki.")
+        faktur_arch = etree.fromstring(self.env["coretax.faktur"].get_view(
+            self.env.ref("coretax_integration.view_coretax_faktur_form").id, "form")["arch"])
+        [button] = faktur_arch.xpath("//button[@name='action_request_replacement']")
+        self.assertIn("replaces_id", button.get("invisible"))
+
+    def test_original_invoice_is_not_marked_replacement(self):
+        move, faktur = self._approved_faktur()
+        self.assertFalse(move.coretax_is_replacement)
+        faktur.action_request_replacement()
+        self.assertTrue(faktur.replace_requested)
+
+    def test_guard_message_describes_open_replacement(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        move.button_draft()
+        move.action_post()
+        fake, patcher = self._patch(self._resend_routes({("GET", f"/faktur/{self.NEW_ID}"): (200, faktur_body(
+            "REJECTED", id=self.NEW_ID, lastError="Ditolak"))}))
+        with patcher:
+            move._coretax_create_faktur(mode="send", connection=self.connection)
+            self.connection._process_event(self._event("faktur.rejected", "REJECTED", 105))
+        self.assertEqual(move.coretax_state, "rejected")
+        with self.assertRaises(UserError) as ctx:
+            move.button_cancel()
+        message = str(ctx.exception)
+        self.assertIn("(Disetujui DJP)", message)  # e-Faktur lama yang masih berlaku, bukan versi pengganti yang ditolak
+        self.assertNotIn("Ditolak DJP", message)
+        self.assertIn("masih berlaku di DJP", message)
+        self.assertIn("Batalkan e-Faktur", message)
+        self.assertNotIn("di AksaTax", message)
+
+    def test_guard_message_points_to_odoo_buttons(self):
+        move, _faktur = self._approved_faktur()
+        with self.assertRaises(UserError) as ctx:
+            move.button_draft()
+        message = str(ctx.exception)
+        self.assertIn("(Disetujui DJP)", message)
+        self.assertIn("Batalkan e-Faktur", message)
+        self.assertIn("Ganti e-Faktur", message)
+        self.assertNotIn("di AksaTax", message)
+
+    def test_cancelled_event_clears_replace_requested(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        fake, patcher = self._patch({("GET", f"/faktur/{FAKTUR_ID}"): (200, faktur_body("CANCELLED"))})
+        with patcher:
+            self.connection._process_event({
+                "id": "evt_120", "sequence": 120, "type": "faktur.cancelled",
+                "object": {"type": "faktur", "id": FAKTUR_ID}, "data": {"id": FAKTUR_ID, "status": "CANCELLED"}})
+        self.assertEqual(old.state, "cancelled")
+        self.assertFalse(old.replace_requested)
+        self.assertFalse(move._coretax_replacing())
+        move.button_draft()
+
+    def test_cancel_requested_remote_clears_replace_requested(self):
+        move, old = self._approved_with_number()
+        old.action_request_replacement()
+        old._apply_remote(faktur_body("CANCEL_REQUESTED"))
+        self.assertEqual(old.state, "cancel_requested")
+        self.assertFalse(old.replace_requested)
+
+    def test_rejected_cancellation_posts_on_invoice(self):
+        move, faktur = self._approved_faktur()
+        fake, patcher = self._patch(self._cancel_routes())
+        with patcher:
+            self._cancel(faktur, "Salah harga satuan")
+        self.assertEqual(faktur.state, "cancel_requested")
+        faktur._apply_remote(faktur_body("APPROVED", lastError="Pembatalan ditolak: Faktur sudah dikreditkan pembeli"))
+        self.assertEqual(faktur.state, "approved")
+        bodies = " ".join(move.message_ids.mapped("body"))
+        self.assertIn("Pembatalan e-Faktur ditolak DJP: Faktur sudah dikreditkan pembeli. e-Faktur tetap berlaku.",
+                      bodies)
+
+    def test_normal_approval_does_not_post_cancel_rejection(self):
+        move, faktur = self._approved_faktur()
+        faktur.state = "processing"
+        faktur._apply_remote(faktur_body("APPROVED"))
+        self.assertEqual(faktur.state, "approved")
+        self.assertNotIn("Pembatalan e-Faktur ditolak", " ".join(move.message_ids.mapped("body")))
+
     def test_cancel_clears_replace_requested(self):
         move, old = self._approved_with_number()
         old.action_request_replacement()
@@ -400,13 +556,58 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
 
     def test_download_pdf_from_move_uses_latest(self):
-        move, faktur = self._approved_faktur()
-        faktur.nomor_faktur = "0400260000000001"
-        _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))
+        move, v1 = self._approved_faktur()
+        v1.write({"nomor_faktur": "0400260000000001", "state": "replaced", "active": False})
+        v2 = self.env["coretax.faktur"].create({
+            "move_id": move.id, "version": 2, "state": "approved", "aksatax_id": self.NEW_ID,
+            "nomor_faktur": "0400260000000002", "replaces_id": v1.id})
+        self.assertEqual(move.coretax_faktur_id, v2)
+        fake, patcher = self._patch({
+            **self._pdf_route(b"%PDF-1.7 v1"),
+            ("GET", f"/faktur/{self.NEW_ID}/pdf"): FakeResponse(
+                200, raw=b"%PDF-1.7 v2", headers={"Content-Type": "application/pdf"}),
+        })
         with patcher:
             action = move.action_coretax_download_pdf()
-        self.assertEqual(len(self._attachments(move)), 1)
-        self.assertIn("/web/content/", action["url"])
+        self.assertEqual([c["path"] for c in fake.calls], [f"/faktur/{self.NEW_ID}/pdf"])
+        att = self._attachments(move)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att.name, "Faktur Pajak 0400260000000002.pdf")
+        self.assertEqual(att.raw, b"%PDF-1.7 v2")
+        self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
+
+    def test_download_non_pdf_rejected(self):
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = "0400260000000001"
+        _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 lama"))
+        with patcher:
+            faktur.action_download_pdf()
+        _fake, patcher = self._patch(self._pdf_route(b"<html>Gateway error</html>"))
+        with patcher, self.assertRaisesRegex(
+                UserError, "Berkas dari AksaTax bukan PDF. Coba lagi nanti atau unduh dari AksaTax."):
+            faktur.action_download_pdf()
+        att = self._attachments(move)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(att.raw, b"%PDF-1.7 lama")
+
+    def test_download_pdf_as_readonly_coretax_user(self):
+        """Pengguna Coretax dengan hak baca faktur saja tetap bisa menyimpan PDF sebagai lampiran."""
+        move, faktur = self._approved_faktur()
+        faktur.nomor_faktur = "0400260000000001"
+        company = move.company_id
+        groups = self.env.ref("account.group_account_readonly") | self.env.ref("coretax_integration.group_coretax_user")
+        user = self.env["res.users"].create({
+            "name": "Pembaca e-Faktur", "login": "pdf_reader", "company_id": company.id,
+            "company_ids": [(6, 0, company.ids)], "group_ids": [(6, 0, groups.ids)]})
+        self.assertFalse(move.with_user(user).has_access("write"))
+        self.env.invalidate_all()
+        _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))
+        with patcher:
+            action = faktur.with_user(user).action_download_pdf()
+        att = self._attachments(move)
+        self.assertEqual(len(att), 1)
+        self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
+        self.assertTrue(att.with_user(user).has_access("read"))
 
     def test_pdf_requires_approved(self):
         move = self._invoice()

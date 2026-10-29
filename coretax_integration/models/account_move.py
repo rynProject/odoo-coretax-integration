@@ -24,6 +24,14 @@ class AccountMove(models.Model):
     coretax_last_error = fields.Text(related="coretax_faktur_id.last_error", string="Keterangan e-Faktur")
     coretax_can_send = fields.Boolean(string="Bisa dikirim ke Coretax", compute="_compute_coretax_can_send")
     coretax_faktur_count = fields.Integer(compute="_compute_coretax_faktur_id", store=True)
+    coretax_is_replacement = fields.Boolean(string="e-Faktur pengganti", compute="_compute_coretax_is_replacement",
+                                            compute_sudo=True)
+
+    @api.depends("coretax_faktur_id.replaces_id")
+    def _compute_coretax_is_replacement(self):
+        # e-Faktur pengganti tidak bisa diganti lagi dari Odoo (tombol Ganti e-Faktur disembunyikan)
+        for move in self:
+            move.coretax_is_replacement = bool(move.coretax_faktur_id.replaces_id)
 
     @api.depends("coretax_faktur_ids", "coretax_faktur_ids.active", "coretax_faktur_ids.version")
     def _compute_coretax_faktur_id(self):
@@ -313,26 +321,39 @@ class AccountMove(models.Model):
                     _logger.exception("Kirim e-Faktur otomatis gagal untuk %s", move.name)
         return posted
 
-    def _coretax_guard(self, action_label, allow_replacing=False):
-        def is_locked(move):
-            replacing = move._coretax_replacing()
-            if move.coretax_state in LOCKING_STATES and not (allow_replacing and move.coretax_faktur_id == replacing):
-                return True
-            # e-Faktur lama masih hidup di DJP walau versi terakhir (pengganti) ditolak/gagal
-            return bool(replacing) and not allow_replacing
+    def _coretax_locking_faktur(self, allow_replacing=False):
+        """e-Faktur yang mengunci faktur ini dari reset/batal, atau kosong."""
+        self.ensure_one()
+        replacing = self._coretax_replacing()
+        if replacing and not allow_replacing:
+            # e-Faktur lama masih berlaku di DJP selama penggantian dibuka, walau versi terakhir
+            # (pengganti) ditolak/gagal - yang dijelaskan adalah e-Faktur lama itu.
+            return replacing
+        latest = self.sudo().coretax_faktur_id
+        if self.coretax_state in LOCKING_STATES and not (allow_replacing and latest == replacing):
+            return latest
+        return self.env["coretax.faktur"]
 
-        locked = self.filtered(is_locked)
-        if locked:
-            raise UserError(_(
-                "Faktur %(moves)s sudah punya e-Faktur di DJP (%(state)s). Batalkan dulu e-Faktur-nya di AksaTax "
-                "sebelum %(action)s faktur ini.",
-                moves=", ".join(locked.mapped("name")), state=dict(STATES).get(locked[0].coretax_state),
-                action=action_label))
+    def _coretax_guard(self, action_label, allow_replacing=False):
+        locks = [(move, move._coretax_locking_faktur(allow_replacing)) for move in self]
+        locks = [(move, faktur) for move, faktur in locks if faktur]
+        if not locks:
+            return
+        if allow_replacing:
+            # reset ke draft: penggantian yang dibuka juga melepas kuncinya
+            hint = _("Batalkan e-Faktur-nya dengan tombol Batalkan e-Faktur, atau buka penggantian dengan tombol "
+                     "Ganti e-Faktur.")
+        else:
+            hint = _("Batalkan e-Faktur-nya dulu dengan tombol Batalkan e-Faktur.")
+        raise UserError(_(
+            "Faktur %(moves)s belum bisa %(action)s karena e-Faktur-nya masih berlaku di DJP (%(state)s). %(hint)s",
+            moves=", ".join(move.name for move, _faktur in locks), action=action_label,
+            state=dict(STATES).get(locks[0][1].state), hint=hint))
 
     def button_draft(self):
-        self._coretax_guard(_("mengembalikan ke draft"), allow_replacing=True)
+        self._coretax_guard(_("dikembalikan ke draft"), allow_replacing=True)
         return super().button_draft()
 
     def button_cancel(self):
-        self._coretax_guard(_("membatalkan"))
+        self._coretax_guard(_("dibatalkan"))
         return super().button_cancel()

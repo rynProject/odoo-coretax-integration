@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timezone
 
 from dateutil.relativedelta import relativedelta
@@ -133,8 +134,14 @@ class CoretaxFaktur(models.Model):
             rec.in_progress = rec.state in IN_PROGRESS_STATES
 
     def write(self, vals):
+        state = vals.get("state")
+        # Kembali ke "approved" dari "cancel_requested" = DJP menolak pembatalan (AksaTax tidak mengirim event).
+        cancel_rejected = self.filtered(lambda r: r.state == "cancel_requested") if state == "approved" else self.browse()
+        if state in ("cancel_requested", "cancelled") and "replace_requested" not in vals:
+            # Pembatalan (juga dari AksaTax web) menutup penggantian yang masih dibuka.
+            vals = {**vals, "replace_requested": False}
         result = super().write(vals)
-        if vals.get("state") == "approved":
+        if state == "approved":
             for rec in self:
                 old = rec.replaces_id
                 if old and old.state == "approved":
@@ -142,6 +149,10 @@ class CoretaxFaktur(models.Model):
                     rec.move_id.message_post(body=_("e-Faktur %(old)s diganti oleh %(new)s.",
                                                     old=old.nomor_faktur or old.display_name,
                                                     new=rec.nomor_faktur or rec.display_name))
+            for rec in cancel_rejected:
+                reason = re.sub(r"^Pembatalan ditolak:\s*", "", rec.last_error or "").strip().rstrip(".")
+                rec.move_id.message_post(body=_("Pembatalan e-Faktur ditolak DJP: %s. e-Faktur tetap berlaku.",
+                                                reason or _("tanpa keterangan")))
         return result
 
     def _compute_aksatax_url(self):
@@ -256,6 +267,10 @@ class CoretaxFaktur(models.Model):
     def action_request_replacement(self):
         """Buka penggantian: faktur Odoo boleh di-reset ke draft, diperbaiki, lalu dikirim sebagai faktur pengganti."""
         for rec in self:
+            if rec.replaces_id:
+                # AksaTax memakai ulang NSFP faktur asal dengan fgPengganti=1: satu faktur hanya diganti sekali.
+                raise UserError(_("e-Faktur ini sudah merupakan pengganti. "
+                                  "Penggantian berikutnya lakukan di AksaTax atau DJP."))
             if rec.state != "approved" or rec.replace_requested:
                 raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP dan belum dibuka penggantiannya yang bisa diganti."))
             rec.replace_requested = True
@@ -269,6 +284,9 @@ class CoretaxFaktur(models.Model):
                 raise UserError(_("Penggantian e-Faktur ini belum dibuka."))
             if self.with_context(active_test=False).search_count([("replaces_id", "=", rec.id)]):
                 raise UserError(_("Penggantian sudah dikirim. Perbaiki lalu kirim ulang faktur pengganti dari faktur Odoo."))
+            if rec.move_id.state != "posted":
+                # faktur draft tanpa penggantian terbuka tidak lagi cocok dengan e-Faktur yang berlaku di DJP
+                raise UserError(_("Posting faktur dulu, lalu batalkan penggantian."))
             rec.replace_requested = False
             rec.move_id.message_post(body=_("Penggantian e-Faktur dibatalkan."))
         return True
@@ -296,13 +314,18 @@ class CoretaxFaktur(models.Model):
             raise UserError(exc.full_message()) from exc
         if not content:
             raise UserError(_("PDF dari AksaTax kosong. Coba lagi nanti atau periksa dokumennya di AksaTax."))
+        if not content.startswith(b"%PDF-"):
+            raise UserError(_("Berkas dari AksaTax bukan PDF. Coba lagi nanti atau unduh dari AksaTax."))
         name = f"Faktur Pajak {self.nomor_faktur or self.aksatax_id}.pdf"
-        attachment = self.env["ir.attachment"].search([
+        # Pengguna sudah lolos hak akses coretax.faktur; PDF milik faktur ini, jadi lampiran ditulis sebagai sudo
+        # (hak baca faktur saja tidak cukup untuk membuat lampiran). Unduhan tetap memeriksa hak baca faktur.
+        Attachment = self.env["ir.attachment"].sudo()
+        attachment = Attachment.search([
             ("res_model", "=", "account.move"), ("res_id", "=", self.move_id.id), ("name", "=", name)], limit=1)
         if attachment:
             attachment.write({"raw": content, "mimetype": "application/pdf"})
         else:
-            attachment = self.env["ir.attachment"].create({
+            attachment = Attachment.create({
                 "name": name, "raw": content, "mimetype": "application/pdf",
                 "res_model": "account.move", "res_id": self.move_id.id})
         return {"type": "ir.actions.act_url", "url": f"/web/content/{attachment.id}?download=true",

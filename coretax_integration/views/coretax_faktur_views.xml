@@ -99,7 +99,7 @@
                             invisible="state != 'approved' or not active"
                             groups="coretax_integration.group_coretax_user"/>
                     <button name="action_request_replacement" type="object" string="Ganti e-Faktur" icon="fa-exchange"
-                            invisible="state != 'approved' or replace_requested or not active"
+                            invisible="state != 'approved' or replace_requested or replaces_id or not active"
                             groups="coretax_integration.group_coretax_user"
                             confirm="Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki."/>
                     <button name="action_cancel_replacement" type="object" string="Batalkan penggantian" icon="fa-undo"
@@ -140,7 +140,7 @@
                         <i title="Berhasil" class="fa fa-check-circle fa-lg mt-1"/>
                         <div>
                             <strong>Disetujui DJP.</strong> Nomor Faktur Pajak <field name="nomor_faktur" class="d-inline fw-bold" readonly="1"/>.
-                            <div class="small">Untuk membatalkan faktur pajak, pakai tombol Batalkan e-Faktur di atas. Untuk mengunduh PDF, buka dokumen ini di AksaTax.</div>
+                            <div class="small">Untuk membatalkan faktur pajak, pakai tombol Batalkan e-Faktur di atas.</div>
                         </div>
                     </div>
                     <div class="alert alert-info d-flex gap-2" role="status" invisible="state not in ('submitted', 'processing', 'cancel_requested')">

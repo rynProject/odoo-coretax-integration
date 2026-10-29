@@ -45,7 +45,8 @@ class FakeAksaTax:
                     return answer
                 status, body = answer
                 return FakeResponse(status, body)
-        return FakeResponse(404, {"statusCode": 404, "message": f"Cannot {method} {path}", "error": "Not Found"})
+        # Rute tidak dikenal: amplop AksaTax asli (AllExceptionsFilter atas NotFoundException NestJS).
+        return FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": f"Cannot {method} /api/v1/public{path}"}})
 
 
 def faktur_body(status="DRAFT", **extra):

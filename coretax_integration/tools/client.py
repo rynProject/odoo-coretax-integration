@@ -12,6 +12,7 @@ Kontrak (aksatax-be/apps/api/src/integrasi/public-api.controller.ts):
 """
 import json
 import logging
+import re
 import time
 
 import requests
@@ -23,6 +24,8 @@ TIMEOUT = 25
 # Dicoba ulang sekali bila AksaTax sibuk/batas laju (aman: POST ber-Idempotency-Key).
 RETRY_STATUSES = {429, 502, 503, 504}
 RETRY_MAX_WAIT = 5
+# Pesan NotFoundException NestJS untuk rute yang tidak ada ("Cannot POST /api/v1/public/…").
+ROUTE_NOT_FOUND = re.compile(r"^Cannot (GET|POST|PUT|PATCH|DELETE) ")
 
 # Pesan galat untuk pengguna non-teknis, menurut kode galat AksaTax.
 FRIENDLY_ERRORS = {
@@ -153,8 +156,11 @@ class AksaTaxClient:
             err = None
         code = (err or {}).get("code") or STATUS_ERRORS.get(response.status_code) or (
             "UNAVAILABLE" if response.status_code >= 500 else "HTTP_%s" % response.status_code)
-        if response.status_code == 404 and not err:
-            code = "NOT_SUPPORTED"  # rute belum ada di AksaTax versi lama
+        if response.status_code == 404 and (not err or (
+                err.get("code") == "NOT_FOUND" and ROUTE_NOT_FOUND.match(err.get("message") or ""))):
+            # Rute belum ada di AksaTax versi lama: amplop NestJS bawaan, atau amplop AksaTax
+            # {"error": {"code": "NOT_FOUND", "message": "Cannot POST …"}}. 404 domain tetap NOT_FOUND.
+            code = "NOT_SUPPORTED"
         if response.status_code == 403 and err and "paket" in (err.get("message") or "").lower():
             code = "PLAN_FEATURE"
         friendly = FRIENDLY_ERRORS.get(code)

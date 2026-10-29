@@ -21,9 +21,11 @@
                 <button name="action_coretax_cancel_efaktur" type="object" string="Batalkan e-Faktur" icon="fa-ban"
                         invisible="coretax_state != 'approved'"
                         groups="coretax_integration.group_coretax_user"/>
+                <field name="coretax_is_replacement" invisible="1"/>
                 <button name="action_coretax_request_replacement" type="object" string="Ganti e-Faktur" icon="fa-exchange"
-                        invisible="coretax_state != 'approved'"
-                        groups="coretax_integration.group_coretax_user"/>
+                        invisible="coretax_state != 'approved' or coretax_is_replacement"
+                        groups="coretax_integration.group_coretax_user"
+                        confirm="Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki."/>
                 <button name="action_coretax_create_bupot" type="object" string="Buat Bukti Potong" icon="fa-file-text"
                         invisible="move_type not in ('in_invoice', 'in_receipt') or state != 'posted' or coretax_has_pph"
                         groups="coretax_integration.group_coretax_user"
