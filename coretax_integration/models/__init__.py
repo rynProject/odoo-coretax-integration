@@ -2,6 +2,7 @@ from . import coretax_log
 from . import coretax_connection
 from . import coretax_faktur
 from . import coretax_bupot
+from . import coretax_retur
 from . import account_move
 from . import account_move_pph
 from . import res_partner

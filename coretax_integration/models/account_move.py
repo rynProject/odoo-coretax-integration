@@ -1,10 +1,13 @@
 import logging
+import math
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 from ..tools.client import AksaTaxError
 from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STATES
+from .coretax_retur import LIVE_STATES as RETUR_LIVE_STATES
 
 _logger = logging.getLogger(__name__)
 
@@ -16,6 +19,11 @@ SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    coretax_vendor_tax_number = fields.Char(string="Nomor Faktur Pajak vendor", copy=False,
+                                            help="Nomor faktur pajak dari vendor; dipakai untuk nota retur pembelian.")
+    coretax_retur_ids = fields.One2many("coretax.retur", "move_id", string="Nota retur Coretax")
+    coretax_retur_count = fields.Integer(compute="_compute_coretax_retur", string="Jumlah nota retur")
+    coretax_retur_live = fields.Boolean(compute="_compute_coretax_retur", string="Nota retur masih berlaku")
     coretax_faktur_ids = fields.One2many("coretax.faktur", "move_id", string="e-Faktur Coretax")
     coretax_faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur terakhir",
                                         compute="_compute_coretax_faktur_id", store=True, index=True)
@@ -26,6 +34,13 @@ class AccountMove(models.Model):
     coretax_faktur_count = fields.Integer(compute="_compute_coretax_faktur_id", store=True)
     coretax_is_replacement = fields.Boolean(string="e-Faktur pengganti", compute="_compute_coretax_is_replacement",
                                             compute_sudo=True)
+
+    @api.constrains("coretax_vendor_tax_number")
+    def _check_coretax_vendor_tax_number(self):
+        for move in self.filtered("coretax_vendor_tax_number"):
+            digits = re.sub(r"\D", "", move.coretax_vendor_tax_number)
+            if len(digits) not in (13, 16, 17):
+                raise ValidationError(_("Nomor Faktur Pajak vendor harus 13, 16, atau 17 digit."))
 
     @api.depends("coretax_faktur_id.replaces_id")
     def _compute_coretax_is_replacement(self):
@@ -375,10 +390,143 @@ class AccountMove(models.Model):
             moves=", ".join(move.name for move, _faktur in locks), action=action_label,
             state=dict(STATES).get(locks[0][1].state), hint=hint))
 
+    # ── nota retur ────────────────────────────────────────────────────
+    @api.depends("coretax_retur_ids", "coretax_retur_ids.state")
+    def _compute_coretax_retur(self):
+        for move in self:
+            returs = move.sudo().coretax_retur_ids
+            move.coretax_retur_count = len(returs)
+            move.coretax_retur_live = any(r.state in RETUR_LIVE_STATES for r in returs)
+
+    def _coretax_retur_guard(self, action_label):
+        """Nota kredit dengan nota retur yang masih berlaku di AksaTax tidak boleh diubah."""
+        refunds = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund"))
+        for move in refunds:
+            live = move.sudo().coretax_retur_ids.filtered(lambda r: r.state in RETUR_LIVE_STATES)[:1]
+            if live:
+                raise UserError(_(
+                    "Nota kredit ini punya nota retur %(nomor)s di AksaTax. Batalkan nota retur dulu, "
+                    "lalu %(action)s.", nomor=live.nomor_dokumen_retur, action=action_label))
+
+    def _coretax_origin_faktur(self):
+        """e-Faktur terbaru yang disetujui DJP dari faktur asal nota kredit ini, atau kosong."""
+        self.ensure_one()
+        fakturs = self.reversed_entry_id.with_context(active_test=False).sudo().coretax_faktur_ids
+        return fakturs.filtered(lambda f: f.state == "approved").sorted("version", reverse=True)[:1]
+
+    def _coretax_tax_rules(self, tax, groups):
+        """Aturan hitung satu pajak baris: daftar (jenis, tarif). Jenis: ppn_non_luxury, ppn_luxury, ppn_zero,
+        ppn_generic, ppnbm. Pajak negatif (PPh, anak WAPU -100%) diabaikan."""
+        if tax.amount_type == "group":
+            rules = [rule for child in tax.children_tax_ids for rule in self._coretax_tax_rules(child, groups)]
+            parent = groups.get(tax.tax_group_id.id)
+            if parent:
+                # pasangan +100%/-100% (WAPU) mengikuti aturan PPN grup induknya
+                rules = [rule for rule in rules if not rule[0].startswith("ppn_")] + [(parent, 0)]
+            return rules
+        group = groups.get(tax.tax_group_id.id)
+        if group == "ppn_non_luxury" and abs(tax.amount - 11) > 1e-9:
+            # hanya pajak 11% (DPP nilai lain 11/12) yang memakai aturan non-mewah AksaTax
+            group = "ppn_generic" if tax.amount > 0 else None
+            return [(group, tax.amount)] if group else []
+        if group == "ppnbm":
+            return [("ppnbm", tax.amount)] if tax.amount > 0 else []
+        if group:
+            return [(group, 0)]
+        if tax.amount > 0:
+            return [("ppn_generic", tax.amount)]
+        return []
+
+    def _coretax_retur_amounts(self, faktur=None):
+        """Nilai retur dari nota kredit, dalam mata uang perusahaan: dict(dpp, ppn, ppnbm, tarif).
+
+        PPN dihitung per baris dan dibulatkan ke bawah per baris seperti AksaTax. Untuk nota kredit keluaran
+        dengan `faktur` (e-Faktur asal yang disetujui): retur penuh memakai total e-Faktur, retur sebagian
+        dibatasi sisa e-Faktur setelah dikurangi nota retur lain yang masih berlaku."""
+        self.ensure_one()
+        template = self.env["account.chart.template"].with_company(self.company_id)
+        groups = {}
+        for xmlid, kind in (("l10n_id_tax_group_non_luxury_goods", "ppn_non_luxury"),
+                            ("l10n_id_tax_group_luxury_goods", "ppn_luxury"),
+                            ("l10n_id_tax_group_0", "ppn_zero"), ("l10n_id_tax_group_exempt", "ppn_zero"),
+                            ("l10n_id_tax_group_stlg", "ppnbm")):
+            group = template.ref(xmlid, raise_if_not_found=False)
+            if group:
+                groups[group.id] = kind
+        by_kind = {}  # (jenis, tarif) -> baris yang kena PPN
+        ppnbm = 0
+        for line in self.line_ids.filtered(lambda l: l.display_type == "product"):
+            rules = [rule for tax in line.tax_ids for rule in self._coretax_tax_rules(tax, groups)]
+            for kind, rate in rules:
+                if kind == "ppnbm":
+                    ppnbm += math.floor(abs(line.balance) * rate / 100)
+            ppn_rule = next((rule for rule in rules if rule[0].startswith("ppn_")), None)
+            if ppn_rule:
+                by_kind.setdefault(ppn_rule, self.env["account.move.line"])
+                by_kind[ppn_rule] |= line
+        dpp = ppn = 0
+        for (kind, rate), lines in by_kind.items():
+            net = sum(lines.mapped("balance"))
+            dpp += abs(net)  # baris 0%/dibebaskan (kode 07/08) ikut DPP dengan PPN 0
+            for line in lines:
+                base = abs(line.balance)
+                if kind == "ppn_non_luxury":
+                    value = math.floor(math.floor(base * 11 / 12) * 12 / 100)
+                elif kind == "ppn_luxury":
+                    value = math.floor(base * 12 / 100)
+                elif kind == "ppn_generic":
+                    value = math.floor(base * rate / 100)
+                else:
+                    value = 0
+                # baris berlawanan arah dengan saldo bersih jenisnya mengurangi
+                ppn += value if (line.balance >= 0) == (net >= 0) else -value
+        dpp, ppn = int(round(dpp)), int(round(ppn))
+        if faktur and self.move_type == "out_refund":
+            if dpp == int(round(faktur.total_dpp)):
+                dpp, ppn, ppnbm = int(round(faktur.total_dpp)), int(round(faktur.total_ppn)), int(round(faktur.total_ppnbm))
+            elif faktur.total_dpp:
+                origin = self.reversed_entry_id
+                live = self.env["coretax.retur"].sudo().search([
+                    ("sisi", "=", "keluaran"), ("state", "in", RETUR_LIVE_STATES),
+                    ("faktur_id", "in", origin.with_context(active_test=False).sudo().coretax_faktur_ids.ids)])
+                dpp = max(0, min(dpp, int(round(faktur.total_dpp - sum(live.mapped("nilai_dpp"))))))
+                ppn = max(0, min(ppn, int(round(faktur.total_ppn - sum(live.mapped("nilai_ppn"))))))
+                ppnbm = max(0, min(ppnbm, int(round(faktur.total_ppnbm - sum(live.mapped("nilai_ppnbm"))))))
+        return {"dpp": dpp, "ppn": ppn, "ppnbm": int(ppnbm), "tarif": 12}
+
+    def action_coretax_open_retur_wizard(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window", "name": _("Kirim nota retur"), "res_model": "coretax.retur.wizard",
+            "view_mode": "form", "target": "new",
+            "context": {"active_model": "account.move", "active_id": self.id, "default_move_id": self.id},
+        }
+
+    def action_coretax_view_retur(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id("coretax_integration.action_coretax_retur")
+        action["domain"] = [("move_id", "=", self.id)]
+        if self.coretax_retur_count == 1:
+            action.update(views=[[False, "form"]], res_id=self.sudo().coretax_retur_ids.id)
+        return action
+
     def button_draft(self):
         self._coretax_guard(_("dikembalikan ke draft"), allow_replacing=True)
+        self._coretax_retur_guard(_("kembalikan ke draft"))
         return super().button_draft()
 
     def button_cancel(self):
         self._coretax_guard(_("dibatalkan"))
+        self._coretax_retur_guard(_("batalkan nota kredit"))
         return super().button_cancel()
+
+    def unlink(self):
+        self._coretax_retur_guard(_("hapus nota kredit"))
+        returs = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund")).sudo().coretax_retur_ids
+        # Nota retur yang tidak pernah sampai ke AksaTax ikut dihapus; yang punya riwayat menahan penghapusan.
+        returs.filtered(lambda r: not r.aksatax_id).unlink()
+        history = returs.exists()
+        if history:
+            raise UserError(_("Nota kredit ini punya riwayat nota retur %s di AksaTax, jadi tidak bisa dihapus. "
+                              "Batalkan nota kredit saja.", history[0].nomor_dokumen_retur))
+        return super().unlink()

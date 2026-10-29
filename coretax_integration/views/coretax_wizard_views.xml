@@ -202,4 +202,54 @@
             </form>
         </field>
     </record>
+    <record id="view_coretax_retur_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.retur.wizard.form</field>
+        <field name="model">coretax.retur.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Kirim nota retur">
+                <div class="alert alert-info" role="status">
+                    Periksa nilai retur di bawah. Nota retur dikirim ke DJP lewat AksaTax.
+                </div>
+                <group>
+                    <group>
+                        <field name="move_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="sisi"/>
+                        <field name="nomor_dokumen_retur"/>
+                        <field name="tanggal_retur"/>
+                        <field name="referensi"/>
+                    </group>
+                    <group>
+                        <field name="nilai_dpp"/>
+                        <field name="nilai_ppn"/>
+                        <field name="nilai_ppnbm"/>
+                        <field name="tarif_ppn"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Kirim nota retur" class="btn-primary"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_coretax_retur_cancel_wizard_form" model="ir.ui.view">
+        <field name="name">coretax.retur.cancel.wizard.form</field>
+        <field name="model">coretax.retur.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Batalkan nota retur">
+                <div class="alert alert-warning" role="status">
+                    Pembatalan diajukan ke DJP dan tidak bisa ditarik kembali. Tulis alasan yang jelas (minimal 5 karakter).
+                </div>
+                <group>
+                    <field name="retur_id" readonly="1" options="{'no_open': True}"/>
+                    <field name="alasan" placeholder="Contoh: Salah nilai retur"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Ajukan pembatalan" class="btn-primary"/>
+                    <button string="Tutup" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
 </odoo>

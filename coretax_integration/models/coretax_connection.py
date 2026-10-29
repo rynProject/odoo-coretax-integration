@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 EVENT_TYPES = [
     "faktur.submitted", "faktur.approved", "faktur.rejected", "faktur.cancelled",
     "bupot.approved", "bupot.rejected", "bupot.cancelled",
+    "retur.approved", "retur.rejected", "retur.cancelled",
 ]
 # Halaman event yang diambil per putaran sinkronisasi (200 event per halaman).
 EVENT_PAGES_PER_RUN = 10
@@ -310,6 +311,19 @@ class CoretaxConnection(models.Model):
                 count += 1
             except AksaTaxError:
                 continue
+        returs = self.env["coretax.retur"].sudo().search([
+            ("company_id", "=", self.company_id.id), ("aksatax_id", "!=", False),
+            ("state", "in", ["draft", "submitted", "cancel_requested"]),
+            "|", ("last_sync", "=", False), ("last_sync", "<", threshold),
+        ], limit=REFRESH_BATCH, order="last_sync asc")
+        for retur in returs:
+            try:
+                retur._apply_remote(client.get_retur(retur.aksatax_id))
+                count += 1
+            except AksaTaxError as exc:
+                if exc.code == "NOT_FOUND":
+                    retur._mark_not_found()
+                continue
         return count
 
     def _process_event(self, event):
@@ -323,6 +337,9 @@ class CoretaxConnection(models.Model):
                 [("aksatax_id", "=", object_id), ("company_id", "=", self.company_id.id)], limit=1)
         elif kind == "bupot":
             record = self.env["coretax.bupot"].sudo().search(
+                [("aksatax_id", "=", object_id), ("company_id", "=", self.company_id.id)], limit=1)
+        elif kind == "retur":
+            record = self.env["coretax.retur"].sudo().search(
                 [("aksatax_id", "=", object_id), ("company_id", "=", self.company_id.id)], limit=1)
         else:
             return False

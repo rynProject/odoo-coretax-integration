@@ -20,6 +20,9 @@
     <menuitem id="menu_coretax_faktur_attention" name="Perlu tindakan" parent="menu_coretax_efaktur" sequence="3"
               action="action_coretax_faktur_attention"/>
 
+    <menuitem id="menu_coretax_retur" name="Nota Retur" parent="menu_coretax_efaktur" sequence="4"
+              action="action_coretax_retur"/>
+
     <menuitem id="menu_coretax_bupot" name="Bukti Potong" parent="menu_coretax_root" sequence="20"
               action="action_coretax_bupot"/>
 

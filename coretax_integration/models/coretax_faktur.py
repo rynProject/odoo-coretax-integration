@@ -7,6 +7,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from ..tools.client import AksaTaxError
+from .coretax_retur import LIVE_STATES as RETUR_LIVE_STATES
 
 # Status dokumen AksaTax (packages/shared/src/enums.ts) -> status di Odoo.
 # "error" khusus Odoo: gagal membuat/mengirim ke AksaTax.
@@ -256,8 +257,18 @@ class CoretaxFaktur(models.Model):
                        "send_attempt": rec.send_attempt + 1, "submitted_at": fields.Datetime.now(), "last_error": False})
         return True
 
+    def _check_no_live_retur(self):
+        """e-Faktur yang punya nota retur berlaku tidak boleh dibatalkan/diganti."""
+        for rec in self:
+            fakturs = rec.move_id.with_context(active_test=False).sudo().coretax_faktur_ids
+            live = self.env["coretax.retur"].sudo().search_count([
+                ("faktur_id", "in", fakturs.ids), ("state", "in", RETUR_LIVE_STATES)])
+            if live:
+                raise UserError(_("Faktur ini punya nota retur yang masih berlaku. Batalkan nota retur dulu."))
+
     def action_open_cancel_wizard(self):
         self.ensure_one()
+        self._check_no_live_retur()
         if self.state != "approved" or not self.aksatax_id:
             raise UserError(_("Hanya e-Faktur yang sudah disetujui DJP yang bisa dibatalkan."))
         return {"type": "ir.actions.act_window", "res_model": "coretax.faktur.cancel.wizard",
@@ -266,6 +277,7 @@ class CoretaxFaktur(models.Model):
 
     def action_request_replacement(self):
         """Buka penggantian: faktur Odoo boleh di-reset ke draft, diperbaiki, lalu dikirim sebagai faktur pengganti."""
+        self._check_no_live_retur()
         for rec in self:
             if rec.replaces_id:
                 # AksaTax memakai ulang NSFP faktur asal dengan fgPengganti=1: satu faktur hanya diganti sekali.

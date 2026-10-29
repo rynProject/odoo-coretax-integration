@@ -15,3 +15,7 @@ access_coretax_partner_match_line_user,coretax.partner.match.line user,model_cor
 access_coretax_partner_register_wizard_user,coretax.partner.register.wizard user,model_coretax_partner_register_wizard,group_coretax_user,1,1,1,1
 access_coretax_partner_register_line_user,coretax.partner.register.line user,model_coretax_partner_register_line,group_coretax_user,1,1,1,1
 access_coretax_faktur_cancel_wizard_user,coretax.faktur.cancel.wizard user,model_coretax_faktur_cancel_wizard,group_coretax_user,1,1,1,1
+access_coretax_retur_user,coretax.retur user,model_coretax_retur,group_coretax_user,1,1,1,0
+access_coretax_retur_manager,coretax.retur manager,model_coretax_retur,group_coretax_manager,1,1,1,1
+access_coretax_retur_wizard_user,coretax.retur.wizard user,model_coretax_retur_wizard,group_coretax_user,1,1,1,1
+access_coretax_retur_cancel_wizard_user,coretax.retur.cancel.wizard user,model_coretax_retur_cancel_wizard,group_coretax_user,1,1,1,1
