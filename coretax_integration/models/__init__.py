@@ -4,3 +4,5 @@ from . import coretax_faktur
 from . import coretax_bupot
 from . import account_move
 from . import res_partner
+from . import account_tax
+from . import template_id
