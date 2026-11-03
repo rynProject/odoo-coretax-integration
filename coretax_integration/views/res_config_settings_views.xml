@@ -7,12 +7,12 @@
         <field name="inherit_id" ref="account.res_config_settings_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app data-string="Coretax" string="Coretax (AksaTax)" name="coretax_integration"
+                <app data-string="Coretax" string="Coretax (PajakMu)" name="coretax_integration"
                      groups="coretax_integration.group_coretax_manager">
-                    <block title="Coretax (AksaTax)" name="coretax_block">
-                        <setting string="Koneksi AksaTax" help="Kirim e-Faktur dan bukti potong ke DJP lewat AksaTax; status DJP kembali ke Odoo otomatis.">
+                    <block title="Coretax (PajakMu)" name="coretax_block">
+                        <setting string="Koneksi PajakMu" help="Kirim e-Faktur dan bukti potong ke DJP lewat PajakMu; status DJP kembali ke Odoo otomatis.">
                             <button name="%(coretax_integration.action_coretax_connection_open)d" type="action"
-                                    string="Atur koneksi AksaTax" class="btn-link" icon="oi-arrow-right"/>
+                                    string="Atur koneksi PajakMu" class="btn-link" icon="oi-arrow-right"/>
                         </setting>
                     </block>
                 </app>

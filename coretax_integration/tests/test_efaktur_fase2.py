@@ -43,7 +43,7 @@ class TestEfakturFase2(CoretaxTestCommon):
         faktur = self._send_rejected("kdJenisTransaksi")
         self.assertEqual(faktur.state, "error")
         self.assertEqual(faktur.error_code, "NOT_SUPPORTED")
-        self.assertIn("Kode transaksi 10 butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server.",
+        self.assertIn("Kode transaksi 10 butuh PajakMu versi terbaru. Minta admin PajakMu memperbarui server.",
                       faktur.last_error)
 
     def test_code_10_other_validation_unchanged(self):
@@ -61,7 +61,7 @@ class TestEfakturFase2(CoretaxTestCommon):
         faktur = self._send_rejected("idKeteranganTambahan", move=move)
         self.assertEqual(faktur.state, "error")
         self.assertEqual(faktur.error_code, "NOT_SUPPORTED")
-        self.assertIn("Keterangan tambahan ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server.",
+        self.assertIn("Keterangan tambahan ini butuh PajakMu versi terbaru. Minta admin PajakMu memperbarui server.",
                       faktur.last_error)
 
     def test_code_10_list_form_path(self):

@@ -5,7 +5,7 @@
          Semua pengguna Invoicing otomatis menjadi Pengguna Coretax, dan
          Administrator Akuntansi menjadi Administrator Coretax. -->
     <record id="res_groups_privilege_coretax" model="res.groups.privilege">
-        <field name="name">Coretax (AksaTax)</field>
+        <field name="name">Coretax (PajakMu)</field>
         <field name="category_id" ref="base.module_category_accounting"/>
         <field name="sequence">40</field>
     </record>
@@ -13,7 +13,7 @@
     <record id="group_coretax_user" model="res.groups">
         <field name="name">Pengguna</field>
         <field name="sequence">10</field>
-        <field name="comment">Mengirim e-Faktur dan bukti potong ke AksaTax, melihat status DJP.</field>
+        <field name="comment">Mengirim e-Faktur dan bukti potong ke PajakMu, melihat status DJP.</field>
         <field name="privilege_id" ref="res_groups_privilege_coretax"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
@@ -21,7 +21,7 @@
     <record id="group_coretax_manager" model="res.groups">
         <field name="name">Administrator</field>
         <field name="sequence">20</field>
-        <field name="comment">Mengatur koneksi AksaTax (API key, webhook) dan data master pajak.</field>
+        <field name="comment">Mengatur koneksi PajakMu (API key, webhook) dan data master pajak.</field>
         <field name="privilege_id" ref="res_groups_privilege_coretax"/>
         <field name="implied_ids" eval="[(4, ref('group_coretax_user'))]"/>
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
@@ -36,7 +36,7 @@
 
     <!-- multi-perusahaan: setiap data hanya terlihat di perusahaannya -->
     <record id="rule_coretax_connection_company" model="ir.rule">
-        <field name="name">Koneksi AksaTax: perusahaan sendiri</field>
+        <field name="name">Koneksi PajakMu: perusahaan sendiri</field>
         <field name="model_id" ref="model_coretax_connection"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
@@ -56,7 +56,7 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
     <record id="rule_coretax_log_company" model="ir.rule">
-        <field name="name">Riwayat AksaTax: perusahaan sendiri</field>
+        <field name="name">Riwayat PajakMu: perusahaan sendiri</field>
         <field name="model_id" ref="model_coretax_log"/>
         <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
     </record>

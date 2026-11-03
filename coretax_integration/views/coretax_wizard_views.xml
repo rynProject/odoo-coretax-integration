@@ -84,7 +84,7 @@
         <field name="name">coretax.partner.match.wizard.form</field>
         <field name="model">coretax.partner.match.wizard</field>
         <field name="arch" type="xml">
-            <form string="Cocokkan dengan AksaTax">
+            <form string="Cocokkan dengan PajakMu">
                 <group>
                     <group>
                         <field name="partner_id" readonly="1"/>
@@ -95,7 +95,7 @@
                     </group>
                 </group>
                 <div class="d-flex gap-2 align-items-center mb-3">
-                    <field name="search_term" placeholder="NPWP atau nama di AksaTax" class="flex-grow-1"/>
+                    <field name="search_term" placeholder="NPWP atau nama di PajakMu" class="flex-grow-1"/>
                     <button name="action_search" type="object" string="Cari" class="btn-primary" icon="fa-search"/>
                 </div>
                 <div class="alert alert-warning" role="status" invisible="not message">
@@ -127,12 +127,12 @@
         <field name="name">coretax.partner.register.wizard.form</field>
         <field name="model">coretax.partner.register.wizard</field>
         <field name="arch" type="xml">
-            <form string="Daftarkan ke AksaTax">
+            <form string="Daftarkan ke PajakMu">
                 <field name="step" invisible="1"/>
 
                 <!-- langkah 1: periksa -->
                 <div invisible="step != 'check'">
-                    <p class="text-muted">Kontak yang datanya lengkap didaftarkan sebagai <b>Lawan Transaksi</b> di AksaTax.
+                    <p class="text-muted">Kontak yang datanya lengkap didaftarkan sebagai <b>Lawan Transaksi</b> di PajakMu.
                         NPWP yang ternyata sudah terdaftar langsung ditautkan ke data yang ada.</p>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <span class="badge rounded-pill text-bg-success fs-6" invisible="not ready_count">
@@ -151,7 +151,7 @@
                 <div invisible="step != 'done'">
                     <div class="alert alert-success" role="status" invisible="not registered_count">
                         <i title="Berhasil" class="fa fa-check-circle"/> <field name="registered_count" class="d-inline fw-bold"/>
-                        kontak kini tertaut ke Lawan Transaksi AksaTax.
+                        kontak kini tertaut ke Lawan Transaksi PajakMu.
                     </div>
                     <div class="alert alert-danger" role="alert" invisible="not failed_count">
                         <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <field name="failed_count" class="d-inline fw-bold"/>
@@ -208,7 +208,7 @@
         <field name="arch" type="xml">
             <form string="Kirim nota retur">
                 <div class="alert alert-info" role="status">
-                    Periksa nilai retur di bawah. Nota retur dikirim ke DJP lewat AksaTax.
+                    Periksa nilai retur di bawah. Nota retur dikirim ke DJP lewat PajakMu.
                 </div>
                 <group>
                     <group>

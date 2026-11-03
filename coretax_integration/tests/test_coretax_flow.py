@@ -21,7 +21,7 @@ class TestCoretaxFlow(CoretaxTestCommon):
         [item] = payload["items"]
         self.assertEqual(item["hargaSatuan"], 50000.0)
         self.assertEqual(item["jumlahBarang"], 2.0)
-        self.assertEqual(item["diskon"], 10000.0, "diskon AksaTax dalam rupiah, bukan persen")
+        self.assertEqual(item["diskon"], 10000.0, "diskon PajakMu dalam rupiah, bukan persen")
         self.assertEqual(len(item["kodeObjek"]), 6)
 
     def test_send_flow_auto_matches_partner_and_submits(self):
@@ -185,7 +185,7 @@ class TestCoretaxFlow(CoretaxTestCommon):
         self._faktur("2026-10-01", state="rejected", last_error="NPWP tidak aktif")
         self._faktur("2026-10-02", state="error", last_error="Pelanggan belum terdaftar")
         # draft yang gagal dikirim ke DJP juga termasuk "gagal dikirim"
-        self._faktur("2026-10-03", state="draft", send_mode="send", last_error="AksaTax tidak menjawab")
+        self._faktur("2026-10-03", state="draft", send_mode="send", last_error="PajakMu tidak menjawab")
         counts = self.env["coretax.faktur"].get_dashboard_data()["counts"]
         self.assertEqual(counts["attention"], 3)
         self.assertEqual(counts["rejected"], 1)

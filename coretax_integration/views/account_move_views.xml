@@ -11,7 +11,7 @@
                 <button name="action_coretax_send" type="object" string="Kirim e-Faktur" class="btn-primary"
                         icon="fa-paper-plane" invisible="not coretax_can_send"
                         groups="coretax_integration.group_coretax_user"
-                        help="Kirim faktur ini ke DJP lewat AksaTax (Coretax)."/>
+                        help="Kirim faktur ini ke DJP lewat PajakMu (Coretax)."/>
                 <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
                         invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
                         groups="coretax_integration.group_coretax_user"/>
@@ -36,7 +36,7 @@
                 <button name="action_coretax_open_retur_wizard" type="object" string="Kirim nota retur" icon="fa-undo"
                         invisible="move_type not in ('out_refund', 'in_refund') or state != 'posted' or coretax_retur_live"
                         groups="coretax_integration.group_coretax_user"
-                        help="Kirim nota retur untuk nota kredit ini ke DJP lewat AksaTax."/>
+                        help="Kirim nota retur untuk nota kredit ini ke DJP lewat PajakMu."/>
             </xpath>
             <xpath expr="//group[@id='other_tab_group']" position="inside">
                 <field name="coretax_vendor_tax_number" invisible="move_type != 'in_invoice'"/>

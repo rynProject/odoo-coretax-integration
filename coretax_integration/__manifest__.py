@@ -1,37 +1,37 @@
 {
-    "name": "Coretax Integration",
-    "summary": "Kirim, batalkan, ganti e-Faktur dan nota retur ke DJP (Coretax) lewat AksaTax, PPh di tagihan vendor jadi bukti potong, status kembali ke Odoo.",
+    "name": "Coretax Integration (PajakMu)",
+    "summary": "Kirim, batalkan, ganti e-Faktur dan nota retur ke DJP (Coretax) lewat PajakMu, PPh di tagihan vendor jadi bukti potong, status kembali ke Odoo.",
     "description": """
-Coretax Integration (AksaTax)
+Coretax Integration (PajakMu)
 =============================
-Menghubungkan Odoo dengan AksaTax (https://aksatax.id) melalui Public API-nya:
+Menghubungkan Odoo dengan PajakMu (https://aksatax.id) melalui Public API-nya:
 
-* e-Faktur Keluaran: dari faktur pelanggan Odoo -> draft di AksaTax -> kirim ke
+* e-Faktur Keluaran: dari faktur pelanggan Odoo -> draft di PajakMu -> kirim ke
   DJP; Nomor Faktur Pajak, kode persetujuan, dan status DJP kembali ke Odoo
   otomatis (polling setiap 5 menit atau webhook bertanda tangan HMAC).
 * Batalkan e-Faktur (dengan alasan), ganti e-Faktur (faktur pengganti dengan
   NSFP asli), dan unduh PDF faktur pajak resmi sebagai lampiran faktur.
 * Kode transaksi 07, 08, dan 10.
 * Nota retur dari nota kredit pelanggan (Keluaran) atau vendor (Masukan);
-  nilainya dihitung seperti AksaTax dan status kembali otomatis.
+  nilainya dihitung seperti PajakMu dan status kembali otomatis.
 * Pemeriksaan sebelum kirim dengan bahasa yang mudah dipahami (NPWP/NIK
   pelanggan, kode transaksi, kode barang/jasa, mata uang, kelompok pajak).
 * Bukti Potong PPh Unifikasi (BPPU/BPNR) dari tagihan vendor, dikirim ke
-  AksaTax sebagai draft untuk ditandatangani di sana.
+  PajakMu sebagai draft untuk ditandatangani di sana.
 * PPh pada tagihan vendor: pajak PPh (mis. PPh 23, PPh 4 ayat 2) per kode objek
   dengan akun terpisah, serta bukti potong otomatis per kode objek saat
   tagihan diposting, tetap sinkron saat tagihan dibatalkan atau dibuatkan nota kredit.
-* Pencocokan pelanggan/vendor dengan Lawan Transaksi AksaTax (per perusahaan),
+* Pencocokan pelanggan/vendor dengan Lawan Transaksi PajakMu (per perusahaan),
   termasuk memperbarui lawan transaksi yang sudah cocok.
 * Ringkasan, daftar "Perlu tindakan", dan Riwayat Sinkronisasi.
 
-Fitur batal, ganti, PDF, dan nota retur butuh AksaTax versi terbaru. Pasang
-AksaTax lebih dulu, baru upgrade modul ini.
+Fitur batal, ganti, PDF, dan nota retur butuh PajakMu versi terbaru. Pasang
+PajakMu lebih dulu, baru upgrade modul ini.
 
 Data baris e-Faktur memakai penyusun data bawaan Odoo
 (l10n_id_efaktur_coretax), jadi angkanya sama dengan XML Coretax resmi.
 """,
-    "version": "19.0.1.4.0",
+    "version": "19.0.1.5.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
     "website": "https://www.aksa.id",

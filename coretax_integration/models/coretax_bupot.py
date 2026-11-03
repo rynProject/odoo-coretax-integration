@@ -8,9 +8,9 @@ from ..tools.client import AksaTaxError
 from .coretax_faktur import REMOTE_STATES
 
 BUPOT_STATES = [
-    ("new", "Belum dikirim ke AksaTax"),
-    ("draft", "Draft di AksaTax"),
-    ("pending_approval", "Menunggu persetujuan di AksaTax"),
+    ("new", "Belum dikirim ke PajakMu"),
+    ("draft", "Draft di PajakMu"),
+    ("pending_approval", "Menunggu persetujuan di PajakMu"),
     ("validated", "Siap dikirim ke DJP"),
     ("submitted", "Dikirim ke DJP"),
     ("processing", "Diproses DJP"),
@@ -63,9 +63,9 @@ class CoretaxTaxObject(models.Model):
 
 
 class CoretaxBupot(models.Model):
-    """Bukti Potong PPh Unifikasi yang dikirim ke AksaTax sebagai DRAFT.
-    Penandatanganan dan pengiriman ke DJP dilakukan di AksaTax (Public API
-    AksaTax belum menyediakan pengiriman bukti potong)."""
+    """Bukti Potong PPh Unifikasi yang dikirim ke PajakMu sebagai DRAFT.
+    Penandatanganan dan pengiriman ke DJP dilakukan di PajakMu (Public API
+    PajakMu belum menyediakan pengiriman bukti potong)."""
 
     _name = "coretax.bupot"
     _description = "Bukti Potong PPh (Coretax)"
@@ -83,7 +83,7 @@ class CoretaxBupot(models.Model):
     move_id = fields.Many2one("account.move", string="Tagihan vendor", check_company=True,
                               domain="[('move_type', 'in', ('in_invoice', 'in_receipt'))]")
     partner_id = fields.Many2one("res.partner", string="Penerima penghasilan", required=True, tracking=True)
-    partner_match_state = fields.Selection(related="partner_id.coretax_match_state", string="Status di AksaTax")
+    partner_match_state = fields.Selection(related="partner_id.coretax_match_state", string="Status di PajakMu")
 
     jenis = fields.Selection([("BPPU", "Penerima dalam negeri (BPPU)"), ("BPNR", "Penerima luar negeri (BPNR)")],
                              string="Jenis", required=True, default="BPPU", tracking=True)
@@ -107,14 +107,14 @@ class CoretaxBupot(models.Model):
     dok_nomor = fields.Char(string="Nomor dokumen dasar", required=True, tracking=True)
     dok_tanggal = fields.Date(string="Tanggal dokumen dasar", required=True, default=fields.Date.context_today,
                                tracking=True)
-    ajukan = fields.Boolean(string="Langsung ajukan persetujuan di AksaTax")
+    ajukan = fields.Boolean(string="Langsung ajukan persetujuan di PajakMu")
 
     state = fields.Selection(BUPOT_STATES, string="Status", default="new", required=True, tracking=True, index=True)
-    aksatax_id = fields.Char(string="ID AksaTax", readonly=True, copy=False, index=True)
+    aksatax_id = fields.Char(string="ID PajakMu", readonly=True, copy=False, index=True)
     nomor_bupot = fields.Char(string="Nomor bukti potong", readonly=True, copy=False, tracking=True)
-    last_error = fields.Text(string="Keterangan dari AksaTax/DJP", readonly=True, copy=False)
+    last_error = fields.Text(string="Keterangan dari PajakMu/DJP", readonly=True, copy=False)
     version = fields.Integer(default=1, readonly=True, copy=False)
-    last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
+    last_sync = fields.Datetime(string="Diperbarui dari PajakMu", readonly=True, copy=False)
     aksatax_url = fields.Char(compute="_compute_aksatax_url")
 
     source_line_ids = fields.Many2many("account.move.line", string="Baris sumber", compute="_compute_source_line_ids")
@@ -230,7 +230,7 @@ class CoretaxBupot(models.Model):
     def action_send_draft(self):
         for rec in self:
             if rec.state not in ("new", "error"):
-                raise UserError(_("Bukti potong %s sudah ada di AksaTax.", rec.display_name))
+                raise UserError(_("Bukti potong %s sudah ada di PajakMu.", rec.display_name))
             rec._check_before_send()
             connection = self.env["coretax.connection"]._for_company(rec.company_id)
             client = connection._client(rec)
@@ -238,7 +238,7 @@ class CoretaxBupot(models.Model):
             try:
                 counterparty = partner._coretax_counterparty_for(connection)
                 if not counterparty:
-                    raise AksaTaxError(_("Penerima %s belum terdaftar di AksaTax. Klik 'Daftarkan ke AksaTax' di "
+                    raise AksaTaxError(_("Penerima %s belum terdaftar di PajakMu. Klik 'Daftarkan ke PajakMu' di "
                                          "Coretax › Data Master › Lawan Transaksi, lalu kirim ulang.",
                                          partner.display_name), code="COUNTERPARTY_MISSING")
                 uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
@@ -251,7 +251,7 @@ class CoretaxBupot(models.Model):
                 "nomor_bupot": data.get("nomorBupot") or False, "last_error": data.get("lastError") or False,
                 "last_sync": fields.Datetime.now(),
             })
-            rec.message_post(body=_("Draft bukti potong dibuat di AksaTax. Tanda tangani & kirim ke DJP dari AksaTax."))
+            rec.message_post(body=_("Draft bukti potong dibuat di PajakMu. Tanda tangani & kirim ke DJP dari PajakMu."))
         return True
 
     def action_refresh(self):
@@ -286,5 +286,5 @@ class CoretaxBupot(models.Model):
     def action_open_aksatax(self):
         self.ensure_one()
         if not self.aksatax_url:
-            raise UserError(_("Koneksi AksaTax belum diatur."))
+            raise UserError(_("Koneksi PajakMu belum diatur."))
         return {"type": "ir.actions.act_url", "url": self.aksatax_url, "target": "new"}

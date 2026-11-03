@@ -1,4 +1,4 @@
-"""Verifikasi tanda tangan webhook AksaTax.
+"""Verifikasi tanda tangan webhook PajakMu.
 
 Header ``AksaTax-Signature: t=<unix>,v1=<hex>[,v1=<hex>…]`` - HMAC-SHA256
 dengan kunci = secret ``whsec_…`` utuh, atas ``"<t>.<isi mentah>"``.

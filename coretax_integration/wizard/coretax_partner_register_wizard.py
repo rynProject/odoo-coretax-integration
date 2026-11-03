@@ -10,10 +10,10 @@ _logger = logging.getLogger(__name__)
 
 class CoretaxPartnerRegisterWizard(models.TransientModel):
     """Dua langkah: (1) periksa kelengkapan data setiap kontak; (2) daftarkan
-    yang siap ke Lawan Transaksi AksaTax dan tampilkan hasilnya."""
+    yang siap ke Lawan Transaksi PajakMu dan tampilkan hasilnya."""
 
     _name = "coretax.partner.register.wizard"
-    _description = "Daftarkan kontak ke AksaTax"
+    _description = "Daftarkan kontak ke PajakMu"
 
     partner_ids = fields.Many2many("res.partner", string="Kontak dipilih")
     step = fields.Selection([("check", "Periksa"), ("done", "Selesai")], default="check")
@@ -38,7 +38,7 @@ class CoretaxPartnerRegisterWizard(models.TransientModel):
         lines = []
         for partner in partners:
             if partner.coretax_counterparty_id:
-                level, messages = "matched", _("Sudah tertaut ke %s di AksaTax.",
+                level, messages = "matched", _("Sudah tertaut ke %s di PajakMu.",
                                                partner.coretax_counterparty_name or partner.coretax_counterparty_id)
             else:
                 problems = partner._coretax_register_check(connection)
@@ -60,17 +60,17 @@ class CoretaxPartnerRegisterWizard(models.TransientModel):
 
     def _reopen(self):
         return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id, "view_mode": "form",
-                "target": "new", "name": _("Daftarkan ke AksaTax")}
+                "target": "new", "name": _("Daftarkan ke PajakMu")}
 
     def action_register(self):
         self.ensure_one()
         connection = self.env["coretax.connection"]._for_company(self.env.company)
         if not connection.has_api_key:
-            raise UserError(_("API key AksaTax belum diisi. Buka Coretax › Pengaturan › Koneksi AksaTax."))
+            raise UserError(_("API key PajakMu belum diisi. Buka Coretax › Pengaturan › Koneksi PajakMu."))
         ready = self.line_ids.filtered(lambda l: l.level == "ok")
         if not ready:
             raise UserError(_("Tidak ada kontak yang siap didaftarkan. Lengkapi dulu datanya."))
-        labels = {"created": _("Lawan transaksi baru dibuat di AksaTax."),
+        labels = {"created": _("Lawan transaksi baru dibuat di PajakMu."),
                   "linked": _("NPWP sudah terdaftar; ditautkan ke lawan transaksi yang ada.")}
         for line in ready:
             try:

@@ -6,11 +6,11 @@ LOG_KEEP_DAYS = 90
 
 
 class CoretaxLog(models.Model):
-    """Riwayat Sinkronisasi: satu baris per panggilan ke AksaTax (dan per
+    """Riwayat Sinkronisasi: satu baris per panggilan ke PajakMu (dan per
     webhook yang diterima). Isi API key tidak pernah dicatat."""
 
     _name = "coretax.log"
-    _description = "Riwayat Sinkronisasi AksaTax"
+    _description = "Riwayat Sinkronisasi PajakMu"
     _order = "id desc"
     _rec_name = "operation"
 
@@ -21,12 +21,12 @@ class CoretaxLog(models.Model):
     method = fields.Char(string="Metode")
     path = fields.Char(string="Alamat")
     status_code = fields.Integer(string="Kode HTTP")
-    request_id = fields.Char(string="ID Permintaan", help="X-Request-Id dari AksaTax - sebutkan saat menghubungi dukungan AksaTax.")
+    request_id = fields.Char(string="ID Permintaan", help="X-Request-Id dari PajakMu - sebutkan saat menghubungi dukungan PajakMu.")
     duration_ms = fields.Integer(string="Durasi (ms)")
     message = fields.Text(string="Pesan")
     technical = fields.Text(string="Rincian teknis")
     payload = fields.Text(string="Data dikirim")
-    response = fields.Text(string="Jawaban AksaTax")
+    response = fields.Text(string="Jawaban PajakMu")
     res_model = fields.Char(string="Model dokumen")
     res_id = fields.Integer(string="ID dokumen")
     document_name = fields.Char(string="Dokumen")

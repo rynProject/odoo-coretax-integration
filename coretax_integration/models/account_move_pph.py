@@ -101,7 +101,7 @@ class AccountMove(models.Model):
                         to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena DPP-nya menjadi 0 "
                                                    "setelah nota kredit.", tax_object.code)))
                 elif bill.company_currency_id.compare_amounts(bupot.jumlah_bruto, dpp) != 0:
-                    # sudah di AksaTax: jangan diubah, beri peringatan dan aktivitas pembetulan
+                    # sudah di PajakMu: jangan diubah, beri peringatan dan aktivitas pembetulan
                     bill._coretax_warn_sent_bupot(bupot, dpp)
             for bupot in active.filtered(lambda b: b.state in EDITABLE_STATES and b.tax_object_id not in groups):
                 to_delete.append((bupot, _("Bukti potong kode objek %s dihapus karena tagihan tidak lagi memuat "
@@ -111,7 +111,7 @@ class AccountMove(models.Model):
                 bill.message_post(body=note)
 
     def _coretax_warn_sent_bupot(self, bupot, new_dpp):
-        """Catat dan jadwalkan aktivitas saat DPP bupot yang sudah di AksaTax berubah."""
+        """Catat dan jadwalkan aktivitas saat DPP bupot yang sudah di PajakMu berubah."""
         self.ensure_one()
         summary = _("Pembetulan bukti potong %(code)s (%(name)s)", code=bupot.tax_object_id.code, name=bupot.name)
         if self.activity_ids.filtered(lambda a: a.summary == summary):
@@ -121,13 +121,13 @@ class AccountMove(models.Model):
         old_text = currency.format(old_dpp)
         new_text = currency.format(new_dpp)
         bupot.message_post(body=_(
-            "DPP tagihan berubah dari %(old)s menjadi %(new)s, tetapi bukti potong ini sudah ada di AksaTax "
+            "DPP tagihan berubah dari %(old)s menjadi %(new)s, tetapi bukti potong ini sudah ada di PajakMu "
             "dan tidak diubah otomatis.", old=old_text, new=new_text))
         user = self.invoice_user_id or self.create_uid
         if not user or user == self.env.ref("base.user_root"):
             return
         note = _("DPP tagihan %(bill)s berubah dari %(old)s menjadi %(new)s, sedangkan bukti potong %(bupot)s "
-                 "sudah ada di AksaTax. Lakukan pembetulan atau pembatalan bukti potong di AksaTax.",
+                 "sudah ada di PajakMu. Lakukan pembetulan atau pembatalan bukti potong di PajakMu.",
                  bill=self.name, old=old_text, new=new_text, bupot=bupot.name)
         self.activity_schedule("mail.mail_activity_data_todo", user_id=user.id,
                                summary=summary, note=note)
@@ -136,8 +136,8 @@ class AccountMove(models.Model):
         sent = self.filtered(lambda m: m.move_type in ("in_invoice", "in_receipt")).sudo().coretax_bupot_ids.filtered(lambda b: b.origin == "bill" and b._coretax_is_at_aksatax())
         if sent:
             raise UserError(_(
-                "Tagihan %(moves)s punya bukti potong yang sudah ada di AksaTax (%(bupots)s). Batalkan dulu "
-                "bukti potongnya di AksaTax sebelum %(action)s tagihan ini.",
+                "Tagihan %(moves)s punya bukti potong yang sudah ada di PajakMu (%(bupots)s). Batalkan dulu "
+                "bukti potongnya di PajakMu sebelum %(action)s tagihan ini.",
                 moves=", ".join(sent.move_id.mapped("name")), bupots=", ".join(sent.mapped("name")),
                 action=action_label))
 

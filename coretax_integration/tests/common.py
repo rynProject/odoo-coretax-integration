@@ -26,7 +26,7 @@ class FakeResponse:
 
 
 class FakeAksaTax:
-    """Pengganti server AksaTax: rute -> (status, isi). Mencatat setiap
+    """Pengganti server PajakMu: rute -> (status, isi). Mencatat setiap
     permintaan untuk diperiksa."""
 
     def __init__(self, routes):
@@ -45,7 +45,7 @@ class FakeAksaTax:
                     return answer
                 status, body = answer
                 return FakeResponse(status, body)
-        # Rute tidak dikenal: amplop AksaTax asli (AllExceptionsFilter atas NotFoundException NestJS).
+        # Rute tidak dikenal: amplop PajakMu asli (AllExceptionsFilter atas NotFoundException NestJS).
         return FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": f"Cannot {method} /api/v1/public{path}"}})
 
 
@@ -58,7 +58,7 @@ def faktur_body(status="DRAFT", **extra):
 
 
 class CoretaxTestCommon(AccountTestInvoicingCommon):
-    """Perusahaan Indonesia, pelanggan ber-NPWP, dan koneksi AksaTax uji."""
+    """Perusahaan Indonesia, pelanggan ber-NPWP, dan koneksi PajakMu uji."""
 
     @classmethod
     @AccountTestInvoicingCommon.setup_country("id")
