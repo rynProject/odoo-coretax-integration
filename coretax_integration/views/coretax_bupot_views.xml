@@ -10,7 +10,7 @@
                 <field name="tax_object_id"/>
                 <field name="move_id"/>
                 <filter name="todo" string="Belum dikirim / gagal" domain="[('state', 'in', ('new', 'error'))]"/>
-                <filter name="in_aksatax" string="Di AksaTax" domain="[('state', 'not in', ('new', 'error'))]"/>
+                <filter name="in_aksatax" string="Di PajakMu" domain="[('state', 'not in', ('new', 'error'))]"/>
                 <filter name="from_bill" string="Dari tagihan" domain="[('origin', '=', 'bill')]"/>
                 <filter name="manual" string="Manual" domain="[('origin', '=', 'manual')]"/>
                 <filter name="approved" string="Disetujui DJP" domain="[('state', '=', 'approved')]"/>
@@ -52,22 +52,22 @@
         <field name="arch" type="xml">
             <form string="Bukti Potong">
                 <header>
-                    <button name="action_send_draft" type="object" string="Kirim draft ke AksaTax" class="btn-primary"
+                    <button name="action_send_draft" type="object" string="Kirim draft ke PajakMu" class="btn-primary"
                             icon="fa-paper-plane" invisible="state not in ('new', 'error')"/>
                     <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh" invisible="not aksatax_id"/>
-                    <button name="action_open_aksatax" type="object" string="Buka di AksaTax" icon="fa-external-link"
+                    <button name="action_open_aksatax" type="object" string="Buka di PajakMu" icon="fa-external-link"
                             invisible="not aksatax_id"/>
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,pending_approval,approved"/>
                 </header>
                 <sheet>
                     <field name="aksatax_id" invisible="1"/>
                     <div class="alert alert-info" role="status" invisible="state != 'new'">
-                        <i title="Info" class="fa fa-info-circle"/> Bukti potong dikirim ke AksaTax sebagai <b>draft</b>.
-                        Penandatanganan dan pengiriman ke DJP dilakukan di AksaTax (menu Bukti Potong Unifikasi).
+                        <i title="Info" class="fa fa-info-circle"/> Bukti potong dikirim ke PajakMu sebagai <b>draft</b>.
+                        Penandatanganan dan pengiriman ke DJP dilakukan di PajakMu (menu Bukti Potong Unifikasi).
                     </div>
                     <div class="alert alert-warning" role="status" invisible="state not in ('draft', 'pending_approval', 'validated')">
-                        <i title="Draft" class="fa fa-pencil-square-o"/> Draft sudah ada di AksaTax. Lanjutkan penandatanganan &amp; kirim ke DJP dari
-                        AksaTax - statusnya akan muncul di sini otomatis.
+                        <i title="Draft" class="fa fa-pencil-square-o"/> Draft sudah ada di PajakMu. Lanjutkan penandatanganan &amp; kirim ke DJP dari
+                        PajakMu - statusnya akan muncul di sini otomatis.
                     </div>
                     <div class="alert alert-success" role="status" invisible="state != 'approved'">
                         <i title="Berhasil" class="fa fa-check-circle"/> Disetujui DJP · Nomor bukti potong
@@ -168,7 +168,7 @@
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Buat bukti potong PPh pertama</p>
             <p>Dari tagihan vendor yang sudah diposting, klik <b>Buat Bukti Potong</b>, atau klik <b>Baru</b> di sini.
-                Bukti potong dikirim ke AksaTax sebagai draft untuk ditandatangani di sana.</p>
+                Bukti potong dikirim ke PajakMu sebagai draft untuk ditandatangani di sana.</p>
         </field>
     </record>
 

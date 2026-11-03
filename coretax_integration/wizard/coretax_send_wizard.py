@@ -19,7 +19,7 @@ class CoretaxSendWizard(models.TransientModel):
     step = fields.Selection([("check", "Periksa"), ("done", "Selesai")], default="check")
     mode = fields.Selection([
         ("send", "Langsung kirim ke DJP"),
-        ("draft", "Simpan sebagai draft di AksaTax (disetujui/dikirim dari AksaTax)"),
+        ("draft", "Simpan sebagai draft di PajakMu (disetujui/dikirim dari PajakMu)"),
     ], string="Cara kirim", required=True, default="send")
     line_ids = fields.One2many("coretax.send.wizard.line", "wizard_id", string="Faktur")
     connection_ready = fields.Boolean(compute="_compute_summary")
@@ -60,11 +60,11 @@ class CoretaxSendWizard(models.TransientModel):
             connection = self.env["coretax.connection"]._for_company(self.env.company, raise_if_missing=False)
             wiz.connection_ready = bool(connection and connection.has_api_key)
             if not connection:
-                wiz.connection_message = _("Koneksi AksaTax belum diatur.")
+                wiz.connection_message = _("Koneksi PajakMu belum diatur.")
             elif not connection.has_api_key:
-                wiz.connection_message = _("API key AksaTax belum diisi.")
+                wiz.connection_message = _("API key PajakMu belum diisi.")
             elif connection.state == "error":
-                wiz.connection_message = _("Uji koneksi terakhir gagal - periksa Pengaturan › Koneksi AksaTax.")
+                wiz.connection_message = _("Uji koneksi terakhir gagal - periksa Pengaturan › Koneksi PajakMu.")
             else:
                 wiz.connection_message = False
             wiz.ready_count = len(wiz.line_ids.filtered(lambda l: l.level == "ok"))
@@ -81,7 +81,7 @@ class CoretaxSendWizard(models.TransientModel):
         self.ensure_one()
         connection = self.env["coretax.connection"]._for_company(self.env.company)
         if not connection.has_api_key:
-            raise UserError(_("API key AksaTax belum diisi. Buka Coretax › Pengaturan › Koneksi AksaTax."))
+            raise UserError(_("API key PajakMu belum diisi. Buka Coretax › Pengaturan › Koneksi PajakMu."))
         sendable = self.line_ids.filtered(lambda l: l.level != "error")
         if not sendable:
             raise UserError(_("Tidak ada faktur yang siap dikirim. Perbaiki dulu catatan pada setiap faktur."))
@@ -133,7 +133,7 @@ class CoretaxSendWizardLine(models.TransientModel):
     level = fields.Selection([("ok", "Siap"), ("warning", "Siap, ada catatan"), ("error", "Belum bisa dikirim")],
                              string="Pemeriksaan", required=True, default="ok")
     messages = fields.Text(string="Catatan")
-    result = fields.Selection([("sent", "Terkirim ke DJP"), ("draft", "Tersimpan di AksaTax"),
+    result = fields.Selection([("sent", "Terkirim ke DJP"), ("draft", "Tersimpan di PajakMu"),
                                ("failed", "Gagal"), ("skipped", "Dilewati")], string="Hasil")
     result_message = fields.Text(string="Keterangan hasil")
     faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur")

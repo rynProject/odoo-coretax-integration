@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
     <!-- Kode objek pajak yang paling sering dipakai (sumber: data contoh
-         AksaTax). Tarif hanya untuk perkiraan di Odoo - perhitungan resmi
-         dilakukan AksaTax/DJP. Administrator bisa menambah kode lain di
+         PajakMu). Tarif hanya untuk perkiraan di Odoo - perhitungan resmi
+         dilakukan PajakMu/DJP. Administrator bisa menambah kode lain di
          Coretax › Data Master › Kode Objek Pajak. -->
     <record id="tax_object_24_104_01" model="coretax.tax.object"><field name="code">24-104-01</field><field name="name">Jasa teknik</field><field name="pasal">23</field><field name="tarif">2</field></record>
     <record id="tax_object_24_104_02" model="coretax.tax.object"><field name="code">24-104-02</field><field name="name">Jasa manajemen</field><field name="pasal">23</field><field name="tarif">2</field></record>

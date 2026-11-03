@@ -61,11 +61,11 @@ export class CoretaxDashboard extends Component {
     get steps() {
         const c = this.d.connection;
         return [
-            { done: Boolean(c && c.has_api_key), title: "Isi API key AksaTax",
-              sub: "Pengaturan › Koneksi AksaTax. Salin API key dari AksaTax › Integrasi." },
+            { done: Boolean(c && c.has_api_key), title: "Isi API key PajakMu",
+              sub: "Pengaturan › Koneksi PajakMu. Salin API key dari PajakMu › Integrasi." },
             { done: this.connected, title: "Uji koneksi", sub: "Klik Uji koneksi sampai statusnya Terhubung." },
             { done: this.d.counts.partners_unmatched === 0, title: "Cocokkan pelanggan",
-              sub: "Tautkan pelanggan ber-NPWP ke Lawan Transaksi AksaTax." },
+              sub: "Tautkan pelanggan ber-NPWP ke Lawan Transaksi PajakMu." },
             { done: this.d.recent.length > 0, title: "Kirim e-Faktur pertama",
               sub: "e-Faktur › Siap dikirim, pilih faktur lalu Kirim e-Faktur." },
         ];
@@ -77,7 +77,7 @@ export class CoretaxDashboard extends Component {
         return [
             { key: "ready", tone: "primary", icon: "fa-inbox", value: c.ready, label: "Siap dikirim",
               hint: "Faktur ber-PPN tanpa e-Faktur", open: () => this.openReady() },
-            { key: "draft", tone: "warning", icon: "fa-pencil-square-o", value: c.draft, label: "Draft di AksaTax",
+            { key: "draft", tone: "warning", icon: "fa-pencil-square-o", value: c.draft, label: "Draft di PajakMu",
               hint: "Belum dikirim ke DJP", open: () => this.openFaktur("draft") },
             { key: "in_progress", tone: "info", icon: "fa-hourglass-half", value: c.in_progress, label: "Diproses DJP",
               hint: "Menunggu jawaban DJP", open: () => this.openFaktur("in_progress") },

@@ -120,9 +120,9 @@ class TestPphBupot(PphTestCommon):
     def test_reset_and_cancel_blocked_when_bupot_at_aksatax(self):
         bill = self._three_lines()
         self._teknik(bill).write({"aksatax_id": "x-1", "state": "draft"})
-        with self.assertRaisesRegex(UserError, "AksaTax"):
+        with self.assertRaisesRegex(UserError, "PajakMu"):
             bill.button_draft()
-        with self.assertRaisesRegex(UserError, "AksaTax"):
+        with self.assertRaisesRegex(UserError, "PajakMu"):
             bill.button_cancel()
 
     def test_cancel_and_unlink_delete_new_bupots(self):

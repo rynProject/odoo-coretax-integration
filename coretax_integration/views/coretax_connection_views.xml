@@ -4,14 +4,14 @@
         <field name="name">coretax.connection.form</field>
         <field name="model">coretax.connection</field>
         <field name="arch" type="xml">
-            <form string="Koneksi AksaTax">
+            <form string="Koneksi PajakMu">
                 <header>
                     <button name="action_test_connection" type="object" string="Uji koneksi" class="btn-primary" icon="fa-plug"/>
                     <button name="action_sync_now" type="object" string="Ambil status terbaru" icon="fa-refresh"
                             invisible="not has_api_key"/>
                     <button name="action_match_all_partners" type="object" string="Cocokkan semua pelanggan" icon="fa-link"
-                            invisible="state != 'ok'" help="Cari semua pelanggan ber-NPWP yang belum cocok di AksaTax."/>
-                    <button name="action_open_aksatax" type="object" string="Buka AksaTax" icon="fa-external-link"/>
+                            invisible="state != 'ok'" help="Cari semua pelanggan ber-NPWP yang belum cocok di PajakMu."/>
+                    <button name="action_open_aksatax" type="object" string="Buka PajakMu" icon="fa-external-link"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
@@ -23,20 +23,20 @@
                     <field name="has_api_key" invisible="1"/>
                     <div class="alert alert-success d-flex align-items-center gap-2" role="status" invisible="state != 'ok'">
                         <i title="Berhasil" class="fa fa-check-circle fa-lg"/>
-                        <span>Terhubung ke AksaTax (<field name="environment" class="d-inline fw-bold" readonly="1"/>). Odoo siap mengirim e-Faktur.</span>
+                        <span>Terhubung ke PajakMu (<field name="environment" class="d-inline fw-bold" readonly="1"/>). Odoo siap mengirim e-Faktur.</span>
                     </div>
                     <div class="alert alert-danger" role="alert" invisible="state != 'error'">
                         <strong><i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> Koneksi gagal.</strong>
                         <field name="last_error" class="d-block mt-1" readonly="1"/>
                     </div>
                     <div class="alert alert-info" role="status" invisible="state != 'draft'">
-                        <i title="Info" class="fa fa-info-circle"/> Isi <b>Alamat AksaTax</b> dan <b>API Key</b> di bawah, simpan, lalu klik <b>Uji koneksi</b>.
+                        <i title="Info" class="fa fa-info-circle"/> Isi <b>Alamat PajakMu</b> dan <b>API Key</b> di bawah, simpan, lalu klik <b>Uji koneksi</b>.
                     </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
-                        <group string="1. Hubungkan ke AksaTax">
+                        <group string="1. Hubungkan ke PajakMu">
                             <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                             <field name="company_vat" string="NPWP perusahaan"/>
                             <field name="base_url" placeholder="https://app.aksatax.id"/>
@@ -65,7 +65,7 @@
                         </group>
                         <group>
                             <div class="text-muted" colspan="2">
-                                Kontak yang belum ada di AksaTax bisa didaftarkan dari
+                                Kontak yang belum ada di PajakMu bisa didaftarkan dari
                                 <b>Coretax › Data Master › Lawan Transaksi</b>. Data diambil dari field kontak berikut;
                                 ganti dengan field lain (termasuk field kustom) bila data Anda disimpan di tempat lain.
                             </div>
@@ -90,13 +90,13 @@
                     <div class="alert alert-light border mt-2" role="status">
                         <h5 class="mb-2"><i title="Tips" class="fa fa-lightbulb-o"/> Cara mendapatkan API key</h5>
                         <ol class="mb-2">
-                            <li>Masuk ke AksaTax sebagai <b>Owner</b> atau <b>Admin Pajak</b> (paket Business ke atas).</li>
+                            <li>Masuk ke PajakMu sebagai <b>Owner</b> atau <b>Admin Pajak</b> (paket Business ke atas).</li>
                             <li>Buka <b>Integrasi › API Key</b> (<a href="#" type="object" name="action_open_aksatax_integrasi">buka halamannya</a>), klik <b>Buat API key</b>.</li>
                             <li>Centang izin: <i>faktur:baca</i>, <i>faktur:tulis</i>, <i>faktur:kirim</i>, <i>bupot:*</i>, dan <i>status:baca</i>.</li>
                             <li>Salin API key (hanya ditampilkan sekali), tempel di kolom <b>API Key</b> di atas, lalu klik <b>Uji koneksi</b>.</li>
                         </ol>
                         <p class="mb-1" invisible="sync_method != 'webhook'">
-                            <b>Webhook:</b> di AksaTax buka <b>Integrasi › Webhook</b>, tempel <b>Alamat webhook untuk AksaTax</b> di atas,
+                            <b>Webhook:</b> di PajakMu buka <b>Integrasi › Webhook</b>, tempel <b>Alamat webhook untuk PajakMu</b> di atas,
                             pilih event <i>faktur.*</i> dan <i>bupot.*</i>, lalu salin <b>Webhook Secret</b> (whsec_…) ke kolomnya.
                         </p>
                         <p class="mb-0 text-muted">Satu API key mewakili satu NPWP. Untuk beberapa perusahaan, atur koneksi di setiap perusahaan.</p>
@@ -111,7 +111,7 @@
         <field name="name">coretax.connection.list</field>
         <field name="model">coretax.connection</field>
         <field name="arch" type="xml">
-            <list string="Koneksi AksaTax">
+            <list string="Koneksi PajakMu">
                 <field name="name"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="environment"/>
@@ -122,13 +122,13 @@
     </record>
 
     <record id="action_coretax_connection" model="ir.actions.act_window">
-        <field name="name">Koneksi AksaTax</field>
+        <field name="name">Koneksi PajakMu</field>
         <field name="res_model">coretax.connection</field>
         <field name="view_mode">list,form</field>
     </record>
 
     <record id="action_coretax_connection_open" model="ir.actions.server">
-        <field name="name">Koneksi AksaTax</field>
+        <field name="name">Koneksi PajakMu</field>
         <field name="model_id" ref="model_coretax_connection"/>
         <field name="state">code</field>
         <field name="code">action = model.action_open_for_company()</field>

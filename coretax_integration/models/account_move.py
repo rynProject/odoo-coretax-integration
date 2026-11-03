@@ -11,8 +11,8 @@ from .coretax_retur import LIVE_STATES as RETUR_LIVE_STATES
 
 _logger = logging.getLogger(__name__)
 
-# Kode transaksi yang bisa dibuat lewat Public API AksaTax (01-10). 07/08 ikut
-# mengirim keterangan tambahan; 10 hanya diterima AksaTax versi terbaru.
+# Kode transaksi yang bisa dibuat lewat Public API PajakMu (01-10). 07/08 ikut
+# mengirim keterangan tambahan; 10 hanya diterima PajakMu versi terbaru.
 SUPPORTED_TRX_CODES = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10"}
 
 
@@ -116,7 +116,7 @@ class AccountMove(models.Model):
         if not code:
             issues.append(("error", _("Kode transaksi e-Faktur belum dipilih (tab Lainnya / Other Info faktur).")))
         elif code not in SUPPORTED_TRX_CODES:
-            issues.append(("error", _("Kode transaksi %s belum didukung AksaTax. Buat e-Faktur ini langsung di AksaTax.", code)))
+            issues.append(("error", _("Kode transaksi %s belum didukung PajakMu. Buat e-Faktur ini langsung di PajakMu.", code)))
         elif code in ("07", "08") and not self._coretax_keterangan_tambahan():
             issues.append(("error", _("Pilih keterangan tambahan untuk kode transaksi %s (tab Info Lainnya).", code)))
         partner = self.commercial_partner_id
@@ -124,11 +124,11 @@ class AccountMove(models.Model):
             issues.append(("error", _("Pelanggan %s belum punya NPWP atau NIK.", partner.display_name)))
         elif not partner.with_company(self.company_id).coretax_counterparty_id:
             if connection and connection.auto_register_partner:
-                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan AksaTax - Odoo akan mencarinya lewat "
+                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan PajakMu - Odoo akan mencarinya lewat "
                                             "NPWP, atau mendaftarkannya sebagai lawan transaksi baru, saat mengirim.",
                                             partner.display_name)))
             else:
-                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan data di AksaTax - Odoo akan mencarinya "
+                issues.append(("warning", _("Pelanggan %s belum dicocokkan dengan data di PajakMu - Odoo akan mencarinya "
                                             "otomatis lewat NPWP saat mengirim.", partner.display_name)))
         lines = self.invoice_line_ids.filtered(lambda l: l.display_type == "product" and l.tax_ids)
         no_code = lines.filtered(lambda l: not l.product_id.l10n_id_product_code)
@@ -144,7 +144,7 @@ class AccountMove(models.Model):
         except (UserError, ValidationError) as exc:
             issues.append(("error", str(exc.args[0] if exc.args else exc)))
         if connection is not None and not connection:
-            issues.insert(0, ("error", _("Koneksi AksaTax untuk perusahaan ini belum diatur.")))
+            issues.insert(0, ("error", _("Koneksi PajakMu untuk perusahaan ini belum diatur.")))
         return issues
 
     # ── data yang dikirim ─────────────────────────────────────────────
@@ -209,7 +209,7 @@ class AccountMove(models.Model):
 
     # ── pengiriman ────────────────────────────────────────────────────
     def _coretax_explain_error(self, exc):
-        """AksaTax lama menolak kode transaksi 10 (atau keterangan tambahan
+        """PajakMu lama menolak kode transaksi 10 (atau keterangan tambahan
         baru untuk 07/08) sebagai VALIDATION; terjemahkan jadi pesan
         'perbarui server'."""
         self.ensure_one()
@@ -224,16 +224,16 @@ class AccountMove(models.Model):
                 path = ".".join(str(part) for part in path)
             if kode == "10" and path == "kdJenisTransaksi":
                 return AksaTaxError(
-                    _("Kode transaksi 10 butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
+                    _("Kode transaksi 10 butuh PajakMu versi terbaru. Minta admin PajakMu memperbarui server."),
                     code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
             if kode in ("07", "08") and path == "idKeteranganTambahan":
                 return AksaTaxError(
-                    _("Keterangan tambahan ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."),
+                    _("Keterangan tambahan ini butuh PajakMu versi terbaru. Minta admin PajakMu memperbarui server."),
                     code="NOT_SUPPORTED", status=exc.status, request_id=exc.request_id)
         return exc
 
     def _coretax_create_faktur(self, mode="send", connection=None):
-        """Buat e-Faktur di AksaTax untuk satu faktur, lalu (bila mode 'send')
+        """Buat e-Faktur di PajakMu untuk satu faktur, lalu (bila mode 'send')
         kirim ke DJP. Selalu menghasilkan dokumen coretax.faktur - yang gagal
         berstatus 'Gagal - perlu tindakan' dengan pesan yang bisa dibaca."""
         self.ensure_one()
@@ -255,7 +255,7 @@ class AccountMove(models.Model):
             counterparty = partner._coretax_counterparty_for(connection)
             if not counterparty:
                 raise AksaTaxError(_(
-                    "Pelanggan %s (NPWP %s) belum terdaftar di AksaTax. Klik 'Daftarkan ke AksaTax' di "
+                    "Pelanggan %s (NPWP %s) belum terdaftar di PajakMu. Klik 'Daftarkan ke PajakMu' di "
                     "Coretax › Data Master › Lawan Transaksi, lalu kirim ulang.",
                     partner.display_name, partner._coretax_identity() or "-"), code="COUNTERPARTY_MISSING")
             data = client.create_faktur(self._coretax_payload(counterparty), faktur._idempotency_base())
@@ -267,17 +267,17 @@ class AccountMove(models.Model):
         except AksaTaxError as caught:
             exc = self._coretax_explain_error(caught)
             if faktur.aksatax_id:
-                # draft sudah ada di AksaTax, hanya kirim ke DJP yang gagal:
+                # draft sudah ada di PajakMu, hanya kirim ke DJP yang gagal:
                 # status tetap draft dan bisa dikirim ulang dari Odoo
                 faktur.write({"last_error": exc.full_message()})
             else:
                 faktur.write({"state": "error", "last_error": exc.full_message()})
-            faktur.message_post(body=_("Gagal mengirim ke AksaTax: %s", exc.full_message()))
+            faktur.message_post(body=_("Gagal mengirim ke PajakMu: %s", exc.full_message()))
             faktur.error_code = exc.code or ""
             if self.env.context.get("coretax_auto"):
                 faktur._schedule_fix_activity(_("e-Faktur gagal dikirim otomatis"))
             return faktur
-        self.message_post(body=_("e-Faktur dibuat di AksaTax (%s).", dict(STATES).get(faktur.state)))
+        self.message_post(body=_("e-Faktur dibuat di PajakMu (%s).", dict(STATES).get(faktur.state)))
         return faktur
 
     def action_coretax_send(self):
@@ -399,13 +399,13 @@ class AccountMove(models.Model):
             move.coretax_retur_live = any(r.state in RETUR_LIVE_STATES for r in returs)
 
     def _coretax_retur_guard(self, action_label):
-        """Nota kredit dengan nota retur yang masih berlaku di AksaTax tidak boleh diubah."""
+        """Nota kredit dengan nota retur yang masih berlaku di PajakMu tidak boleh diubah."""
         refunds = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund"))
         for move in refunds:
             live = move.sudo().coretax_retur_ids.filtered(lambda r: r.state in RETUR_LIVE_STATES)[:1]
             if live:
                 raise UserError(_(
-                    "Nota kredit ini punya nota retur %(nomor)s di AksaTax. Batalkan nota retur dulu, "
+                    "Nota kredit ini punya nota retur %(nomor)s di PajakMu. Batalkan nota retur dulu, "
                     "lalu %(action)s.", nomor=live.nomor_dokumen_retur, action=action_label))
 
     def _coretax_origin_faktur(self):
@@ -426,7 +426,7 @@ class AccountMove(models.Model):
             return rules
         group = groups.get(tax.tax_group_id.id)
         if group == "ppn_non_luxury" and abs(tax.amount - 11) > 1e-9:
-            # hanya pajak 11% (DPP nilai lain 11/12) yang memakai aturan non-mewah AksaTax
+            # hanya pajak 11% (DPP nilai lain 11/12) yang memakai aturan non-mewah PajakMu
             group = "ppn_generic" if tax.amount > 0 else None
             return [(group, tax.amount)] if group else []
         if group == "ppnbm":
@@ -440,7 +440,7 @@ class AccountMove(models.Model):
     def _coretax_retur_amounts(self, faktur=None):
         """Nilai retur dari nota kredit, dalam mata uang perusahaan: dict(dpp, ppn, ppnbm, tarif).
 
-        PPN dihitung per baris dan dibulatkan ke bawah per baris seperti AksaTax. Untuk nota kredit keluaran
+        PPN dihitung per baris dan dibulatkan ke bawah per baris seperti PajakMu. Untuk nota kredit keluaran
         dengan `faktur` (e-Faktur asal yang disetujui): retur penuh memakai total e-Faktur, retur sebagian
         dibatasi sisa e-Faktur setelah dikurangi nota retur lain yang masih berlaku."""
         self.ensure_one()
@@ -523,10 +523,10 @@ class AccountMove(models.Model):
     def unlink(self):
         self._coretax_retur_guard(_("hapus nota kredit"))
         returs = self.filtered(lambda m: m.move_type in ("out_refund", "in_refund")).sudo().coretax_retur_ids
-        # Nota retur yang tidak pernah sampai ke AksaTax ikut dihapus; yang punya riwayat menahan penghapusan.
+        # Nota retur yang tidak pernah sampai ke PajakMu ikut dihapus; yang punya riwayat menahan penghapusan.
         returs.filtered(lambda r: not r.aksatax_id).unlink()
         history = returs.exists()
         if history:
-            raise UserError(_("Nota kredit ini punya riwayat nota retur %s di AksaTax, jadi tidak bisa dihapus. "
+            raise UserError(_("Nota kredit ini punya riwayat nota retur %s di PajakMu, jadi tidak bisa dihapus. "
                               "Batalkan nota kredit saja.", history[0].nomor_dokumen_retur))
         return super().unlink()

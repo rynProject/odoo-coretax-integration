@@ -14,7 +14,7 @@ def digits(value):
     return re.sub(r"\D", "", value or "")
 
 
-# Jenis identitas pembeli (l10n_id_efaktur_coretax) -> jenisId lawan transaksi AksaTax.
+# Jenis identitas pembeli (l10n_id_efaktur_coretax) -> jenisId lawan transaksi PajakMu.
 JENIS_ID = {"NIK": "NIK", "Passport": "PASPOR", "Other": "LAINNYA"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -22,15 +22,15 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
-    # Satu NPWP di AksaTax = satu tenant, jadi tautannya per perusahaan Odoo.
-    coretax_counterparty_id = fields.Char(string="ID lawan transaksi AksaTax", company_dependent=True, copy=False,
-                                          help="Diisi otomatis saat dicocokkan dengan data Lawan Transaksi di AksaTax.")
-    coretax_counterparty_name = fields.Char(string="Nama di AksaTax", company_dependent=True, copy=False)
+    # Satu NPWP di PajakMu = satu tenant, jadi tautannya per perusahaan Odoo.
+    coretax_counterparty_id = fields.Char(string="ID lawan transaksi PajakMu", company_dependent=True, copy=False,
+                                          help="Diisi otomatis saat dicocokkan dengan data Lawan Transaksi di PajakMu.")
+    coretax_counterparty_name = fields.Char(string="Nama di PajakMu", company_dependent=True, copy=False)
     coretax_vswp_status = fields.Char(string="Status VSWP", company_dependent=True, copy=False,
-                                      help="Hasil verifikasi NPWP di AksaTax (VSWP).")
+                                      help="Hasil verifikasi NPWP di PajakMu (VSWP).")
     coretax_match_state = fields.Selection([("matched", "Sudah cocok"), ("unmatched", "Belum dicocokkan"),
                                             ("no_id", "Belum ada NPWP/NIK")],
-                                           string="Status AksaTax", compute="_compute_coretax_match_state",
+                                           string="Status PajakMu", compute="_compute_coretax_match_state",
                                            search="_search_coretax_match_state")
 
     @api.depends_context("company")
@@ -47,7 +47,7 @@ class ResPartner(models.Model):
 
     def _search_coretax_match_state(self, operator, value):
         if operator not in ("=", "!=") or value not in ("matched", "unmatched", "no_id"):
-            raise UserError(_("Pencarian status AksaTax ini tidak didukung."))
+            raise UserError(_("Pencarian status PajakMu ini tidak didukung."))
         has_id = ["|", "|"] + [(name, "!=", False) for name in self._coretax_identity_fields()]
         domain = {
             "matched": [("coretax_counterparty_id", "!=", False)],
@@ -56,7 +56,7 @@ class ResPartner(models.Model):
         }[value]
         return domain if operator == "=" else ["!"] + domain
 
-    # ── pemetaan field (Coretax › Pengaturan › Koneksi AksaTax) ───────
+    # ── pemetaan field (Coretax › Pengaturan › Koneksi PajakMu) ───────
     def _coretax_connection(self):
         return self.env["coretax.connection"]._for_company(self.env.company, raise_if_missing=False)
 
@@ -106,7 +106,7 @@ class ResPartner(models.Model):
         return digits(self._coretax_value("doc_number", connection))
 
     def _coretax_npwp_variants(self, connection=None):
-        """NPWP 15 digit (lama) dan 16 digit (Coretax) - AksaTax menyimpan
+        """NPWP 15 digit (lama) dan 16 digit (Coretax) - PajakMu menyimpan
         salah satunya, jadi keduanya dicoba."""
         npwp = digits(self._coretax_value("npwp", connection))
         variants = [npwp] if npwp else []
@@ -131,8 +131,8 @@ class ResPartner(models.Model):
         })
 
     def _coretax_auto_match(self, connection):
-        """Cari lawan transaksi di AksaTax lewat NPWP; dipakai otomatis bila
-        hasilnya tepat satu. Mengembalikan ID AksaTax atau False."""
+        """Cari lawan transaksi di PajakMu lewat NPWP; dipakai otomatis bila
+        hasilnya tepat satu. Mengembalikan ID PajakMu atau False."""
         self.ensure_one()
         client = connection._client(self)
         for npwp in self._coretax_npwp_variants(connection):
@@ -142,9 +142,9 @@ class ResPartner(models.Model):
                 return rows[0]["id"]
         return False
 
-    # ── mendaftarkan sebagai lawan transaksi AksaTax ──────────────────
+    # ── mendaftarkan sebagai lawan transaksi PajakMu ──────────────────
     def _coretax_counterparty_payload(self, connection):
-        """Data lawan transaksi untuk POST /public/lawan-transaksi (skema counterpartySchema AksaTax)."""
+        """Data lawan transaksi untuk POST /public/lawan-transaksi (skema counterpartySchema PajakMu)."""
         self.ensure_one()
         kind = self._coretax_kind(connection)
         npwp = digits(self._coretax_value("npwp", connection)) if kind == "NPWP" else ""
@@ -185,7 +185,7 @@ class ResPartner(models.Model):
         return problems
 
     def _coretax_register(self, connection):
-        """Daftarkan kontak ke AksaTax lalu tautkan. 'created' = lawan transaksi baru,
+        """Daftarkan kontak ke PajakMu lalu tautkan. 'created' = lawan transaksi baru,
         'linked' = NPWP sudah terdaftar, ditautkan ke yang ada. Galat lain: AksaTaxError."""
         self.ensure_one()
         payload = self._coretax_counterparty_payload(connection)
@@ -202,15 +202,15 @@ class ResPartner(models.Model):
             rows = [r for r in client.find_counterparties(npwp=payload["npwp"]) if r.get("id") == existing_id] \
                 if payload["npwp"] else []
             self._coretax_set_counterparty(rows[0] if rows else {"id": existing_id})
-            self.message_post(body=_("NPWP sudah terdaftar di AksaTax; ditautkan ke lawan transaksi %s.",
+            self.message_post(body=_("NPWP sudah terdaftar di PajakMu; ditautkan ke lawan transaksi %s.",
                                      self.coretax_counterparty_name or existing_id))
             return "linked"
         self._coretax_set_counterparty(row)
-        self.message_post(body=_("Didaftarkan ke AksaTax sebagai lawan transaksi %s.", row.get("nama") or self.name))
+        self.message_post(body=_("Didaftarkan ke PajakMu sebagai lawan transaksi %s.", row.get("nama") or self.name))
         return "created"
 
     def _coretax_counterparty_for(self, connection):
-        """ID lawan transaksi AksaTax untuk kontak ini: yang sudah tertaut, dicari lewat NPWP,
+        """ID lawan transaksi PajakMu untuk kontak ini: yang sudah tertaut, dicari lewat NPWP,
         atau didaftarkan otomatis (bila diaktifkan di koneksi). False bila tidak ada."""
         self.ensure_one()
         if self.coretax_counterparty_id:
@@ -221,7 +221,7 @@ class ResPartner(models.Model):
             problems = self._coretax_register_check(connection)
             if problems:
                 raise AksaTaxError(_(
-                    "%(partner)s belum terdaftar di AksaTax dan datanya belum lengkap untuk didaftarkan otomatis: "
+                    "%(partner)s belum terdaftar di PajakMu dan datanya belum lengkap untuk didaftarkan otomatis: "
                     "%(problems)s Lengkapi data kontak, lalu kirim ulang.",
                     partner=self.display_name, problems=" ".join(problems)), code="COUNTERPARTY_INCOMPLETE")
             self._coretax_register(connection)
@@ -235,7 +235,7 @@ class ResPartner(models.Model):
             raise UserError(_("Pilih minimal satu kontak."))
         return {
             "type": "ir.actions.act_window", "res_model": "coretax.partner.register.wizard", "view_mode": "form",
-            "target": "new", "name": _("Daftarkan ke AksaTax"),
+            "target": "new", "name": _("Daftarkan ke PajakMu"),
             "context": {"default_partner_ids": [(6, 0, partners.ids)]},
         }
 
@@ -257,17 +257,17 @@ class ResPartner(models.Model):
                 raise UserError(exc.full_message()) from exc
         message = _("%s kontak berhasil dicocokkan.", matched)
         if skipped:
-            message += _(" Belum ditemukan/ganda di AksaTax (%s): %s%s. Klik Daftarkan ke AksaTax untuk mendaftarkannya.",
+            message += _(" Belum ditemukan/ganda di PajakMu (%s): %s%s. Klik Daftarkan ke PajakMu untuk mendaftarkannya.",
                          len(skipped), ", ".join(skipped[:5]), "…" if len(skipped) > 5 else "")
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"title": _("Pencocokan AksaTax"), "message": message, "sticky": bool(skipped),
+            "params": {"title": _("Pencocokan PajakMu"), "message": message, "sticky": bool(skipped),
                        "type": "success" if not skipped else "warning",
                        "next": {"type": "ir.actions.client", "tag": "soft_reload"}},
         }
 
     def action_coretax_update_counterparty(self):
-        """Kirim data kontak terbaru ke lawan transaksi AksaTax yang sudah tertaut."""
+        """Kirim data kontak terbaru ke lawan transaksi PajakMu yang sudah tertaut."""
         connection = self.env["coretax.connection"]._for_company(self.env.company)
         partners = self.commercial_partner_id
         if not partners:
@@ -275,7 +275,7 @@ class ResPartner(models.Model):
         done, problems = [], []
         for partner in partners:
             if not partner.coretax_counterparty_id:
-                problems.append(_("Cocokkan dulu kontak %s dengan AksaTax.", partner.display_name))
+                problems.append(_("Cocokkan dulu kontak %s dengan PajakMu.", partner.display_name))
                 continue
             try:
                 row = connection._client(partner).update_counterparty(
@@ -284,18 +284,18 @@ class ResPartner(models.Model):
                 problems.append(f"{partner.display_name}: {exc.full_message()}")
                 continue
             partner._coretax_set_counterparty(row)
-            partner.message_post(body=_("Data kontak diperbarui di AksaTax (%s).", row.get("nama") or partner.name))
+            partner.message_post(body=_("Data kontak diperbarui di PajakMu (%s).", row.get("nama") or partner.name))
             done.append(partner.display_name)
         if len(partners) == 1:
             if problems:
                 raise UserError(problems[0])
             return True
-        message = _("%s kontak diperbarui di AksaTax.", len(done))
+        message = _("%s kontak diperbarui di PajakMu.", len(done))
         if problems:
             message += " " + _("Gagal (%s): %s", len(problems), " ".join(problems[:5]))
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"title": _("Perbarui di AksaTax"), "message": message, "sticky": bool(problems),
+            "params": {"title": _("Perbarui di PajakMu"), "message": message, "sticky": bool(problems),
                        "type": "success" if not problems else "warning",
                        "next": {"type": "ir.actions.client", "tag": "soft_reload"}},
         }
@@ -304,7 +304,7 @@ class ResPartner(models.Model):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window", "res_model": "coretax.partner.match.wizard", "view_mode": "form",
-            "target": "new", "name": _("Cocokkan dengan AksaTax"),
+            "target": "new", "name": _("Cocokkan dengan PajakMu"),
             "context": {"default_partner_id": self.commercial_partner_id.id},
         }
 

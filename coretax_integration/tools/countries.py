@@ -1,5 +1,5 @@
 """Kode negara ISO 3166-1: alpha-2 (res.country.code di Odoo) -> alpha-3
-(field `negara` lawan transaksi AksaTax)."""
+(field `negara` lawan transaksi PajakMu)."""
 
 _PAIRS = """
 AD AND AE ARE AF AFG AG ATG AI AIA AL ALB AM ARM AO AGO AQ ATA AR ARG AS ASM AT AUT AU AUS AW ABW AX ALA AZ AZE

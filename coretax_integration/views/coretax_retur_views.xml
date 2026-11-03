@@ -86,7 +86,7 @@
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
-                    <group string="AksaTax" invisible="not aksatax_id">
+                    <group string="PajakMu" invisible="not aksatax_id">
                         <field name="aksatax_id"/>
                         <field name="last_sync"/>
                         <field name="alasan_batal" invisible="not alasan_batal"/>

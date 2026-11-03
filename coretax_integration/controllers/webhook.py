@@ -10,11 +10,11 @@ _logger = logging.getLogger(__name__)
 
 
 class CoretaxWebhookController(http.Controller):
-    """Penerima webhook AksaTax: POST /coretax/webhook/<id koneksi>.
+    """Penerima webhook PajakMu: POST /coretax/webhook/<id koneksi>.
 
     Tanpa sesi Odoo (auth='none'); keasliannya dijamin tanda tangan HMAC
     ``AksaTax-Signature`` dengan Webhook Secret koneksi. Jawaban 2xx berarti
-    diterima - AksaTax mengulang kiriman yang gagal (maks. 5 kali)."""
+    diterima - PajakMu mengulang kiriman yang gagal (maks. 5 kali)."""
 
     @http.route("/coretax/webhook/<int:connection_id>", type="http", auth="none", methods=["POST"], csrf=False,
                 save_session=False)
@@ -28,7 +28,7 @@ class CoretaxWebhookController(http.Controller):
             return request.make_json_response({"ok": False, "error": "unknown endpoint"}, status=404)
         header = request.httprequest.headers.get("AksaTax-Signature", "")
         if not verify_signature(connection.webhook_secret, header, raw):
-            _logger.warning("Webhook AksaTax ditolak: tanda tangan tidak valid (koneksi %s)", connection_id)
+            _logger.warning("Webhook PajakMu ditolak: tanda tangan tidak valid (koneksi %s)", connection_id)
             return request.make_json_response({"ok": False, "error": "invalid signature"}, status=401)
         try:
             event = json.loads(raw or b"{}")

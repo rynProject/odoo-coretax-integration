@@ -124,7 +124,7 @@ class TestRetur(CoretaxTestCommon):
         with patcher:
             retur.action_send()
         self.assertEqual(retur.state, "error")
-        self.assertIn("butuh AksaTax versi terbaru", retur.last_error)
+        self.assertIn("butuh PajakMu versi terbaru", retur.last_error)
         self.assertEqual(retur.error_code, "NOT_SUPPORTED")
 
     def test_event_approved(self):
@@ -281,7 +281,7 @@ class TestRetur(CoretaxTestCommon):
     def test_credit_note_locked_while_retur_live(self):
         retur = self._out_retur(state="approved", aksatax_id=RETUR_ID)
         credit = retur.move_id
-        with self.assertRaisesRegex(UserError, "punya nota retur RTR/001 di AksaTax"):
+        with self.assertRaisesRegex(UserError, "punya nota retur RTR/001 di PajakMu"):
             credit.button_draft()
         with self.assertRaisesRegex(UserError, "Batalkan nota retur dulu"):
             credit.button_cancel()
@@ -336,7 +336,7 @@ class TestRetur(CoretaxTestCommon):
         retur = self._out_retur(state="cancelled", aksatax_id=RETUR_ID)
         credit = retur.move_id
         credit.button_draft()
-        with self.assertRaisesRegex(UserError, "punya riwayat nota retur RTR/001 di AksaTax, jadi tidak bisa "
+        with self.assertRaisesRegex(UserError, "punya riwayat nota retur RTR/001 di PajakMu, jadi tidak bisa "
                                                "dihapus. Batalkan nota kredit saja."):
             credit.unlink()
         self.assertTrue(retur.exists())
@@ -367,7 +367,7 @@ class TestRetur(CoretaxTestCommon):
         credit = self._credit_note(bill)
         self.assertEqual(credit._coretax_retur_amounts(), {"dpp": 100000, "ppn": 12000, "ppnbm": 10000, "tarif": 12})
 
-    # ── Track O: nilai sesuai AksaTax, kunci, wizard ─────────────────
+    # ── Track O: nilai sesuai PajakMu, kunci, wizard ─────────────────
     def _sale_credit(self, tax, price=1000000, faktur_vals=None, extra_lines=()):
         lines = [(0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": price,
                          "tax_ids": [(6, 0, tax.ids)]})] + list(extra_lines)
@@ -467,7 +467,7 @@ class TestRetur(CoretaxTestCommon):
             retur.action_refresh()
         self.assertEqual(retur.state, "error")
         self.assertFalse(retur.aksatax_id)
-        self.assertEqual(retur.last_error, "Nota retur tidak ditemukan di AksaTax. Kirim ulang dari Odoo.")
+        self.assertEqual(retur.last_error, "Nota retur tidak ditemukan di PajakMu. Kirim ulang dari Odoo.")
 
     def test_refresh_pending_covers_draft_and_not_found(self):
         retur = self._out_retur(state="draft", aksatax_id=RETUR_ID,

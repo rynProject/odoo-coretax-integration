@@ -6,11 +6,11 @@ from ..tools.client import AksaTaxError
 
 
 class CoretaxPartnerMatchWizard(models.TransientModel):
-    """Cari pelanggan/vendor di daftar Lawan Transaksi AksaTax lalu pilih
+    """Cari pelanggan/vendor di daftar Lawan Transaksi PajakMu lalu pilih
     yang sesuai, atau daftarkan sebagai lawan transaksi baru bila belum ada."""
 
     _name = "coretax.partner.match.wizard"
-    _description = "Cocokkan kontak dengan AksaTax"
+    _description = "Cocokkan kontak dengan PajakMu"
 
     partner_id = fields.Many2one("res.partner", string="Kontak", required=True)
     partner_identity = fields.Char(string="NPWP/NIK di Odoo", compute="_compute_partner_info")
@@ -41,7 +41,7 @@ class CoretaxPartnerMatchWizard(models.TransientModel):
     def _search_values(self, partner, term):
         connection = self.env["coretax.connection"]._for_company(self.env.company, raise_if_missing=False)
         if not connection or not connection.has_api_key:
-            return {"message": _("Koneksi AksaTax belum diatur, jadi pencarian belum bisa dilakukan."), "searched": True}
+            return {"message": _("Koneksi PajakMu belum diatur, jadi pencarian belum bisa dilakukan."), "searched": True}
         client = connection._client(partner)
         rows, seen = [], set()
         try:
@@ -62,7 +62,7 @@ class CoretaxPartnerMatchWizard(models.TransientModel):
         except AksaTaxError as exc:
             return {"message": exc.full_message(), "searched": True, "line_ids": [(5, 0, 0)]}
         message = False if rows else _(
-            "Tidak ditemukan di AksaTax. Klik Daftarkan dari Odoo untuk mendaftarkan kontak ini sebagai "
+            "Tidak ditemukan di PajakMu. Klik Daftarkan dari Odoo untuk mendaftarkan kontak ini sebagai "
             "lawan transaksi baru.")
         return {
             "searched": True, "message": message,
@@ -78,14 +78,14 @@ class CoretaxPartnerMatchWizard(models.TransientModel):
         self.ensure_one()
         self.write(self._search_values(self.partner_id, self.search_term or self.partner_id.name))
         return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": self.id, "view_mode": "form",
-                "target": "new", "name": _("Cocokkan dengan AksaTax")}
+                "target": "new", "name": _("Cocokkan dengan PajakMu")}
 
     def action_open_aksatax(self):
         self.ensure_one()
         return {"type": "ir.actions.act_url", "url": self.aksatax_url, "target": "new"}
 
     def action_register(self):
-        """Daftarkan kontak ini ke AksaTax sebagai lawan transaksi baru."""
+        """Daftarkan kontak ini ke PajakMu sebagai lawan transaksi baru."""
         self.ensure_one()
         connection = self.env["coretax.connection"]._for_company(self.env.company)
         partner = self.partner_id.with_company(self.env.company)
@@ -97,23 +97,23 @@ class CoretaxPartnerMatchWizard(models.TransientModel):
             result = partner._coretax_register(connection)
         except AksaTaxError as exc:
             raise UserError(exc.full_message()) from exc
-        message = _("%s didaftarkan sebagai lawan transaksi baru di AksaTax.", partner.display_name) \
-            if result == "created" else _("NPWP %s sudah terdaftar di AksaTax; kontak ditautkan ke data yang ada.",
+        message = _("%s didaftarkan sebagai lawan transaksi baru di PajakMu.", partner.display_name) \
+            if result == "created" else _("NPWP %s sudah terdaftar di PajakMu; kontak ditautkan ke data yang ada.",
                                           partner._coretax_identity(connection))
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"title": _("Lawan transaksi AksaTax"), "type": "success", "message": message,
+            "params": {"title": _("Lawan transaksi PajakMu"), "type": "success", "message": message,
                        "next": {"type": "ir.actions.act_window_close"}},
         }
 
 
 class CoretaxPartnerMatchLine(models.TransientModel):
     _name = "coretax.partner.match.line"
-    _description = "Kandidat lawan transaksi AksaTax"
+    _description = "Kandidat lawan transaksi PajakMu"
 
     wizard_id = fields.Many2one("coretax.partner.match.wizard", required=True, ondelete="cascade")
-    counterparty_id = fields.Char(string="ID AksaTax", required=True)
-    nama = fields.Char(string="Nama di AksaTax")
+    counterparty_id = fields.Char(string="ID PajakMu", required=True)
+    nama = fields.Char(string="Nama di PajakMu")
     npwp = fields.Char(string="NPWP/NIK")
     jenis_id = fields.Char(string="Jenis identitas")
     vswp_status = fields.Char(string="Status VSWP")
@@ -123,10 +123,10 @@ class CoretaxPartnerMatchLine(models.TransientModel):
         self.ensure_one()
         partner = self.wizard_id.partner_id
         partner._coretax_set_counterparty({"id": self.counterparty_id, "nama": self.nama, "vswpStatus": self.vswp_status})
-        partner.message_post(body=_("Dicocokkan dengan lawan transaksi AksaTax: %s (%s).", self.nama, self.npwp or "-"))
+        partner.message_post(body=_("Dicocokkan dengan lawan transaksi PajakMu: %s (%s).", self.nama, self.npwp or "-"))
         return {
             "type": "ir.actions.client", "tag": "display_notification",
             "params": {"title": _("Sudah cocok"), "type": "success",
-                       "message": _("%s kini tertaut ke %s di AksaTax.", partner.display_name, self.nama),
+                       "message": _("%s kini tertaut ke %s di PajakMu.", partner.display_name, self.nama),
                        "next": {"type": "ir.actions.act_window_close"}},
         }

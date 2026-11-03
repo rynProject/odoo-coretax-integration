@@ -7,7 +7,7 @@ from ..tools.client import AksaTaxError
 
 RETUR_STATES = [
     ("new", "Baru"),
-    ("draft", "Draft di AksaTax"),
+    ("draft", "Draft di PajakMu"),
     ("submitted", "Dikirim"),
     ("approved", "Disetujui DJP"),
     ("rejected", "Ditolak DJP"),
@@ -19,13 +19,13 @@ REMOTE_RETUR_STATES = {
     "DRAFT": "draft", "SUBMITTED": "submitted", "APPROVED": "approved", "REJECTED": "rejected",
     "CANCEL_REQUESTED": "cancel_requested", "CANCELLED": "cancelled",
 }
-# Nota retur yang masih berlaku di AksaTax (menahan faktur kredit Odoo).
+# Nota retur yang masih berlaku di PajakMu (menahan faktur kredit Odoo).
 LIVE_STATES = ("draft", "submitted", "approved", "cancel_requested")
 SENDABLE_STATES = ("new", "draft", "error")
 ATTENTION_STATES = ("rejected", "error")
-# Galat sementara: kiriman belum tentu diterima AksaTax, jadi percobaan ulang memakai kunci idempotensi yang sama.
+# Galat sementara: kiriman belum tentu diterima PajakMu, jadi percobaan ulang memakai kunci idempotensi yang sama.
 TRANSIENT_CODES = ("TIMEOUT", "CONNECTION", "UNAVAILABLE", "RATE_LIMITED", "IDEMPOTENCY_IN_PROGRESS")
-NOT_FOUND_MESSAGE = "Nota retur tidak ditemukan di AksaTax. Kirim ulang dari Odoo."
+NOT_FOUND_MESSAGE = "Nota retur tidak ditemukan di PajakMu. Kirim ulang dari Odoo."
 
 
 def _digits(value):
@@ -33,7 +33,7 @@ def _digits(value):
 
 
 class CoretaxRetur(models.Model):
-    """Nota retur (pengembalian BKP/JKP) di AksaTax untuk satu faktur kredit Odoo."""
+    """Nota retur (pengembalian BKP/JKP) di PajakMu untuk satu faktur kredit Odoo."""
 
     _name = "coretax.retur"
     _description = "Nota Retur Coretax"
@@ -64,13 +64,13 @@ class CoretaxRetur(models.Model):
     referensi = fields.Char(string="Referensi")
 
     state = fields.Selection(RETUR_STATES, string="Status", default="new", required=True, index=True, tracking=True)
-    aksatax_id = fields.Char(string="ID AksaTax", readonly=True, copy=False, index=True)
-    last_error = fields.Text(string="Keterangan dari AksaTax/DJP", readonly=True, copy=False)
+    aksatax_id = fields.Char(string="ID PajakMu", readonly=True, copy=False, index=True)
+    last_error = fields.Text(string="Keterangan dari PajakMu/DJP", readonly=True, copy=False)
     error_code = fields.Char(string="Kode galat", readonly=True, copy=False)
     version = fields.Integer(string="Versi", default=1, readonly=True, copy=False)
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     cancel_attempt = fields.Integer(string="Percobaan batal", default=0, readonly=True, copy=False)
-    last_sync = fields.Datetime(string="Diperbarui dari AksaTax", readonly=True, copy=False)
+    last_sync = fields.Datetime(string="Diperbarui dari PajakMu", readonly=True, copy=False)
     alasan_batal = fields.Char(string="Alasan batal", readonly=True, copy=False)
 
     @api.depends("nomor_dokumen_retur")
@@ -99,7 +99,7 @@ class CoretaxRetur(models.Model):
                 nomor=rec.nomor_dokumen_retur, alasan=rec.last_error or _("tanpa keterangan")))
         return result
 
-    # ── kirim ke AksaTax ──────────────────────────────────────────────
+    # ── kirim ke PajakMu ──────────────────────────────────────────────
     def _payload(self):
         self.ensure_one()
         payload = {
@@ -137,7 +137,7 @@ class CoretaxRetur(models.Model):
             problems.append(_("DPP retur harus lebih dari 0."))
         if self.sisi == "keluaran":
             if not self.faktur_id or not self.faktur_id.aksatax_id:
-                problems.append(_("e-Faktur asal belum ada di AksaTax. Kirim dulu e-Faktur-nya."))
+                problems.append(_("e-Faktur asal belum ada di PajakMu. Kirim dulu e-Faktur-nya."))
             elif self.faktur_id.state != "approved":
                 problems.append(_("e-Faktur asal belum disetujui DJP. Nota retur hanya untuk faktur yang sudah disetujui."))
         else:
@@ -167,7 +167,7 @@ class CoretaxRetur(models.Model):
                 try:
                     data = client.create_retur(rec._payload(), base)
                 except AksaTaxError as exc:
-                    # galat sementara: kiriman belum tentu gagal di AksaTax, jadi kunci idempotensi dipakai ulang
+                    # galat sementara: kiriman belum tentu gagal di PajakMu, jadi kunci idempotensi dipakai ulang
                     rec._record_error(exc, **({} if exc.code in TRANSIENT_CODES else {"version": rec.version + 1}))
                     continue
                 rec.write({"aksatax_id": data.get("id"), "state": "draft", "last_error": False, "error_code": False})
@@ -176,7 +176,7 @@ class CoretaxRetur(models.Model):
             except AksaTaxError as exc:
                 rec.write({"state": "draft", "last_error": exc.user_message, "error_code": exc.code or False,
                            "last_sync": fields.Datetime.now()})
-                rec.message_post(body=_("Nota retur tersimpan sebagai draft di AksaTax, tetapi belum terkirim: %s",
+                rec.message_post(body=_("Nota retur tersimpan sebagai draft di PajakMu, tetapi belum terkirim: %s",
                                         exc.user_message))
                 continue
             rec.write({
@@ -187,9 +187,9 @@ class CoretaxRetur(models.Model):
             rec.move_id.message_post(body=_("Nota retur %s dikirim ke DJP.", rec.nomor_dokumen_retur))
         return True
 
-    # ── pembaruan dari AksaTax ────────────────────────────────────────
+    # ── pembaruan dari PajakMu ────────────────────────────────────────
     def _apply_remote(self, data):
-        """Isi dari bentuk `publicRetur` AksaTax."""
+        """Isi dari bentuk `publicRetur` PajakMu."""
         self.ensure_one()
         vals = {"last_sync": fields.Datetime.now()}
         state = REMOTE_RETUR_STATES.get((data.get("status") or "").upper())

@@ -67,7 +67,7 @@
                         <page string="Data dikirim" name="payload">
                             <field name="payload" widget="code" options="{'mode': 'javascript'}" readonly="1"/>
                         </page>
-                        <page string="Jawaban AksaTax" name="response">
+                        <page string="Jawaban PajakMu" name="response">
                             <field name="response" widget="code" options="{'mode': 'javascript'}" readonly="1"/>
                         </page>
                         <page string="Rincian teknis" name="technical">
@@ -89,8 +89,8 @@
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_coretax_log_search"/>
         <field name="help" type="html">
-            <p>Setiap komunikasi Odoo dengan AksaTax tercatat di sini (disimpan 90 hari).
-                Sebutkan <b>ID Permintaan</b> saat menghubungi dukungan AksaTax.</p>
+            <p>Setiap komunikasi Odoo dengan PajakMu tercatat di sini (disimpan 90 hari).
+                Sebutkan <b>ID Permintaan</b> saat menghubungi dukungan PajakMu.</p>
         </field>
     </record>
 </odoo>

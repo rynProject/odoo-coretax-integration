@@ -25,17 +25,17 @@ class TestEfakturFase1(CoretaxTestCommon):
         with patcher, self.assertRaisesRegex(AksaTaxError, "setelah faktur disetujui DJP"):
             self.connection._client(self.connection).faktur_pdf(FAKTUR_ID)
 
-    NOT_SUPPORTED_MESSAGE = "Fitur ini butuh AksaTax versi terbaru. Minta admin AksaTax memperbarui server."
+    NOT_SUPPORTED_MESSAGE = "Fitur ini butuh PajakMu versi terbaru. Minta admin PajakMu memperbarui server."
 
     def test_route_missing_means_old_aksatax(self):
         fake, patcher = self._patch({})
         with patcher, self.assertRaises(AksaTaxError) as ctx:
             self.connection._client(self.connection).cancel_faktur(FAKTUR_ID, "Salah harga satuan", "k-1")
         self.assertEqual(ctx.exception.code, "NOT_SUPPORTED")
-        self.assertIn("AksaTax versi terbaru", ctx.exception.full_message())
+        self.assertIn("PajakMu versi terbaru", ctx.exception.full_message())
 
     def test_route_not_found_envelope_is_not_supported(self):
-        """Amplop asli AksaTax lama untuk rute yang belum ada: error.code NOT_FOUND + "Cannot <METHOD> …"."""
+        """Amplop asli PajakMu lama untuk rute yang belum ada: error.code NOT_FOUND + "Cannot <METHOD> …"."""
         for method, call in (
             ("GET", lambda client: client.faktur_pdf(FAKTUR_ID)),
             ("POST", lambda client: client.cancel_faktur(FAKTUR_ID, "Salah harga satuan", "k-1")),
@@ -71,7 +71,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertEqual(len(fake.calls), 1)
         self.assertEqual(fake.calls[0]["json"], self.partner_a._coretax_counterparty_payload(self.connection))
         self.assertEqual(self.partner_a.coretax_counterparty_name, "PT Pelanggan Baru")
-        self.assertIn("diperbarui di AksaTax", " ".join(self.partner_a.message_ids.mapped("body")))
+        self.assertIn("diperbarui di PajakMu", " ".join(self.partner_a.message_ids.mapped("body")))
 
     def test_update_unmatched_partner(self):
         self.partner_a.coretax_counterparty_id = False
@@ -424,7 +424,7 @@ class TestEfakturFase1(CoretaxTestCommon):
 
     def test_replacement_cannot_be_replaced_again(self):
         move, _old, new = self._approved_replacement()
-        message = "e-Faktur ini sudah merupakan pengganti. Penggantian berikutnya lakukan di AksaTax atau DJP."
+        message = "e-Faktur ini sudah merupakan pengganti. Penggantian berikutnya lakukan di PajakMu atau DJP."
         with self.assertRaisesRegex(UserError, message):
             new.action_request_replacement()
         with self.assertRaisesRegex(UserError, message):
@@ -469,7 +469,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertNotIn("Ditolak DJP", message)
         self.assertIn("masih berlaku di DJP", message)
         self.assertIn("Batalkan e-Faktur", message)
-        self.assertNotIn("di AksaTax", message)
+        self.assertNotIn("di PajakMu", message)
 
     def test_guard_message_points_to_odoo_buttons(self):
         move, _faktur = self._approved_faktur()
@@ -479,7 +479,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertIn("(Disetujui DJP)", message)
         self.assertIn("Batalkan e-Faktur", message)
         self.assertIn("Ganti e-Faktur", message)
-        self.assertNotIn("di AksaTax", message)
+        self.assertNotIn("di PajakMu", message)
 
     def test_cancelled_event_clears_replace_requested(self):
         move, old = self._approved_with_number()
@@ -580,7 +580,7 @@ class TestEfakturFase1(CoretaxTestCommon):
             faktur.action_download_pdf()
         _fake, patcher = self._patch(self._pdf_route(b"<html>Gateway error</html>"))
         with patcher, self.assertRaisesRegex(
-                UserError, "Berkas dari AksaTax bukan PDF. Coba lagi nanti atau unduh dari AksaTax."):
+                UserError, "Berkas dari PajakMu bukan PDF. Coba lagi nanti atau unduh dari PajakMu."):
             faktur.action_download_pdf()
         att = self._attachments(move)
         self.assertEqual(len(att), 1)

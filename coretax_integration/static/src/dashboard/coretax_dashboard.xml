@@ -28,16 +28,16 @@
                             <span class="o_ctx_count" t-esc="d.counts.ready"/>
                         </button>
                         <button t-if="d.connection and d.connection.has_api_key" type="button" class="btn btn-secondary"
-                                t-on-click="syncNow" t-att-disabled="state.syncing" title="Ambil status terbaru dari AksaTax">
+                                t-on-click="syncNow" t-att-disabled="state.syncing" title="Ambil status terbaru dari PajakMu">
                             <i t-attf-class="fa fa-refresh {{ state.syncing ? 'fa-spin' : '' }}"/>
                             <span class="o_ctx_btn_label ms-1">Ambil status terbaru</span>
                         </button>
                         <button t-if="d.connection" type="button" class="btn btn-secondary" t-on-click="openAksaTax"
-                                title="Buka AksaTax di tab baru">
-                            <i class="fa fa-external-link"/><span class="o_ctx_btn_label ms-1">AksaTax</span>
+                                title="Buka PajakMu di tab baru">
+                            <i class="fa fa-external-link"/><span class="o_ctx_btn_label ms-1">PajakMu</span>
                         </button>
                         <button t-if="d.is_manager" type="button" class="btn btn-secondary" t-on-click="openConnection"
-                                title="Pengaturan koneksi AksaTax" aria-label="Pengaturan koneksi AksaTax">
+                                title="Pengaturan koneksi PajakMu" aria-label="Pengaturan koneksi PajakMu">
                             <i class="fa fa-cog"/>
                         </button>
                     </div>
@@ -60,10 +60,10 @@
                     <div class="o_ctx_card_head">
                         <div>
                             <h2><i class="fa fa-flag-checkered me-2"/>Mulai di sini</h2>
-                            <p>Empat langkah agar e-Faktur dari Odoo terkirim ke DJP lewat AksaTax.</p>
+                            <p>Empat langkah agar e-Faktur dari Odoo terkirim ke DJP lewat PajakMu.</p>
                         </div>
                         <button t-if="d.is_manager and !connected" type="button" class="btn btn-primary" t-on-click="openConnection">
-                            <i class="fa fa-plug me-1"/>Atur koneksi AksaTax
+                            <i class="fa fa-plug me-1"/>Atur koneksi PajakMu
                         </button>
                     </div>
                     <ol class="o_ctx_steps">
@@ -76,9 +76,9 @@
                         </li>
                     </ol>
                     <p t-if="!d.is_manager and !connected" class="o_ctx_note">
-                        Minta Administrator Coretax untuk mengatur koneksi AksaTax.
+                        Minta Administrator Coretax untuk mengatur koneksi PajakMu.
                     </p>
-                    <p class="o_ctx_note">Pembatalan, PDF faktur pajak, dan retur dilakukan langsung di AksaTax.</p>
+                    <p class="o_ctx_note">Pembatalan, PDF faktur pajak, dan retur dilakukan langsung di PajakMu.</p>
                 </section>
 
                 <!-- alur e-Faktur -->
@@ -171,12 +171,12 @@
                                     <span class="o_ctx_todo_icon"><i class="fa fa-users"/></span>
                                     <button type="button" class="o_ctx_todo_text" t-on-click="openPartners">
                                         <b>Pelanggan belum dicocokkan</b>
-                                        <small>Ditautkan ke AksaTax lewat NPWP</small>
+                                        <small>Ditautkan ke PajakMu lewat NPWP</small>
                                     </button>
                                     <span class="o_ctx_todo_count" t-esc="d.counts.partners_unmatched"/>
                                     <button t-if="connected and d.counts.partners_unmatched" type="button"
                                             class="btn btn-sm btn-secondary" t-on-click="matchAll" t-att-disabled="state.syncing"
-                                            title="Cari semua lewat NPWP di AksaTax">
+                                            title="Cari semua lewat NPWP di PajakMu">
                                         Cocokkan
                                     </button>
                                 </li>
@@ -184,7 +184,7 @@
                                     <span class="o_ctx_todo_icon"><i class="fa fa-file-text-o"/></span>
                                     <button type="button" class="o_ctx_todo_text" t-on-click="openBupot">
                                         <b>Bukti potong belum dikirim</b>
-                                        <small>Dari tagihan vendor, belum ada di AksaTax</small>
+                                        <small>Dari tagihan vendor, belum ada di PajakMu</small>
                                     </button>
                                     <span class="o_ctx_todo_count" t-esc="d.counts.bupot_open"/>
                                 </li>

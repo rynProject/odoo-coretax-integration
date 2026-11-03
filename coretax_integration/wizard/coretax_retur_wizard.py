@@ -85,7 +85,7 @@ class CoretaxReturWizard(models.TransientModel):
             "tarif_ppn": self.tarif_ppn,
             "referensi": self.referensi or move.name,
         }
-        # nota retur yang belum sampai ke AksaTax (baru/gagal) dipakai ulang, bukan dibuat ganda
+        # nota retur yang belum sampai ke PajakMu (baru/gagal) dipakai ulang, bukan dibuat ganda
         retur = move.sudo().coretax_retur_ids.filtered(lambda r: r.state in ("new", "error") and not r.aksatax_id)[:1]
         if retur:
             retur.write(vals)

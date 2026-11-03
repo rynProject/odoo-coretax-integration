@@ -9,7 +9,7 @@ from ..tools.client import AksaTaxClient, AksaTaxError
 
 _logger = logging.getLogger(__name__)
 
-# Event AksaTax yang diikuti Odoo (lewat webhook maupun /public/events).
+# Event PajakMu yang diikuti Odoo (lewat webhook maupun /public/events).
 EVENT_TYPES = [
     "faktur.submitted", "faktur.approved", "faktur.rejected", "faktur.cancelled",
     "bupot.approved", "bupot.rejected", "bupot.cancelled",
@@ -35,12 +35,12 @@ PARTNER_FIELD_DOMAIN = "[('model', '=', 'res.partner'), ('ttype', 'in', ('char',
 
 
 class CoretaxConnection(models.Model):
-    """Koneksi ke AksaTax untuk satu perusahaan. Satu API key AksaTax mewakili
+    """Koneksi ke PajakMu untuk satu perusahaan. Satu API key PajakMu mewakili
     satu wajib pajak (NPWP), jadi setiap perusahaan di Odoo punya koneksinya
     sendiri."""
 
     _name = "coretax.connection"
-    _description = "Koneksi AksaTax"
+    _description = "Koneksi PajakMu"
     _inherit = ["mail.thread"]
     _check_company_auto = True
 
@@ -49,10 +49,10 @@ class CoretaxConnection(models.Model):
     company_id = fields.Many2one("res.company", string="Perusahaan", required=True, default=lambda self: self.env.company)
     company_vat = fields.Char(related="company_id.vat", string="NPWP Perusahaan")
 
-    base_url = fields.Char(string="Alamat AksaTax", required=True, default="https://app.aksatax.id", tracking=True,
-                           help="Alamat aplikasi AksaTax yang Anda pakai, mis. https://app.aksatax.id")
+    base_url = fields.Char(string="Alamat PajakMu", required=True, default="https://app.aksatax.id", tracking=True,
+                           help="Alamat aplikasi PajakMu yang Anda pakai, mis. https://app.aksatax.id")
     api_key = fields.Char(string="API Key", copy=False, groups="coretax_integration.group_coretax_manager",
-                          help="Dibuat di AksaTax › Integrasi › API Key. Diawali ak_live_ (produksi) atau ak_test_ (sandbox).")
+                          help="Dibuat di PajakMu › Integrasi › API Key. Diawali ak_live_ (produksi) atau ak_test_ (sandbox).")
     has_api_key = fields.Boolean(string="API key terisi", compute="_compute_has_api_key")
     environment = fields.Selection([("production", "Produksi"), ("sandbox", "Sandbox (uji coba)"), ("unknown", "Belum diketahui")],
                                    string="Lingkungan", compute="_compute_environment", compute_sudo=True)
@@ -63,12 +63,12 @@ class CoretaxConnection(models.Model):
 
     auto_mode = fields.Selection([
         ("manual", "Manual - saya kirim sendiri dari faktur"),
-        ("draft", "Otomatis simpan sebagai draft di AksaTax saat faktur diposting"),
+        ("draft", "Otomatis simpan sebagai draft di PajakMu saat faktur diposting"),
         ("send", "Otomatis kirim ke DJP saat faktur diposting"),
     ], string="Saat faktur pelanggan diposting", default="manual", required=True, tracking=True)
     default_send_mode = fields.Selection([
         ("send", "Langsung kirim ke DJP"),
-        ("draft", "Simpan sebagai draft di AksaTax (disetujui di AksaTax)"),
+        ("draft", "Simpan sebagai draft di PajakMu (disetujui di PajakMu)"),
     ], string="Pilihan awal saat mengirim", default="send", required=True)
 
     sync_method = fields.Selection([
@@ -76,15 +76,15 @@ class CoretaxConnection(models.Model):
         ("webhook", "Webhook - lebih cepat, butuh alamat Odoo yang bisa diakses dari internet"),
     ], string="Cara menerima hasil DJP", default="poll", required=True)
     webhook_secret = fields.Char(string="Webhook Secret", copy=False, groups="coretax_integration.group_coretax_manager",
-                                 help="Diawali whsec_. Ditampilkan sekali saat membuat webhook di AksaTax › Integrasi › Webhook.")
-    webhook_url = fields.Char(string="Alamat webhook untuk AksaTax", compute="_compute_webhook_url")
+                                 help="Diawali whsec_. Ditampilkan sekali saat membuat webhook di PajakMu › Integrasi › Webhook.")
+    webhook_url = fields.Char(string="Alamat webhook untuk PajakMu", compute="_compute_webhook_url")
     event_cursor = fields.Integer(string="Posisi event terakhir", default=0, readonly=True, copy=False)
     last_sync = fields.Datetime(string="Sinkronisasi terakhir", readonly=True, copy=False)
 
     # ── lawan transaksi ───────────────────────────────────────────────
     auto_register_partner = fields.Boolean(
         string="Daftarkan lawan transaksi baru otomatis", default=True,
-        help="Saat mengirim e-Faktur atau bukti potong, kontak yang belum ada di AksaTax didaftarkan dulu "
+        help="Saat mengirim e-Faktur atau bukti potong, kontak yang belum ada di PajakMu didaftarkan dulu "
              "sebagai Lawan Transaksi (bila datanya lengkap), lalu dokumennya langsung dikirim.")
     # Field kontak Odoo yang dipakai untuk data lawan transaksi. Bawaan: field standar
     # Odoo/l10n_id; bisa diganti field lain, termasuk field kustom (x_…/Studio).
@@ -107,12 +107,12 @@ class CoretaxConnection(models.Model):
 
     log_count = fields.Integer(compute="_compute_log_count")
 
-    _company_uniq = models.Constraint("unique(company_id)", "Setiap perusahaan hanya boleh punya satu koneksi AksaTax.")
+    _company_uniq = models.Constraint("unique(company_id)", "Setiap perusahaan hanya boleh punya satu koneksi PajakMu.")
 
     @api.depends("company_id")
     def _compute_name(self):
         for rec in self:
-            rec.name = _("AksaTax – %s", rec.company_id.name or "")
+            rec.name = _("PajakMu – %s", rec.company_id.name or "")
 
     def _compute_has_api_key(self):
         for rec in self:
@@ -139,7 +139,7 @@ class CoretaxConnection(models.Model):
         key = (self.api_key or "").strip()
         if key and not key.startswith(("ak_live_", "ak_test_")):
             return {"warning": {"title": _("Format API key"),
-                                "message": _("API key AksaTax biasanya diawali ak_live_ atau ak_test_. Periksa lagi salinannya.")}}
+                                "message": _("API key PajakMu biasanya diawali ak_live_ atau ak_test_. Periksa lagi salinannya.")}}
 
     def write(self, vals):
         # kunci/alamat berubah: status koneksi perlu diuji ulang
@@ -168,18 +168,18 @@ class CoretaxConnection(models.Model):
         company = company or self.env.company
         connection = self.sudo().search([("company_id", "=", company.id)], limit=1)
         if not connection and raise_if_missing:
-            raise UserError(_("Koneksi AksaTax untuk %s belum diatur. Buka Coretax › Pengaturan › Koneksi AksaTax.", company.name))
+            raise UserError(_("Koneksi PajakMu untuk %s belum diatur. Buka Coretax › Pengaturan › Koneksi PajakMu.", company.name))
         return connection
 
     @api.model
     def action_open_for_company(self):
-        """Menu Pengaturan › Koneksi AksaTax: langsung membuka koneksi milik
+        """Menu Pengaturan › Koneksi PajakMu: langsung membuka koneksi milik
         perusahaan aktif (dibuat bila belum ada)."""
         connection = self._for_company(raise_if_missing=False)
         if not connection:
             connection = self.create({"company_id": self.env.company.id})
         return {"type": "ir.actions.act_window", "res_model": self._name, "res_id": connection.id,
-                "views": [[False, "form"]], "target": "current", "name": _("Koneksi AksaTax")}
+                "views": [[False, "form"]], "target": "current", "name": _("Koneksi PajakMu")}
 
     def _client(self, res=None):
         """Klien API untuk koneksi ini; setiap panggilan dicatat di Riwayat
@@ -220,7 +220,7 @@ class CoretaxConnection(models.Model):
             return self._notify(_("Koneksi gagal"), exc.full_message(), "danger", sticky=True)
         self.write({"state": "ok", "last_check": fields.Datetime.now(), "last_error": False})
         env_label = dict(self._fields["environment"].selection).get(self.environment)
-        return self._notify(_("Terhubung ke AksaTax"), _("Koneksi berhasil (%s). Odoo siap mengirim e-Faktur.", env_label))
+        return self._notify(_("Terhubung ke PajakMu"), _("Koneksi berhasil (%s). Odoo siap mengirim e-Faktur.", env_label))
 
     def action_sync_now(self):
         self.ensure_one()
@@ -229,7 +229,7 @@ class CoretaxConnection(models.Model):
         except AksaTaxError as exc:
             return self._notify(_("Sinkronisasi gagal"), exc.full_message(), "danger", sticky=True)
         return self._notify(_("Sinkronisasi selesai"),
-                            _("%(events)s kabar baru dari AksaTax, %(refreshed)s dokumen diperbarui.", **summary))
+                            _("%(events)s kabar baru dari PajakMu, %(refreshed)s dokumen diperbarui.", **summary))
 
     def action_open_aksatax(self):
         self.ensure_one()
@@ -260,13 +260,13 @@ class CoretaxConnection(models.Model):
                 self.env.cr.commit()
             except AksaTaxError as exc:
                 self.env.cr.rollback()
-                _logger.warning("Sinkronisasi AksaTax %s gagal: %s", connection.company_id.name, exc.full_message())
+                _logger.warning("Sinkronisasi PajakMu %s gagal: %s", connection.company_id.name, exc.full_message())
             except Exception:
                 self.env.cr.rollback()
-                _logger.exception("Sinkronisasi AksaTax %s gagal", connection.company_id.name)
+                _logger.exception("Sinkronisasi PajakMu %s gagal", connection.company_id.name)
 
     def _sync(self):
-        """Ambil kabar terbaru dari AksaTax (event), lalu cek ulang dokumen
+        """Ambil kabar terbaru dari PajakMu (event), lalu cek ulang dokumen
         yang masih diproses DJP. Aman dijalankan berulang."""
         self.ensure_one()
         self = self.with_company(self.company_id)
@@ -327,7 +327,7 @@ class CoretaxConnection(models.Model):
         return count
 
     def _process_event(self, event):
-        """Satu event AksaTax (dari /public/events atau webhook)."""
+        """Satu event PajakMu (dari /public/events atau webhook)."""
         kind = (event.get("type") or "").split(".")[0]
         object_id = (event.get("object") or {}).get("id") or (event.get("data") or {}).get("id")
         if not object_id:
@@ -344,7 +344,7 @@ class CoretaxConnection(models.Model):
         else:
             return False
         if not record:
-            # dokumen dibuat langsung di AksaTax, bukan dari Odoo - abaikan
+            # dokumen dibuat langsung di PajakMu, bukan dari Odoo - abaikan
             return False
         record._apply_event(event, self)
         return True
