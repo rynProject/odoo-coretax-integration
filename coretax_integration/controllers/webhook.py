@@ -13,20 +13,24 @@ class CoretaxWebhookController(http.Controller):
     """Penerima webhook PajakMu: POST /coretax/webhook/<id koneksi>.
 
     Tanpa sesi Odoo (auth='none'); keasliannya dijamin tanda tangan HMAC
-    ``AksaTax-Signature`` dengan Webhook Secret koneksi. Jawaban 2xx berarti
-    diterima - PajakMu mengulang kiriman yang gagal (maks. 5 kali)."""
+    ``X-PajakMu-Signature`` (atau header lama ``AksaTax-Signature``, nilainya
+    sama) dengan Webhook Secret koneksi. Jawaban 2xx berarti diterima -
+    PajakMu mengulang kiriman yang gagal (maks. 5 kali)."""
 
+    # readonly=False: rute auth='none' di Odoo 19 bawaannya read-only, padahal webhook menulis status & riwayat.
     @http.route("/coretax/webhook/<int:connection_id>", type="http", auth="none", methods=["POST"], csrf=False,
-                save_session=False)
+                save_session=False, readonly=False)
     def receive(self, connection_id, **_kwargs):
-        raw = request.httprequest.get_data(cache=False)
+        # cache=True: isi tetap terbaca bila Odoo mengulang permintaan (mis. konflik serialisasi)
+        raw = request.httprequest.get_data(cache=True)
         if not request.db:
             return request.make_json_response({"ok": False, "error": "no database"}, status=400)
         env = request.env(su=True)
         connection = env["coretax.connection"].browse(connection_id).exists()
         if not connection or not connection.webhook_secret:
             return request.make_json_response({"ok": False, "error": "unknown endpoint"}, status=404)
-        header = request.httprequest.headers.get("AksaTax-Signature", "")
+        headers = request.httprequest.headers
+        header = headers.get("X-PajakMu-Signature") or headers.get("AksaTax-Signature", "")
         if not verify_signature(connection.webhook_secret, header, raw):
             _logger.warning("Webhook PajakMu ditolak: tanda tangan tidak valid (koneksi %s)", connection_id)
             return request.make_json_response({"ok": False, "error": "invalid signature"}, status=401)
@@ -40,7 +44,7 @@ class CoretaxWebhookController(http.Controller):
             "connection_id": connection.id, "company_id": connection.company_id.id,
             "operation": f"Webhook diterima: {event.get('type') or '-'}", "method": "POST",
             "path": request.httprequest.path, "status_code": 200, "success": True,
-            "request_id": request.httprequest.headers.get("AksaTax-Delivery", ""),
+            "request_id": headers.get("X-PajakMu-Delivery") or headers.get("AksaTax-Delivery", ""),
             "message": "Diproses" if handled else "Diabaikan (dokumen bukan dari Odoo)",
             "response": raw.decode(errors="replace")[:8000],
         })

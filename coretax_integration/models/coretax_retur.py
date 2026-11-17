@@ -1,5 +1,3 @@
-import re
-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -16,7 +14,8 @@ RETUR_STATES = [
     ("error", "Gagal - perlu tindakan"),
 ]
 REMOTE_RETUR_STATES = {
-    "DRAFT": "draft", "SUBMITTED": "submitted", "APPROVED": "approved", "REJECTED": "rejected",
+    # Menunggu persetujuan / siap kirim di PajakMu: masih draft dari sisi Odoo (belum terkirim ke DJP).
+    "DRAFT": "draft", "PENDING_APPROVAL": "draft", "VALIDATED": "draft", "SUBMITTED": "submitted", "APPROVED": "approved", "REJECTED": "rejected",
     "CANCEL_REQUESTED": "cancel_requested", "CANCELLED": "cancelled",
 }
 # Nota retur yang masih berlaku di PajakMu (menahan faktur kredit Odoo).
@@ -26,14 +25,26 @@ ATTENTION_STATES = ("rejected", "error")
 # Galat sementara: kiriman belum tentu diterima PajakMu, jadi percobaan ulang memakai kunci idempotensi yang sama.
 TRANSIENT_CODES = ("TIMEOUT", "CONNECTION", "UNAVAILABLE", "RATE_LIMITED", "IDEMPOTENCY_IN_PROGRESS")
 NOT_FOUND_MESSAGE = "Nota retur tidak ditemukan di PajakMu. Kirim ulang dari Odoo."
-
-
-def _digits(value):
-    return re.sub(r"\D", "", value or "")
+# Aturan PajakMu/Coretax: retur atas faktur keluaran dibuat pembeli di Coretax, bukan oleh penjual.
+KELUARAN_MESSAGE = ("Retur atas faktur keluaran dibuat oleh pembeli di Coretax, bukan dari Odoo. "
+                    "Tarik returnya dari DJP di PajakMu › Retur pajak.")
+# Nilai retur per barang/jasa: field Odoo -> field PajakMu (`items[]`) dan field faktur asal / sudah diretur.
+ITEM_VALUES = [
+    ("retur_jumlah", "returJmlBrgJasa", "jmlBrgJasa"),
+    ("retur_diskon", "returDiskon", "diskon"),
+    ("retur_dpp", "returDpp", "dpp"),
+    ("retur_dpp_lain", "returDppLain", "dppLain"),
+    ("retur_ppn", "returPpn", "ppn"),
+    ("retur_ppnbm", "returPpnbm", "ppnbm"),
+]
 
 
 class CoretaxRetur(models.Model):
-    """Nota retur (pengembalian BKP/JKP) di PajakMu untuk satu faktur kredit Odoo."""
+    """Nota retur (pengembalian BKP/JKP) di PajakMu untuk satu faktur kredit Odoo.
+
+    Retur baru hanya untuk sisi masukan (nota kredit vendor) atas faktur masukan
+    yang sudah ada di PajakMu, per barang/jasa. Retur keluaran lama tetap
+    disinkronkan dan bisa dibatalkan."""
 
     _name = "coretax.retur"
     _description = "Nota Retur Coretax"
@@ -62,6 +73,10 @@ class CoretaxRetur(models.Model):
     nilai_ppnbm = fields.Monetary(string="PPnBM retur")
     tarif_ppn = fields.Float(string="Tarif PPN (%)", default=12)
     referensi = fields.Char(string="Referensi")
+    faktur_masukan_id = fields.Char(string="ID faktur masukan PajakMu", copy=False,
+                                    help="Faktur masukan di PajakMu yang diretur (hasil tarikan dari DJP).")
+    is_creditable = fields.Boolean(string="Retur dapat dikreditkan", default=True)
+    line_ids = fields.One2many("coretax.retur.line", "retur_id", string="Barang/jasa diretur", copy=True)
 
     state = fields.Selection(RETUR_STATES, string="Status", default="new", required=True, index=True, tracking=True)
     aksatax_id = fields.Char(string="ID PajakMu", readonly=True, copy=False, index=True)
@@ -88,7 +103,28 @@ class CoretaxRetur(models.Model):
         uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
         return f"odoo-{uuid}-retur-{self.id}-v{self.version}"
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.filtered("line_ids")._sync_totals_from_lines()
+        return records
+
+    def _sync_totals_from_lines(self):
+        for rec in self:
+            lines = rec.line_ids
+            super(CoretaxRetur, rec).write({
+                "nilai_dpp": sum(lines.mapped("retur_dpp")), "nilai_ppn": sum(lines.mapped("retur_ppn")),
+                "nilai_ppnbm": sum(lines.mapped("retur_ppnbm")),
+            })
+
     def write(self, vals):
+        if "line_ids" in vals:
+            result = self._write_state(vals)
+            self.filtered("line_ids")._sync_totals_from_lines()
+            return result
+        return self._write_state(vals)
+
+    def _write_state(self, vals):
         # Kembali ke "approved" dari "cancel_requested" = DJP menolak pembatalan.
         cancel_rejected = (self.filtered(lambda r: r.state == "cancel_requested")
                            if vals.get("state") == "approved" else self.browse())
@@ -101,51 +137,36 @@ class CoretaxRetur(models.Model):
 
     # ── kirim ke PajakMu ──────────────────────────────────────────────
     def _payload(self):
+        """Isi POST /nota-retur: retur faktur masukan per barang/jasa (IF_TXR_017)."""
         self.ensure_one()
+        if self.sisi == "keluaran":
+            raise UserError(_(KELUARAN_MESSAGE))
         payload = {
-            "sisi": self.sisi.upper(),
-            "nomorDokumenRetur": self.nomor_dokumen_retur,
+            "sisi": "MASUKAN",
+            "fakturMasukanId": self.faktur_masukan_id,
             "tanggalRetur": fields.Date.to_string(self.tanggal_retur),
-            "nilaiReturDpp": int(round(self.nilai_dpp)),
-            "nilaiReturPpn": int(round(self.nilai_ppn)),
-            "nilaiReturPpnbm": int(round(self.nilai_ppnbm)),
-            "tarifPpn": self.tarif_ppn,
+            "isCreditable": bool(self.is_creditable),
+            "items": [line._payload() for line in self.line_ids.sorted("index") if line._has_value()],
             "referensi": (self.referensi or self.move_id.name or self.nomor_dokumen_retur or "")[:100],
         }
-        if self.sisi == "keluaran":
-            payload["fakturId"] = self.faktur_id.aksatax_id
-        else:
-            seller = self.partner_id or self.move_id.commercial_partner_id
-            seller = seller.commercial_partner_id
-            address = ", ".join(part for part in (seller.street, seller.street2, seller.city, seller.state_id.name,
-                                                  seller.zip) if part)
-            payload.update({
-                "nomorFaktur": _digits(self.nomor_faktur),
-                "namaPenjual": (seller.name or "")[:200],
-                "npwpPenjual": _digits(seller.vat),
-                "alamatPenjual": address[:300],
-            })
+        if self.nomor_dokumen_retur:
+            payload["nomorDokumenRetur"] = self.nomor_dokumen_retur[:50]
         return payload
 
     def _check_before_send(self):
         """Daftar masalah (kalimat Indonesia) yang menghalangi pengiriman; kosong = siap."""
         self.ensure_one()
-        problems = []
-        if not self.nomor_dokumen_retur:
-            problems.append(_("Nomor dokumen retur wajib diisi."))
-        if self.nilai_dpp <= 0:
-            problems.append(_("DPP retur harus lebih dari 0."))
         if self.sisi == "keluaran":
-            if not self.faktur_id or not self.faktur_id.aksatax_id:
-                problems.append(_("e-Faktur asal belum ada di PajakMu. Kirim dulu e-Faktur-nya."))
-            elif self.faktur_id.state != "approved":
-                problems.append(_("e-Faktur asal belum disetujui DJP. Nota retur hanya untuk faktur yang sudah disetujui."))
-        else:
-            seller = (self.partner_id or self.move_id.commercial_partner_id).commercial_partner_id
-            if len(_digits(self.nomor_faktur)) not in (13, 16, 17):
-                problems.append(_("Nomor Faktur Pajak vendor harus 13, 16, atau 17 digit."))
-            if len(_digits(seller.vat)) not in (15, 16):
-                problems.append(_("NPWP vendor harus 15 atau 16 digit. Lengkapi NPWP di kontak vendor."))
+            return [_(KELUARAN_MESSAGE)]
+        problems = []
+        if not self.faktur_masukan_id:
+            problems.append(_("Faktur masukan asal belum dipilih. Kirim nota retur lewat tombol Kirim nota retur "
+                              "di nota kredit vendor."))
+        if not any(line.retur_dpp > 0 for line in self.line_ids):
+            problems.append(_("DPP retur harus lebih dari 0 pada minimal satu barang/jasa."))
+        indexes = self.line_ids.mapped("index")
+        if len(indexes) != len(set(indexes)):
+            problems.append(_("Barang/jasa yang sama tercantum dua kali."))
         return problems
 
     def _record_error(self, exc, **extra):
@@ -197,6 +218,8 @@ class CoretaxRetur(models.Model):
             vals["state"] = state
         if data.get("id"):
             vals["aksatax_id"] = data["id"]
+        if data.get("nomorDokumenRetur"):
+            vals["nomor_dokumen_retur"] = data["nomorDokumenRetur"]
         if "lastError" in data:
             vals["last_error"] = data.get("lastError") or False
         elif state and state not in ATTENTION_STATES:
@@ -256,3 +279,28 @@ class CoretaxRetur(models.Model):
             "res_model": "coretax.retur.cancel.wizard", "view_mode": "form", "target": "new",
             "context": {"default_retur_id": self.id},
         }
+
+
+class CoretaxReturLine(models.Model):
+    """Nilai retur satu barang/jasa faktur masukan asal (urutan `index` dari DJP)."""
+
+    _name = "coretax.retur.line"
+    _description = "Barang/jasa nota retur"
+    _order = "index"
+
+    retur_id = fields.Many2one("coretax.retur", required=True, ondelete="cascade", index=True)
+    index = fields.Integer(string="No. barang/jasa", required=True, help="Urutan pada faktur asal di DJP, mulai 0.")
+    nama = fields.Char(string="Barang/jasa")
+    retur_jumlah = fields.Float(string="Jumlah", digits=(16, 2))
+    retur_diskon = fields.Float(string="Diskon", digits=(16, 2))
+    retur_dpp = fields.Float(string="DPP", digits=(16, 2))
+    retur_dpp_lain = fields.Float(string="DPP nilai lain", digits=(16, 2))
+    retur_ppn = fields.Float(string="PPN", digits=(16, 2))
+    retur_ppnbm = fields.Float(string="PPnBM", digits=(16, 2))
+
+    def _has_value(self):
+        return any(self[field] for field, _key, _asal in ITEM_VALUES)
+
+    def _payload(self):
+        self.ensure_one()
+        return {"index": self.index, **{key: round(self[field], 2) for field, key, _asal in ITEM_VALUES}}

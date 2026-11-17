@@ -34,7 +34,7 @@
             <xpath expr="//header" position="inside">
                 <field name="coretax_retur_live" invisible="1"/>
                 <button name="action_coretax_open_retur_wizard" type="object" string="Kirim nota retur" icon="fa-undo"
-                        invisible="move_type not in ('out_refund', 'in_refund') or state != 'posted' or coretax_retur_live"
+                        invisible="move_type != 'in_refund' or state != 'posted' or coretax_retur_live"
                         groups="coretax_integration.group_coretax_user"
                         help="Kirim nota retur untuk nota kredit ini ke DJP lewat PajakMu."/>
             </xpath>

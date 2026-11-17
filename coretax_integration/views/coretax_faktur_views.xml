@@ -188,6 +188,7 @@
                             <div class="o_row"><field name="masa_pajak" options="{'enable_formatting': false}"/> / <field name="tahun_pajak" options="{'enable_formatting': false}"/></div>
                             <field name="kode_approval"/>
                             <field name="tanggal_approval"/>
+                            <field name="lapor_state" invisible="not lapor_state"/>
                         </group>
                     </group>
                     <group string="Nilai pajak (dihitung PajakMu)">

@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import timedelta
 
 from odoo import _, api, fields, models
@@ -11,10 +12,13 @@ _logger = logging.getLogger(__name__)
 
 # Event PajakMu yang diikuti Odoo (lewat webhook maupun /public/events).
 EVENT_TYPES = [
-    "faktur.submitted", "faktur.approved", "faktur.rejected", "faktur.cancelled",
-    "bupot.approved", "bupot.rejected", "bupot.cancelled",
+    "faktur.submitted", "faktur.approved", "faktur.rejected", "faktur.cancelled", "faktur.amended", "faktur.reported",
+    "bupot.approved", "bupot.rejected", "bupot.cancelled", "bupot.amended",
     "retur.approved", "retur.rejected", "retur.cancelled",
 ]
+# Prefiks API key PajakMu: ak_ (bawaan) dan alias sk_.
+LIVE_KEY_PREFIXES = ("ak_live_", "sk_live_")
+TEST_KEY_PREFIXES = ("ak_test_", "sk_test_")
 # Halaman event yang diambil per putaran sinkronisasi (200 event per halaman).
 EVENT_PAGES_PER_RUN = 10
 # Dokumen yang masih diproses dicek ulang statusnya setelah selang ini.
@@ -35,8 +39,9 @@ PARTNER_FIELD_DOMAIN = "[('model', '=', 'res.partner'), ('ttype', 'in', ('char',
 
 
 class CoretaxConnection(models.Model):
-    """Koneksi ke PajakMu untuk satu perusahaan. Satu API key PajakMu mewakili
-    satu wajib pajak (NPWP), jadi setiap perusahaan di Odoo punya koneksinya
+    """Koneksi ke PajakMu untuk satu perusahaan. API key per entitas mewakili
+    satu wajib pajak (NPWP); API key tingkat grup melayani beberapa entitas dan
+    memilihnya lewat NPWP entitas. Setiap perusahaan di Odoo punya koneksinya
     sendiri."""
 
     _name = "coretax.connection"
@@ -52,7 +57,11 @@ class CoretaxConnection(models.Model):
     base_url = fields.Char(string="Alamat PajakMu", required=True, default="https://app.aksatax.id", tracking=True,
                            help="Alamat aplikasi PajakMu yang Anda pakai, mis. https://app.aksatax.id")
     api_key = fields.Char(string="API Key", copy=False, groups="coretax_integration.group_coretax_manager",
-                          help="Dibuat di PajakMu › Integrasi › API Key. Diawali ak_live_ (produksi) atau ak_test_ (sandbox).")
+                          help="Dibuat di PajakMu › Integrasi › API Key. Diawali ak_live_ / sk_live_ (produksi) "
+                               "atau ak_test_ / sk_test_ (sandbox).")
+    npwp_entitas = fields.Char(string="NPWP entitas", tracking=True,
+                               help="Wajib bila API key dibuat tingkat grup: NPWP entitas (15/16 digit) yang dipakai "
+                                    "perusahaan ini di PajakMu. Kosongkan untuk API key per entitas.")
     has_api_key = fields.Boolean(string="API key terisi", compute="_compute_has_api_key")
     environment = fields.Selection([("production", "Produksi"), ("sandbox", "Sandbox (uji coba)"), ("unknown", "Belum diketahui")],
                                    string="Lingkungan", compute="_compute_environment", compute_sudo=True)
@@ -121,7 +130,8 @@ class CoretaxConnection(models.Model):
     def _compute_environment(self):
         for rec in self:
             key = rec.sudo().api_key or ""
-            rec.environment = "production" if key.startswith("ak_live_") else "sandbox" if key.startswith("ak_test_") else "unknown"
+            rec.environment = ("production" if key.startswith(LIVE_KEY_PREFIXES)
+                               else "sandbox" if key.startswith(TEST_KEY_PREFIXES) else "unknown")
 
     @api.depends("company_id")
     def _compute_webhook_url(self):
@@ -137,13 +147,20 @@ class CoretaxConnection(models.Model):
     @api.onchange("api_key")
     def _onchange_api_key(self):
         key = (self.api_key or "").strip()
-        if key and not key.startswith(("ak_live_", "ak_test_")):
+        if key and not key.startswith(LIVE_KEY_PREFIXES + TEST_KEY_PREFIXES):
             return {"warning": {"title": _("Format API key"),
-                                "message": _("API key PajakMu biasanya diawali ak_live_ atau ak_test_. Periksa lagi salinannya.")}}
+                                "message": _("API key PajakMu biasanya diawali ak_live_, ak_test_, sk_live_, atau sk_test_. "
+                                             "Periksa lagi salinannya.")}}
+
+    @api.constrains("npwp_entitas")
+    def _check_npwp_entitas(self):
+        for rec in self:
+            if rec.npwp_entitas and len(re.sub(r"\D", "", rec.npwp_entitas)) not in (15, 16):
+                raise UserError(_("NPWP entitas harus 15 atau 16 digit."))
 
     def write(self, vals):
-        # kunci/alamat berubah: status koneksi perlu diuji ulang
-        if {"api_key", "base_url"} & set(vals):
+        # kunci/alamat/entitas berubah: status koneksi perlu diuji ulang
+        if {"api_key", "base_url", "npwp_entitas"} & set(vals):
             vals = dict(vals, state="draft")
         return super().write(vals)
 
@@ -201,7 +218,7 @@ class CoretaxConnection(models.Model):
             with self.env.registry.cursor() as cr:
                 self.env(cr=cr, su=True)["coretax.log"].create(vals)
 
-        return AksaTaxClient(self.sudo().base_url, self.sudo().api_key, logger=logger)
+        return AksaTaxClient(self.sudo().base_url, self.sudo().api_key, logger=logger, npwp=self.sudo().npwp_entitas)
 
     # ── tombol ────────────────────────────────────────────────────────
     def _notify(self, title, message, kind="success", sticky=False):

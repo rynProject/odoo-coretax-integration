@@ -4,11 +4,13 @@ Murni HTTP - tidak tahu apa pun tentang model Odoo, supaya mudah diuji.
 Kontrak (aksatax-be/apps/api/src/integrasi/public-api.controller.ts):
 
   * Autentikasi  : header ``Authorization: Bearer ak_live_…`` / ``ak_test_…``
-                   (satu API key = satu wajib pajak/NPWP di PajakMu).
+                   (alias ``sk_live_…`` / ``sk_test_…``). Kunci per entitas
+                   melayani satu NPWP; kunci tingkat grup wajib memilih entitas
+                   lewat header ``X-PajakMu-NPWP``.
   * POST         : wajib ``Idempotency-Key`` (≤255 karakter); kunci yang sama
                    + isi yang sama = jawaban yang sama diputar ulang 24 jam.
   * Galat        : ``{"error": {"code", "message", "details"?}}``.
-  * Batas laju   : 120 permintaan/menit per key (429 + ``Retry-After``).
+  * Batas laju   : 120 permintaan/menit per NPWP (429 + ``Retry-After``).
 """
 import json
 import logging
@@ -30,10 +32,20 @@ ROUTE_NOT_FOUND = re.compile(r"^Cannot (GET|POST|PUT|PATCH|DELETE) ")
 # Pesan galat untuk pengguna non-teknis, menurut kode galat PajakMu.
 FRIENDLY_ERRORS = {
     "UNAUTHORIZED": "API key PajakMu salah, sudah dicabut, atau kedaluwarsa. Minta API key baru ke admin PajakMu.",
+    "UNAUTHENTICATED": "API key PajakMu salah, sudah dicabut, atau kedaluwarsa. Minta API key baru ke admin PajakMu.",
+    "API_KEY_REVOKED": "API key PajakMu ini sudah dicabut. Buat API key baru di PajakMu › Integrasi › API Key.",
     "API_KEY_ORPHANED": "Pembuat API key ini sudah tidak terdaftar di perusahaan pada PajakMu. Buat API key baru.",
-    "FORBIDDEN": "API key ini tidak punya izin untuk tindakan tersebut. Periksa scope API key di PajakMu.",
+    "PEMBUAT_BUKAN_ANGGOTA": "Pembuat API key grup ini bukan lagi anggota entitas NPWP tersebut di PajakMu. Buat API key baru.",
+    "FORBIDDEN": "Peran pembuat API key ini di PajakMu tidak punya izin untuk tindakan tersebut.",
+    "INSUFFICIENT_SCOPE": "API key ini tidak punya izin untuk tindakan tersebut. Periksa izin (scope) API key di PajakMu.",
+    "ENTITAS_BELUM_DIPILIH": "API key ini tingkat grup. Isi NPWP entitas di Koneksi PajakMu agar PajakMu tahu entitas yang dipakai.",
+    "ENTITAS_DI_LUAR_CAKUPAN": "NPWP entitas di Koneksi PajakMu tidak termasuk cakupan API key ini. Periksa NPWP entitas atau API key-nya.",
+    "NPWP_TIDAK_VALID": "NPWP entitas di Koneksi PajakMu harus 15 atau 16 digit.",
     "PLAN_FEATURE": "Paket langganan PajakMu Anda belum mencakup Public API (minimal paket Business).",
+    "FEATURE_NOT_AVAILABLE": "Paket langganan PajakMu Anda belum mencakup Public API (minimal paket Business).",
     "QUOTA_EXCEEDED": "Kuota dokumen bulanan di PajakMu sudah habis. Hubungi admin PajakMu untuk menambah kuota.",
+    "RETUR_KELUARAN_DARI_PEMBELI": "Retur atas faktur keluaran dibuat oleh pembeli di Coretax, bukan dari Odoo. "
+                                   "Tarik returnya dari DJP di PajakMu › Retur pajak.",
     "TENANT_FROZEN": "Akun perusahaan di PajakMu sedang dibekukan (misalnya tagihan belum dibayar).",
     "RATE_LIMITED": "Terlalu banyak permintaan dalam satu menit. Tunggu sebentar lalu coba lagi.",
     "VALIDATION": "Data ditolak PajakMu karena belum lengkap atau tidak sesuai aturan.",
@@ -83,9 +95,11 @@ class AksaTaxClient:
     """Satu klien per koneksi. `logger` (opsional) dipanggil setelah setiap
     permintaan dengan dict ringkas untuk Riwayat Sinkronisasi."""
 
-    def __init__(self, base_url, api_key, logger=None, session=None, timeout=TIMEOUT):
+    def __init__(self, base_url, api_key, logger=None, session=None, timeout=TIMEOUT, npwp=None):
         self.base_url = (base_url or "").rstrip("/")
         self.api_key = (api_key or "").strip()
+        # NPWP entitas (header X-PajakMu-NPWP): wajib untuk kunci tingkat grup, opsional untuk kunci per entitas.
+        self.npwp = re.sub(r"\D", "", npwp or "")
         self.logger = logger
         self.session = session or requests.Session()
         self.timeout = timeout
@@ -98,6 +112,8 @@ class AksaTaxClient:
         url = f"{self.base_url}{API_PREFIX}{path}"
         headers = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/pdf, application/json" if raw else "application/json",
                    "User-Agent": "Odoo-Coretax-Integration/1.0"}
+        if self.npwp:
+            headers["X-PajakMu-NPWP"] = self.npwp
         if payload is not None:
             headers["Content-Type"] = "application/json"
         if method == "POST":
@@ -259,6 +275,17 @@ class AksaTaxClient:
     def send_retur(self, retur_id, idempotency_key):
         return self.request("POST", f"/nota-retur/{retur_id}/kirim", payload={}, idempotency_key=idempotency_key,
                             operation="Kirim nota retur ke DJP")
+
+    def retur_faktur_masukan(self, query=None):
+        """Faktur masukan di PajakMu yang masih bisa diretur (Dikreditkan / Tidak dikreditkan)."""
+        params = {"q": query} if query else None
+        return self.request("GET", "/nota-retur/faktur-masukan", params=params,
+                            operation="Cari faktur masukan untuk retur").get("data", [])
+
+    def retur_faktur_masukan_items(self, faktur_masukan_id):
+        """Barang/jasa faktur masukan dari DJP (`items`) dan nilai yang sudah diretur (`sudahDiretur`), indeks sama."""
+        return self.request("GET", f"/nota-retur/faktur-masukan/{faktur_masukan_id}/items",
+                            operation="Ambil barang/jasa faktur masukan")
 
     def cancel_retur(self, retur_id, alasan, idempotency_key):
         return self.request("POST", f"/nota-retur/{retur_id}/batal", payload={"alasan": alasan},

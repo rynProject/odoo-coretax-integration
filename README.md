@@ -11,13 +11,13 @@ Modul ada di folder [`coretax_integration/`](coretax_integration/).
 |---|---|
 | Kirim e-Faktur | Dari faktur pelanggan (tombol **Kirim e-Faktur**), tombol **Kirim** per baris, atau banyak sekaligus (centang di **e-Faktur › Siap dikirim**). Pilihannya: langsung kirim ke DJP, atau simpan sebagai draft di PajakMu untuk disetujui di sana. |
 | Pemeriksaan sebelum kirim | Sebelum mengirim, setiap faktur diperiksa: NPWP/NIK pelanggan, kode transaksi, kode barang/jasa, mata uang IDR, kelompok pajak, tanggal. Pesannya ditulis dalam bahasa yang mudah dipahami. |
-| Status otomatis | Odoo menanyakan kabar terbaru ke PajakMu setiap 5 menit. Bisa juga memakai webhook bertanda tangan HMAC supaya lebih cepat. Status dan nomor faktur pajak tampil di faktur Odoo. |
+| Status otomatis | Odoo menanyakan kabar terbaru ke PajakMu setiap 5 menit. Bisa juga memakai webhook bertanda tangan HMAC supaya lebih cepat (header `X-PajakMu-*` atau `AksaTax-*`). Status, nomor faktur pajak, status lapor SPT Masa PPN, dan penggantian faktur/bukti potong yang dibuat di PajakMu tampil di Odoo. |
 | Perlu tindakan | e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasannya dan tombol **Buat ulang e-Faktur**. Penanggung jawab faktur juga menerima **aktivitas** "Perbaiki e-Faktur" di Odoo. |
 | Batal e-Faktur | Tombol **Batalkan e-Faktur** di faktur yang sudah disetujui meminta alasan (minimal 5 karakter). Status menjadi **Proses batal**, lalu **Dibatalkan**. Ditahan selama e-Faktur masih punya nota retur aktif. |
 | Ganti e-Faktur | Tombol **Ganti e-Faktur** membuka faktur untuk diedit; pengiriman berikutnya berupa faktur pengganti dengan NSFP asli. Setelah disetujui, e-Faktur lama berstatus **Diganti**. |
 | PDF faktur pajak | Tombol **Unduh PDF Faktur Pajak** menyimpan PDF resmi sebagai satu lampiran di faktur, diperbarui setiap kali diunduh. |
 | Kode transaksi 07/08/10 | e-Faktur bisa dikirim dengan kode 07 dan 08 (keterangan tambahan dari tab Info Lainnya; 07: 1-31, 08: 1-10) dan kode 10. |
-| Nota retur | Dari nota kredit yang sudah diposting (pelanggan atau vendor), tombol **Kirim nota retur** membuka wizard. Nilai DPP/PPN/PPnBM dihitung seperti PajakMu dan bisa diubah. Status kembali otomatis; **Batalkan nota retur** meminta alasan. Nota kredit terkunci selama nota retur aktif. |
+| Nota retur | Dari nota kredit vendor yang sudah diposting, tombol **Kirim nota retur** mencari faktur masukannya di PajakMu dan menampilkan barang/jasa dari DJP beserta sisanya. Nilai retur per barang/jasa terisi dari nota kredit dan bisa diubah. Status kembali otomatis; **Batalkan nota retur** meminta alasan. Nota kredit terkunci selama nota retur aktif. Retur atas faktur keluaran dibuat pembeli di Coretax. |
 | Lawan transaksi | Pelanggan dan vendor ditautkan ke *Lawan Transaksi* PajakMu lewat NPWP (**Cocokkan semua**, wizard **Cocokkan dengan PajakMu**, atau otomatis saat mengirim). Yang belum ada bisa **didaftarkan dari Odoo** di **Data Master › Lawan Transaksi** (satu per satu atau massal); NPWP yang ternyata sudah terdaftar langsung ditautkan. Lawan transaksi yang sudah cocok bisa diperbarui lewat tombol **Perbarui di PajakMu** (di kontak, atau aksi daftar). Bila diaktifkan, kontak baru juga didaftarkan otomatis saat mengirim e-Faktur/bukti potong. |
 | Pemetaan field | Data lawan transaksi (NPWP, NIK, nomor paspor/identitas lain, NITKU/TKU, nama, alamat, email) diambil dari field kontak standar Odoo, dan bisa diganti field lain termasuk field kustom/Studio di **Pengaturan › Koneksi PajakMu**. Pencocokan dan pemeriksaan memakai pemetaan yang sama. |
 | Kesiapan data | **Data Master › Kesiapan data**: produk yang masih berkode barang/jasa umum 000000, satuan tanpa kode Coretax, dan pelanggan di faktur siap kirim yang belum punya NPWP/NIK - semuanya bisa diperbaiki langsung dari daftarnya. Angkanya juga tampil di Ringkasan. |
@@ -37,7 +37,7 @@ Coretax
 ├── e-Faktur
 │   ├── Siap dikirim          (faktur pelanggan ber-PPN yang belum punya e-Faktur)
 │   ├── Semua e-Faktur        (daftar / kanban per status)
-│   ├── Nota Retur            (nota retur keluaran dan masukan)
+│   ├── Nota Retur            (nota retur masukan; retur keluaran lama tetap tersinkron)
 │   └── Perlu tindakan        (ditolak DJP / gagal dikirim)
 ├── Bukti Potong
 ├── Data Master
@@ -60,9 +60,11 @@ Hak akses ada dua tingkat:
 - Odoo 19 dengan modul `account` dan `l10n_id_efaktur_coretax` (bawaan Odoo, ikut terpasang otomatis).
 - Akun PajakMu dengan **paket Business atau lebih tinggi**, karena paket Starter tidak mencakup Public API.
 - API key PajakMu yang dibuat oleh **Owner/Admin Pajak**, dengan izin `faktur:baca`, `faktur:tulis`, `faktur:kirim`,
-  `bupot:*`, dan `status:baca`. Satu API key mewakili satu NPWP, jadi tiap perusahaan di Odoo butuh API key sendiri.
-- Fitur batal, ganti, PDF, kode 07/08/10, nota retur, dan perbarui lawan transaksi butuh PajakMu versi terbaru
-  (lihat **Upgrade**).
+  `bupot:tulis`, `master:baca`, dan `status:baca` (kunci lama dengan `bupot:*` tetap diterima). Prefiks `ak_…` atau
+  alias `sk_…`.
+- API key per entitas mewakili satu NPWP. API key **tingkat grup** juga bisa: isi **NPWP entitas** di Koneksi PajakMu
+  tiap perusahaan (dikirim sebagai header `X-PajakMu-NPWP`).
+- Modul mengikuti Public API PajakMu terbaru (lihat **Upgrade**).
 - Untuk mendaftarkan lawan transaksi dari Odoo, PajakMu harus sudah menyediakan `POST /api/v1/public/lawan-transaksi`
   (izin `faktur:tulis`).
 
@@ -71,7 +73,8 @@ Hak akses ada dua tingkat:
 1. Tambahkan folder proyek ini ke `addons_path` Odoo, misalnya `addons_path = ...,/opt/coretax-integration`.
 2. Restart Odoo, buka **Apps › Update Apps List**, cari **Coretax Integration (PajakMu)**, lalu klik **Install**.
 3. Buka **Coretax › Pengaturan › Koneksi PajakMu** (juga ada di Akuntansi › Pengaturan › Coretax):
-   1. Isi **Alamat PajakMu** dan **API Key**, simpan, lalu klik **Uji koneksi**.
+   1. Isi **Alamat PajakMu** dan **API Key** (serta **NPWP entitas** bila API key-nya tingkat grup), simpan, lalu klik
+      **Uji koneksi**.
    2. Pilih cara mengirim: manual dari faktur, atau otomatis saat faktur diposting.
    3. Opsional: pilih **Webhook**. Salin **Alamat webhook untuk PajakMu** ke PajakMu › Integrasi › Webhook, lalu
       tempel **Webhook Secret** (`whsec_…`) ke Odoo. Alamat Odoo harus bisa diakses dari internet (https).
@@ -119,10 +122,14 @@ kali diunduh.
 
 ### Nota retur
 
-- Dari nota kredit yang sudah diposting (pelanggan atau vendor), klik **Kirim nota retur**. Nilai DPP/PPN/PPnBM
-  dihitung seperti PajakMu dan bisa diubah di wizard.
-- **Keluaran:** faktur asal harus punya e-Faktur yang sudah disetujui.
-- **Masukan:** isi **Nomor Faktur Pajak vendor** (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal.
+- Hanya untuk nota kredit **vendor** (retur faktur masukan). Retur atas faktur keluaran dibuat pembeli di Coretax dan
+  ditarik di PajakMu › Retur pajak; nota retur keluaran lama di Odoo tetap tersinkron dan bisa dibatalkan.
+- Isi **Nomor Faktur Pajak vendor** (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal. Faktur masukannya harus
+  sudah ditarik dari DJP di PajakMu dan berstatus Dikreditkan / Tidak dikreditkan.
+- Klik **Kirim nota retur** di nota kredit yang sudah diposting. Wizard mencari faktur masukan di PajakMu (tombol
+  **Cari ulang** bila nomornya diubah) dan menampilkan barang/jasa dari DJP beserta sisa yang masih bisa diretur.
+- Nilai retur per barang/jasa terisi dari nota kredit: baris yang namanya sama dengan barang/jasa DJP memakai nilai
+  barisnya, selain itu dibagi sebanding sisa DPP. Nilai bisa diubah tetapi tidak boleh melebihi sisa.
 - Status kembali otomatis. **Batalkan nota retur** meminta alasan.
 - Selama nota retur aktif, nota kredit tidak bisa direset, dibatalkan, atau dihapus.
 - Daftarnya ada di tombol pintar **Nota Retur** dan menu **Coretax › e-Faktur › Nota Retur**. Di aplikasi PajakMu
@@ -130,20 +137,25 @@ kali diunduh.
 
 ## Batasan saat ini (dari sisi PajakMu Public API)
 
-Hal berikut belum tersedia di Public API PajakMu, jadi dilakukan langsung di aplikasi PajakMu. Tombol **Buka di PajakMu**
+Hal berikut belum dikerjakan dari Odoo, jadi dilakukan langsung di aplikasi PajakMu. Tombol **Buka di PajakMu**
 membuka dokumennya.
 
 - penandatanganan dan pengiriman Bukti Potong ke DJP
-- Faktur Masukan dan SPT
+- tarik Faktur Masukan dari DJP, retur atas faktur keluaran (dibuat pembeli di Coretax), dan SPT
 
 Saat ini PajakMu terhubung ke DJP melalui PJAP PajakExpress dengan kontrak pra-Coretax (NSFP 13 digit). Format nomor
 Coretax 17 digit menunggu spesifikasi dari PJAP. Modul ini hanya menampilkan nomor yang dikembalikan PajakMu.
 
 ## Upgrade
 
-Fitur batal, ganti, PDF, kode 07/08/10, nota retur, dan perbarui lawan transaksi butuh PajakMu versi terbaru.
-Urutannya: pasang PajakMu lebih dulu (termasuk migrasi 0017 dan 0018 di sisi PajakMu), baru upgrade modul Odoo
-(versi 19.0.1.4.0). Dengan PajakMu lama, fitur-fitur ini dan kode 10 menampilkan pesan "butuh PajakMu versi terbaru".
+Versi 19.0.1.6.0 mengikuti Public API PajakMu terbaru: retur faktur masukan per barang/jasa
+(`GET /nota-retur/faktur-masukan`, `…/{id}/items`), API key tingkat grup (`X-PajakMu-NPWP`), alias kunci `sk_`, header
+webhook `X-PajakMu-*`, serta event `faktur.amended`, `faktur.reported`, dan `bupot.amended`. Urutannya: perbarui
+PajakMu lebih dulu, baru upgrade modul Odoo. Dengan PajakMu lama, wizard nota retur menampilkan pesan "butuh PajakMu
+versi terbaru".
+
+Versi ini juga memperbaiki penerima webhook: di Odoo 19 rute `auth='none'` bawaannya read-only, sehingga webhook
+sebelumnya selalu ditolak (401) dan status hanya datang dari polling 5 menit.
 
 ## Pengujian
 
