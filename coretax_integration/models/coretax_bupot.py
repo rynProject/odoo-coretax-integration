@@ -27,6 +27,12 @@ DOK_DASAR = [
 ]
 EDITABLE_STATES = ("new", "error")
 INACTIVE_STATES = ("rejected", "cancelled")
+# Journal item PPh tagihan dan nota kreditnya (tax_line_ids, pph_gl, pph_selisih dihitung dari sini).
+TAX_LINE_DEPENDS = (
+    "origin", "move_id", "tax_object_id", "move_id.line_ids.balance", "move_id.line_ids.coretax_tax_object_id",
+    "move_id.line_ids.tax_line_id", "move_id.reversal_move_ids.state", "move_id.reversal_move_ids.line_ids.balance",
+    "move_id.reversal_move_ids.line_ids.coretax_tax_object_id",
+)
 FASILITAS = [
     ("NONE", "Tanpa fasilitas"), ("SKB", "Surat Keterangan Bebas (SKB)"), ("SKD", "Surat Keterangan Domisili (SKD/P3B)"),
     ("DTP", "Ditanggung Pemerintah (DTP)"), ("PP23", "PP 23 / PP 55 (UMKM)"), ("LAINNYA", "Fasilitas lainnya"),
@@ -128,6 +134,10 @@ class CoretaxBupot(models.Model):
         for rec in self:
             rec.tarif = rec.tax_object_id.tarif
 
+    @api.depends("origin", "move_id", "tax_object_id", "move_id.line_ids.tax_ids",
+                 "move_id.line_ids.coretax_tax_object_id", "move_id.reversal_move_ids.state",
+                 "move_id.reversal_move_ids.line_ids.tax_ids",
+                 "move_id.reversal_move_ids.line_ids.coretax_tax_object_id")
     def _compute_source_line_ids(self):
         for rec in self:
             if rec.origin == "bill" and rec.move_id:
@@ -135,6 +145,7 @@ class CoretaxBupot(models.Model):
             else:
                 rec.source_line_ids = False
 
+    @api.depends(*TAX_LINE_DEPENDS)
     def _compute_tax_line_ids(self):
         for rec in self:
             if rec.origin == "bill" and rec.move_id:
@@ -143,11 +154,12 @@ class CoretaxBupot(models.Model):
             else:
                 rec.tax_line_ids = False
 
+    @api.depends(*TAX_LINE_DEPENDS)
     def _compute_pph_gl(self):
         for rec in self:
             rec.pph_gl = -sum(rec.tax_line_ids.mapped("balance"))
 
-    @api.depends("pph_estimasi")
+    @api.depends("pph_estimasi", *TAX_LINE_DEPENDS)
     def _compute_pph_selisih(self):
         for rec in self:
             rec.pph_selisih = -sum(rec.tax_line_ids.mapped("balance")) - rec.pph_estimasi
