@@ -108,7 +108,7 @@ class AccountMove(models.Model):
                                            "PPh tersebut.", bupot.tax_object_id.code)))
             for bupot, note in to_delete:
                 bupot.with_context(coretax_bupot_sync=True).unlink()
-                bill.message_post(body=note)
+                bill._message_log(body=note)
 
     def _coretax_warn_sent_bupot(self, bupot, new_dpp):
         """Catat dan jadwalkan aktivitas saat DPP bupot yang sudah di PajakMu berubah."""
@@ -120,7 +120,7 @@ class AccountMove(models.Model):
         currency = self.company_currency_id
         old_text = currency.format(old_dpp)
         new_text = currency.format(new_dpp)
-        bupot.message_post(body=_(
+        bupot._message_log(body=_(
             "DPP tagihan berubah dari %(old)s menjadi %(new)s, tetapi bukti potong ini sudah ada di PajakMu "
             "dan tidak diubah otomatis.", old=old_text, new=new_text))
         user = self.invoice_user_id or self.create_uid
@@ -152,7 +152,7 @@ class AccountMove(models.Model):
         editable.with_context(coretax_bupot_sync=True).unlink()
         if note:
             for move in moves:
-                move.message_post(body=note)
+                move._message_log(body=note)
 
     def button_draft(self):
         self._coretax_bupot_guard(_("mengembalikan ke draft"))

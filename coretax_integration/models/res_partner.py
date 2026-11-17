@@ -149,6 +149,8 @@ class ResPartner(models.Model):
         kind = self._coretax_kind(connection)
         npwp = digits(self._coretax_value("npwp", connection)) if kind == "NPWP" else ""
         tku = digits(self._coretax_value("tku", connection))
+        if tku == "000000":
+            tku = ""  # kantor pusat (bawaan l10n_id Odoo 18): kosong = TKU utama lawan transaksi
         if len(tku) == 6 and len(npwp) == 16:
             tku = npwp + tku
         address_lines = (self._coretax_value("address", connection) or "").splitlines()

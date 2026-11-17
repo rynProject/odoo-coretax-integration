@@ -8,6 +8,10 @@ def _coretax_post_init(env):
     for company in companies:
         Template = env["account.chart.template"].with_company(company)
         data = {
+            "account.account": {
+                xmlid: values for xmlid, values in Template._get_id_coretax_account_account().items()
+                if not Template.ref(xmlid, raise_if_not_found=False)
+            },
             "account.tax.group": {
                 xmlid: values for xmlid, values in Template._get_id_coretax_account_tax_group().items()
                 if not Template.ref(xmlid, raise_if_not_found=False)

@@ -221,7 +221,7 @@ class TestPphBupot(PphTestCommon):
             groups |= self.env.ref(xmlid)
         return self.env["res.users"].create({
             "name": "Pengguna biasa", "login": "plain_" + "_".join(xmlids or ["x"]),
-            "company_id": company.id, "company_ids": [(6, 0, company.ids)], "group_ids": [(6, 0, groups.ids)],
+            "company_id": company.id, "company_ids": [(6, 0, company.ids)], "groups_id": [(6, 0, groups.ids)],
         })
 
     def test_readonly_user_can_read_bill_form_fields(self):
@@ -245,7 +245,7 @@ class TestPphBupot(PphTestCommon):
             self.env["ir.model.access"].create({
                 "name": "uji " + model, "model_id": self.env["ir.model"]._get(model).id, "group_id": group.id,
                 "perm_read": True, "perm_write": True, "perm_create": True, "perm_unlink": True})
-        user.write({"group_ids": [(4, group.id)]})
+        user.write({"groups_id": [(4, group.id)]})
         self.assertFalse(user.has_group("coretax_integration.group_coretax_user"))
         draft = self._three_lines(post=False)
         self.env.invalidate_all()  # cache dibagi antar env; paksa pembacaan memeriksa hak akses

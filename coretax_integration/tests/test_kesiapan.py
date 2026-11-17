@@ -20,8 +20,8 @@ class TestKesiapanData(CoretaxTestCommon):
 
     def test_dashboard_counts_uoms_without_coretax_code(self):
         before = self._counts()["uoms_no_code"]
-        rim = self.env["uom.uom"].create({"name": "Rim", "relative_factor": 1.0,
-                                          "relative_uom_id": self.env.ref("uom.product_uom_unit").id})
+        rim = self.env["uom.uom"].create({"name": "Rim", "uom_type": "bigger", "factor_inv": 500.0,
+                                          "category_id": self.env.ref("uom.product_uom_categ_unit").id})
         self.env["product.product"].create({"name": "Kertas", "sale_ok": True, "uom_id": rim.id})
         self.assertEqual(self._counts()["uoms_no_code"], before + 1)
 

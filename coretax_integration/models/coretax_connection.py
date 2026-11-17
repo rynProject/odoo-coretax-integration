@@ -116,7 +116,9 @@ class CoretaxConnection(models.Model):
 
     log_count = fields.Integer(compute="_compute_log_count")
 
-    _company_uniq = models.Constraint("unique(company_id)", "Setiap perusahaan hanya boleh punya satu koneksi PajakMu.")
+    _sql_constraints = [
+        ("company_uniq", "unique(company_id)", "Setiap perusahaan hanya boleh punya satu koneksi PajakMu."),
+    ]
 
     @api.depends("company_id")
     def _compute_name(self):

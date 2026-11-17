@@ -27,6 +27,12 @@ DOK_DASAR = [
 ]
 EDITABLE_STATES = ("new", "error")
 INACTIVE_STATES = ("rejected", "cancelled")
+# Journal item PPh tagihan dan nota kreditnya (tax_line_ids, pph_gl, pph_selisih dihitung dari sini).
+TAX_LINE_DEPENDS = (
+    "origin", "move_id", "tax_object_id", "move_id.line_ids.balance", "move_id.line_ids.coretax_tax_object_id",
+    "move_id.line_ids.tax_line_id", "move_id.reversal_move_ids.state", "move_id.reversal_move_ids.line_ids.balance",
+    "move_id.reversal_move_ids.line_ids.coretax_tax_object_id",
+)
 FASILITAS = [
     ("NONE", "Tanpa fasilitas"), ("SKB", "Surat Keterangan Bebas (SKB)"), ("SKD", "Surat Keterangan Domisili (SKD/P3B)"),
     ("DTP", "Ditanggung Pemerintah (DTP)"), ("PP23", "PP 23 / PP 55 (UMKM)"), ("LAINNYA", "Fasilitas lainnya"),
@@ -49,7 +55,7 @@ class CoretaxTaxObject(models.Model):
     tarif = fields.Float(string="Tarif (%)", digits=(5, 2))
     active = fields.Boolean(default=True)
 
-    _code_uniq = models.Constraint("unique(code)", "Kode objek pajak sudah ada.")
+    _sql_constraints = [("code_uniq", "unique(code)", "Kode objek pajak sudah ada.")]
 
     @api.depends("code", "name")
     def _compute_display_name(self):
@@ -74,9 +80,6 @@ class CoretaxBupot(models.Model):
     _order = "tanggal_pemotongan desc, id desc"
     _check_company_auto = True
 
-    _bill_unique = models.UniqueIndex(
-        "(move_id, tax_object_id) WHERE origin = 'bill' AND state NOT IN ('rejected', 'cancelled')",
-        "Tagihan ini sudah punya bukti potong aktif untuk kode objek pajak yang sama.")
 
     name = fields.Char(string="Bukti Potong", compute="_compute_name", store=True)
     company_id = fields.Many2one("res.company", string="Perusahaan", required=True, default=lambda self: self.env.company)
@@ -123,11 +126,23 @@ class CoretaxBupot(models.Model):
     pph_gl = fields.Monetary(string="PPh di jurnal", compute="_compute_pph_gl")
     pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_selisih")
 
+    def init(self):
+        # Satu bukti potong aktif per tagihan dan kode objek pajak (Odoo 18 belum punya models.UniqueIndex).
+        self.env.cr.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS coretax_bupot_bill_unique
+            ON coretax_bupot (move_id, tax_object_id)
+            WHERE origin = 'bill' AND state NOT IN ('rejected', 'cancelled')
+        """)
+
     @api.depends("tax_object_id")
     def _compute_tarif(self):
         for rec in self:
             rec.tarif = rec.tax_object_id.tarif
 
+    @api.depends("origin", "move_id", "tax_object_id", "move_id.line_ids.tax_ids",
+                 "move_id.line_ids.coretax_tax_object_id", "move_id.reversal_move_ids.state",
+                 "move_id.reversal_move_ids.line_ids.tax_ids",
+                 "move_id.reversal_move_ids.line_ids.coretax_tax_object_id")
     def _compute_source_line_ids(self):
         for rec in self:
             if rec.origin == "bill" and rec.move_id:
@@ -135,6 +150,7 @@ class CoretaxBupot(models.Model):
             else:
                 rec.source_line_ids = False
 
+    @api.depends(*TAX_LINE_DEPENDS)
     def _compute_tax_line_ids(self):
         for rec in self:
             if rec.origin == "bill" and rec.move_id:
@@ -143,11 +159,12 @@ class CoretaxBupot(models.Model):
             else:
                 rec.tax_line_ids = False
 
+    @api.depends(*TAX_LINE_DEPENDS)
     def _compute_pph_gl(self):
         for rec in self:
             rec.pph_gl = -sum(rec.tax_line_ids.mapped("balance"))
 
-    @api.depends("pph_estimasi")
+    @api.depends("pph_estimasi", *TAX_LINE_DEPENDS)
     def _compute_pph_selisih(self):
         for rec in self:
             rec.pph_selisih = -sum(rec.tax_line_ids.mapped("balance")) - rec.pph_estimasi

@@ -1,19 +1,30 @@
 from odoo import Command, models
 from odoo.addons.account.models.chart_template import template
 
+# Akun Hutang PPh di chart l10n_id Odoo 18: 21210020 = PPh 23, 21210040 = Pasal 4(2). Odoo 18 belum punya akun
+# Hutang PPh 26, jadi modul menambahkannya (nomor sama dengan Odoo 19).
+PPH_ACCOUNTS = {
+    "l10n_id_21210060": {"code": "21210060", "name": "Hutang Pajak PPh 26", "account_type": "liability_current",
+                         "reconcile": True},
+}
+
 # (xmlid, nama, tarif, kode objek, akun Utang PPh, label faktur)
 PPH_TAXES = [
-    ("tax_pph23_2", "PPh 23 2%", -2.0, "coretax_integration.tax_object_24_104_01", "l10n_id_21210030", "PPh 23"),
-    ("tax_pph23_skb", "PPh 23 SKB 0%", 0.0, "coretax_integration.tax_object_24_104_01", "l10n_id_21210030",
+    ("tax_pph23_2", "PPh 23 2%", -2.0, "coretax_integration.tax_object_24_104_01", "l10n_id_21210020", "PPh 23"),
+    ("tax_pph23_skb", "PPh 23 SKB 0%", 0.0, "coretax_integration.tax_object_24_104_01", "l10n_id_21210020",
      "PPh 23 SKB"),
     ("tax_pph42_sewa_10", "PPh 4(2) Sewa 10%", -10.0, "coretax_integration.tax_object_28_402_01",
-     "l10n_id_21210050", "PPh 4(2)"),
+     "l10n_id_21210040", "PPh 4(2)"),
     ("tax_pph26_20", "PPh 26 20%", -20.0, "coretax_integration.tax_object_27_104_01", "l10n_id_21210060", "PPh 26"),
 ]
 
 
 class AccountChartTemplate(models.AbstractModel):
     _inherit = "account.chart.template"
+
+    @template("id", "account.account")
+    def _get_id_coretax_account_account(self):
+        return {xmlid: dict(values) for xmlid, values in PPH_ACCOUNTS.items()}
 
     @template("id", "account.tax.group")
     def _get_id_coretax_account_tax_group(self):

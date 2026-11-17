@@ -594,7 +594,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         groups = self.env.ref("account.group_account_readonly") | self.env.ref("coretax_integration.group_coretax_user")
         user = self.env["res.users"].create({
             "name": "Pembaca e-Faktur", "login": "pdf_reader", "company_id": company.id,
-            "company_ids": [(6, 0, company.ids)], "group_ids": [(6, 0, groups.ids)]})
+            "company_ids": [(6, 0, company.ids)], "groups_id": [(6, 0, groups.ids)]})
         self.assertFalse(move.with_user(user).has_access("write"))
         self.env.invalidate_all()
         _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))

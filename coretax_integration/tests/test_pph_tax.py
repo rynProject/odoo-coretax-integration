@@ -11,9 +11,9 @@ class TestPphTax(PphTestCommon):
 
     def test_template_pph_taxes(self):
         expected = [
-            (self.pph23, -2.0, "24-104-01", "21210030"),
-            (self.pph23_skb, 0.0, "24-104-01", "21210030"),
-            (self.pph42, -10.0, "28-402-01", "21210050"),
+            (self.pph23, -2.0, "24-104-01", "21210020"),
+            (self.pph23_skb, 0.0, "24-104-01", "21210020"),
+            (self.pph42, -10.0, "28-402-01", "21210040"),
             (self.env["account.chart.template"].ref("tax_pph26_20"), -20.0, "27-104-01", "21210060"),
         ]
         for tax, amount, code, account in expected:
@@ -55,7 +55,7 @@ class TestPphTax(PphTestCommon):
             {"tax_line_id": self.pph42.id, "coretax_tax_object_id": self.obj_sewa.id, "balance": -2_000_000},
             {"tax_line_id": self.pph23.id, "coretax_tax_object_id": self.obj_teknik.id, "balance": -300_000},
         ])
-        self.assertEqual(pph.mapped("account_id.code"), ["21210050", "21210030"])
+        self.assertEqual(pph.mapped("account_id.code"), ["21210040", "21210020"])
         self.assertEqual(bill.amount_total, 32_700_000)
 
     def test_changed_object_splits_tax_line(self):
