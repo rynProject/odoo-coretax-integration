@@ -208,26 +208,62 @@
         <field name="arch" type="xml">
             <form string="Kirim nota retur">
                 <div class="alert alert-info" role="status">
-                    Periksa nilai retur di bawah. Nota retur dikirim ke DJP lewat PajakMu.
+                    Nota retur meretur faktur masukan yang sudah ada di PajakMu, per barang/jasa. Periksa nilai retur
+                    di bawah; nilainya tidak boleh melebihi sisa faktur asal.
+                </div>
+                <div class="alert alert-warning" role="alert" invisible="not lookup_message">
+                    <field name="lookup_message"/>
                 </div>
                 <group>
                     <group>
                         <field name="move_id" readonly="1" options="{'no_open': True}"/>
-                        <field name="sisi"/>
-                        <field name="nomor_dokumen_retur"/>
-                        <field name="tanggal_retur"/>
-                        <field name="referensi"/>
+                        <label for="nomor_faktur"/>
+                        <div class="o_row">
+                            <field name="nomor_faktur"/>
+                            <button name="action_lookup" type="object" string="Cari ulang" icon="fa-search"
+                                    class="btn-link"/>
+                        </div>
+                        <field name="faktur_masukan_info" invisible="not faktur_masukan_id"/>
+                        <field name="is_creditable"/>
                     </group>
                     <group>
-                        <field name="nilai_dpp"/>
-                        <field name="nilai_ppn"/>
-                        <field name="nilai_ppnbm"/>
-                        <field name="tarif_ppn"/>
+                        <field name="nomor_dokumen_retur" placeholder="Kosongkan agar diberi nomor oleh PajakMu"/>
+                        <field name="tanggal_retur"/>
+                        <field name="referensi"/>
+                        <field name="faktur_masukan_id" invisible="1"/>
                         <field name="currency_id" invisible="1"/>
                     </group>
                 </group>
+                <field name="line_ids" invisible="not faktur_masukan_id">
+                    <list editable="bottom" create="0" delete="0">
+                        <field name="index" column_invisible="1"/>
+                        <field name="nama"/>
+                        <field name="satuan" optional="hide"/>
+                        <field name="sisa_jumlah" optional="show"/>
+                        <field name="retur_jumlah"/>
+                        <field name="sisa_dpp" optional="show"/>
+                        <field name="retur_dpp"/>
+                        <field name="retur_diskon" optional="hide"/>
+                        <field name="retur_dpp_lain" optional="show"/>
+                        <field name="retur_ppn"/>
+                        <field name="retur_ppnbm" optional="hide"/>
+                        <field name="sisa_diskon" column_invisible="1"/>
+                        <field name="sisa_dpp_lain" column_invisible="1"/>
+                        <field name="sisa_ppn" column_invisible="1"/>
+                        <field name="sisa_ppnbm" column_invisible="1"/>
+                    </list>
+                </field>
+                <group invisible="not faktur_masukan_id">
+                    <group/>
+                    <group>
+                        <field name="total_dpp"/>
+                        <field name="total_ppn"/>
+                        <field name="total_ppnbm"/>
+                    </group>
+                </group>
                 <footer>
-                    <button name="action_confirm" type="object" string="Kirim nota retur" class="btn-primary"/>
+                    <button name="action_confirm" type="object" string="Kirim nota retur" class="btn-primary"
+                            invisible="not faktur_masukan_id"/>
                     <button string="Tutup" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

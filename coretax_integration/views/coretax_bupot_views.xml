@@ -30,7 +30,7 @@
         <field name="model">coretax.bupot</field>
         <field name="arch" type="xml">
             <list string="Bukti Potong" decoration-danger="state in ('error', 'rejected')" decoration-success="state == 'approved'"
-                  decoration-muted="state == 'cancelled'">
+                  decoration-muted="state in ('cancelled', 'replaced')">
                 <field name="tanggal_pemotongan"/>
                 <field name="name"/>
                 <field name="partner_id"/>

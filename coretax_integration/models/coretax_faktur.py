@@ -28,7 +28,10 @@ REMOTE_STATES = {
     "DRAFT": "draft", "PENDING_APPROVAL": "pending_approval", "VALIDATED": "validated",
     "SUBMITTED": "submitted", "PROCESSING": "processing", "APPROVED": "approved",
     "REJECTED": "rejected", "CANCEL_REQUESTED": "cancel_requested", "CANCELLED": "cancelled",
+    "AMENDED": "replaced",
 }
+# Status lapor SPT Masa PPN (turunan PajakMu, field `dilaporkan`).
+LAPOR_STATES = [("YA", "Sudah dilaporkan"), ("BELUM", "Belum dilaporkan"), ("PEMBETULAN", "Perlu pembetulan SPT")]
 # Status yang masih "hidup" - faktur Odoo yang punya e-Faktur seperti ini tidak
 # dikirim ulang dan tidak boleh dikembalikan ke draft.
 LOCKING_STATES = ("submitted", "processing", "approved", "cancel_requested")
@@ -117,6 +120,9 @@ class CoretaxFaktur(models.Model):
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     submitted_at = fields.Datetime(string="Dikirim ke DJP pada", readonly=True, copy=False)
     last_sync = fields.Datetime(string="Diperbarui dari PajakMu", readonly=True, copy=False)
+    lapor_state = fields.Selection(LAPOR_STATES, string="Lapor SPT Masa PPN", readonly=True, copy=False,
+                                   help="Status lapor dari PajakMu: apakah faktur ini sudah termasuk SPT Masa PPN "
+                                        "yang terlapor di Coretax.")
     aksatax_url = fields.Char(string="Tautan PajakMu", compute="_compute_aksatax_url")
     log_count = fields.Integer(compute="_compute_log_count")
 
@@ -191,6 +197,8 @@ class CoretaxFaktur(models.Model):
                 vals[field] = data[key]
         if "tanggalApproval" in data:
             vals["tanggal_approval"] = _parse_dt(data.get("tanggalApproval"))
+        if "dilaporkan" in data:
+            vals["lapor_state"] = data.get("dilaporkan") if data.get("dilaporkan") in dict(LAPOR_STATES) else False
         if "lastError" in data:
             vals["last_error"] = data.get("lastError") or False
         if state and state not in ATTENTION_STATES and "lastError" not in data:
@@ -203,10 +211,20 @@ class CoretaxFaktur(models.Model):
         self.ensure_one()
         data = event.get("data") or {}
         vals = {"last_sync": fields.Datetime.now()}
+        if event.get("type") == "faktur.reported":
+            # status lapor SPT saja; status dokumen tidak berubah
+            lapor = data.get("dilaporkan") or "YA"
+            self.write({"last_sync": fields.Datetime.now(),
+                        "lapor_state": lapor if lapor in dict(LAPOR_STATES) else False})
+            return
         state = REMOTE_STATES.get((data.get("status") or "").upper()) or {
             "faktur.submitted": "submitted", "faktur.approved": "approved",
-            "faktur.rejected": "rejected", "faktur.cancelled": "cancelled",
+            "faktur.rejected": "rejected", "faktur.cancelled": "cancelled", "faktur.amended": "replaced",
         }.get(event.get("type"))
+        if event.get("type") == "faktur.amended":
+            state = "replaced"
+            if self.state == "replaced":
+                state = None  # penggantian dari Odoo sudah tercatat
         if self.state == "replaced" and state == "approved":
             state = None  # PajakMu tidak tahu e-Faktur ini sudah diganti; tetap Diganti
         if state:
@@ -226,6 +244,10 @@ class CoretaxFaktur(models.Model):
             self._schedule_fix_activity(_("e-Faktur ditolak DJP"))
         elif state == "approved":
             self.move_id.message_post(body=_("e-Faktur disetujui DJP. Nomor Faktur Pajak: %s", self.nomor_faktur or "-"))
+        elif state == "replaced":
+            self.move_id.message_post(body=_(
+                "e-Faktur %(nomor)s diganti oleh faktur pengganti %(pengganti)s yang dibuat di PajakMu.",
+                nomor=self.nomor_faktur or "-", pengganti=data.get("nomorPengganti") or "-"))
 
     def _schedule_fix_activity(self, summary):
         """Aktivitas 'perbaiki' untuk penanggung jawab faktur, supaya penolakan

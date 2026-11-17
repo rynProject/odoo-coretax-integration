@@ -7,3 +7,4 @@ from . import test_pph_bupot
 from . import test_efaktur_fase1
 from . import test_efaktur_fase2
 from . import test_retur
+from . import test_api_pajakmu

@@ -41,6 +41,7 @@
                             <field name="company_vat" string="NPWP perusahaan"/>
                             <field name="base_url" placeholder="https://app.aksatax.id"/>
                             <field name="api_key" password="True" placeholder="ak_live_… atau ak_test_…"/>
+                            <field name="npwp_entitas" placeholder="Isi hanya untuk API key tingkat grup"/>
                             <field name="environment"/>
                             <field name="last_check"/>
                         </group>

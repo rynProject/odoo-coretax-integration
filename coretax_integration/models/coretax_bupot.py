@@ -18,6 +18,7 @@ BUPOT_STATES = [
     ("rejected", "Ditolak DJP"),
     ("cancel_requested", "Pembatalan diajukan"),
     ("cancelled", "Dibatalkan"),
+    ("replaced", "Diganti pembetulan"),
     ("error", "Gagal - perlu tindakan"),
 ]
 DOK_DASAR = [
@@ -278,8 +279,8 @@ class CoretaxBupot(models.Model):
 
     def _apply_event(self, event, connection):
         data = event.get("data") or {}
-        state = {"bupot.approved": "APPROVED", "bupot.rejected": "REJECTED", "bupot.cancelled": "CANCELLED"}.get(
-            event.get("type"))
+        state = {"bupot.approved": "APPROVED", "bupot.rejected": "REJECTED", "bupot.cancelled": "CANCELLED",
+                 "bupot.amended": "AMENDED"}.get(event.get("type"))
         self._apply_status({"status": data.get("status") or state, "nomor": data.get("nomor"),
                             **({"lastError": data["alasan"]} if data.get("alasan") else {})})
 

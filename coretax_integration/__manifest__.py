@@ -12,8 +12,9 @@ Menghubungkan Odoo dengan PajakMu (https://aksatax.id) melalui Public API-nya:
 * Batalkan e-Faktur (dengan alasan), ganti e-Faktur (faktur pengganti dengan
   NSFP asli), dan unduh PDF faktur pajak resmi sebagai lampiran faktur.
 * Kode transaksi 07, 08, dan 10.
-* Nota retur dari nota kredit pelanggan (Keluaran) atau vendor (Masukan);
-  nilainya dihitung seperti PajakMu dan status kembali otomatis.
+* Nota retur dari nota kredit vendor atas faktur masukan yang sudah ada di
+  PajakMu, per barang/jasa; status kembali otomatis. Retur atas faktur
+  keluaran dibuat pembeli di Coretax.
 * Pemeriksaan sebelum kirim dengan bahasa yang mudah dipahami (NPWP/NIK
   pelanggan, kode transaksi, kode barang/jasa, mata uang, kelompok pajak).
 * Bukti Potong PPh Unifikasi (BPPU/BPNR) dari tagihan vendor, dikirim ke
@@ -23,15 +24,17 @@ Menghubungkan Odoo dengan PajakMu (https://aksatax.id) melalui Public API-nya:
   tagihan diposting, tetap sinkron saat tagihan dibatalkan atau dibuatkan nota kredit.
 * Pencocokan pelanggan/vendor dengan Lawan Transaksi PajakMu (per perusahaan),
   termasuk memperbarui lawan transaksi yang sudah cocok.
+* API key per entitas atau tingkat grup (NPWP entitas dipilih per koneksi).
 * Ringkasan, daftar "Perlu tindakan", dan Riwayat Sinkronisasi.
 
-Fitur batal, ganti, PDF, dan nota retur butuh PajakMu versi terbaru. Pasang
-PajakMu lebih dulu, baru upgrade modul ini.
+Modul ini mengikuti Public API PajakMu terbaru (retur faktur masukan per
+barang/jasa, API key grup, webhook X-PajakMu-*). Perbarui PajakMu lebih dulu,
+baru upgrade modul ini.
 
 Data baris e-Faktur memakai penyusun data bawaan Odoo
 (l10n_id_efaktur_coretax), jadi angkanya sama dengan XML Coretax resmi.
 """,
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.6.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
     "website": "https://www.aksa.id",
@@ -63,7 +66,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
             "coretax_integration/static/src/dashboard/coretax_dashboard.scss",
         ],
     },
-    "images": ["static/description/banner.png", "static/description/dashboard_screenshot.png"],
+    "images": ["static/description/banner.png"],
     "application": True,
     "installable": True,
     "post_init_hook": "_coretax_post_init",

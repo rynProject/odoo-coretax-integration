@@ -78,16 +78,30 @@
                             <field name="tanggal_retur" readonly="state not in ('new', 'error')"/>
                             <field name="masa"/>
                             <field name="tahun"/>
-                            <field name="nilai_dpp" readonly="state not in ('new', 'error')"/>
-                            <field name="nilai_ppn" readonly="state not in ('new', 'error')"/>
-                            <field name="nilai_ppnbm" readonly="state not in ('new', 'error')"/>
-                            <field name="tarif_ppn" readonly="state not in ('new', 'error')"/>
+                            <field name="nilai_dpp" readonly="1"/>
+                            <field name="nilai_ppn" readonly="1"/>
+                            <field name="nilai_ppnbm" readonly="1"/>
+                            <field name="is_creditable" invisible="sisi != 'masukan'"
+                                   readonly="state not in ('new', 'error')"/>
                             <field name="referensi" readonly="state not in ('new', 'error')"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
+                    <field name="line_ids" invisible="sisi != 'masukan'" readonly="state not in ('new', 'error')">
+                        <list editable="bottom" create="0">
+                            <field name="index" column_invisible="1"/>
+                            <field name="nama"/>
+                            <field name="retur_jumlah"/>
+                            <field name="retur_diskon" optional="hide"/>
+                            <field name="retur_dpp" sum="Total DPP"/>
+                            <field name="retur_dpp_lain" optional="show"/>
+                            <field name="retur_ppn" sum="Total PPN"/>
+                            <field name="retur_ppnbm" optional="hide"/>
+                        </list>
+                    </field>
                     <group string="PajakMu" invisible="not aksatax_id">
                         <field name="aksatax_id"/>
+                        <field name="faktur_masukan_id" invisible="not faktur_masukan_id"/>
                         <field name="last_sync"/>
                         <field name="alasan_batal" invisible="not alasan_batal"/>
                     </group>
@@ -104,7 +118,8 @@
         <field name="search_view_id" ref="view_coretax_retur_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Belum ada nota retur</p>
-            <p>Nota retur dibuat dari faktur kredit (credit note) yang sudah diposting.</p>
+            <p>Nota retur dibuat dari nota kredit vendor yang sudah diposting. Retur atas faktur keluaran
+                dibuat pembeli di Coretax.</p>
         </field>
     </record>
 </odoo>
