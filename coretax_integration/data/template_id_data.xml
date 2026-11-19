@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Pajak PPh untuk chart l10n_id. Odoo 16 belum punya akun Hutang PPh 26, jadi modul menambahkannya
+         (nomor sama dengan Odoo 19). Akun Hutang PPh 23 (21210020) dan Pasal 4(2) (21210040) memakai akun bawaan. -->
+    <record id="l10n_id_tax_group_pph" model="account.tax.group">
+        <field name="name">PPh</field>
+        <field name="country_id" ref="base.id"/>
+    </record>
+
+    <record id="l10n_id_21210060" model="account.account.template">
+        <field name="code">21210060</field>
+        <field name="name">Hutang Pajak PPh 26</field>
+        <field name="account_type">liability_current</field>
+        <field name="reconcile" eval="True"/>
+        <field name="chart_template_id" ref="l10n_id.l10n_id_chart"/>
+    </record>
+
+    <record id="tax_pph23_2" model="account.tax.template">
+        <field name="chart_template_id" ref="l10n_id.l10n_id_chart"/>
+        <field name="name">PPh 23 2%</field>
+        <field name="description">PPh 23</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="amount_type">percent</field>
+        <field name="amount">-2.0</field>
+        <field name="tax_group_id" ref="l10n_id_tax_group_pph"/>
+        <field name="coretax_tax_object_id" ref="tax_object_24_104_01"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210020'), 'use_in_tax_closing': False}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210020'), 'use_in_tax_closing': False}),
+        ]"/>
+    </record>
+
+    <record id="tax_pph23_skb" model="account.tax.template">
+        <field name="chart_template_id" ref="l10n_id.l10n_id_chart"/>
+        <field name="name">PPh 23 SKB 0%</field>
+        <field name="description">PPh 23 SKB</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="amount_type">percent</field>
+        <field name="amount">0.0</field>
+        <field name="tax_group_id" ref="l10n_id_tax_group_pph"/>
+        <field name="coretax_tax_object_id" ref="tax_object_24_104_01"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210020'), 'use_in_tax_closing': False}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210020'), 'use_in_tax_closing': False}),
+        ]"/>
+    </record>
+
+    <record id="tax_pph42_sewa_10" model="account.tax.template">
+        <field name="chart_template_id" ref="l10n_id.l10n_id_chart"/>
+        <field name="name">PPh 4(2) Sewa 10%</field>
+        <field name="description">PPh 4(2)</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="amount_type">percent</field>
+        <field name="amount">-10.0</field>
+        <field name="tax_group_id" ref="l10n_id_tax_group_pph"/>
+        <field name="coretax_tax_object_id" ref="tax_object_28_402_01"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210040'), 'use_in_tax_closing': False}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id.l10n_id_21210040'), 'use_in_tax_closing': False}),
+        ]"/>
+    </record>
+
+    <record id="tax_pph26_20" model="account.tax.template">
+        <field name="chart_template_id" ref="l10n_id.l10n_id_chart"/>
+        <field name="name">PPh 26 20%</field>
+        <field name="description">PPh 26</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="amount_type">percent</field>
+        <field name="amount">-20.0</field>
+        <field name="tax_group_id" ref="l10n_id_tax_group_pph"/>
+        <field name="coretax_tax_object_id" ref="tax_object_27_104_01"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id_21210060'), 'use_in_tax_closing': False}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0, 0, {'repartition_type': 'base'}),
+            (0, 0, {'repartition_type': 'tax', 'account_id': ref('l10n_id_21210060'), 'use_in_tax_closing': False}),
+        ]"/>
+    </record>
+</odoo>

@@ -7,10 +7,9 @@
             <form string="Koneksi PajakMu">
                 <header>
                     <button name="action_test_connection" type="object" string="Uji koneksi" class="btn-primary" icon="fa-plug"/>
-                    <button name="action_sync_now" type="object" string="Ambil status terbaru" icon="fa-refresh"
-                            invisible="not has_api_key"/>
-                    <button name="action_match_all_partners" type="object" string="Cocokkan semua pelanggan" icon="fa-link"
-                            invisible="state != 'ok'" help="Cari semua pelanggan ber-NPWP yang belum cocok di PajakMu."/>
+                    <button name="action_sync_now" attrs="{'invisible': [('has_api_key', '=', False)]}" type="object" string="Ambil status terbaru" icon="fa-refresh"/>
+                    <button name="action_match_all_partners" attrs="{'invisible': [('state', '!=', 'ok')]}" type="object" string="Cocokkan semua pelanggan" icon="fa-link"
+                            help="Cari semua pelanggan ber-NPWP yang belum cocok di PajakMu."/>
                     <button name="action_open_aksatax" type="object" string="Buka PajakMu" icon="fa-external-link"/>
                     <field name="state" widget="statusbar"/>
                 </header>
@@ -21,15 +20,15 @@
                         </button>
                     </div>
                     <field name="has_api_key" invisible="1"/>
-                    <div class="alert alert-success d-flex align-items-center gap-2" role="status" invisible="state != 'ok'">
+                    <div attrs="{'invisible': [('state', '!=', 'ok')]}" class="alert alert-success d-flex align-items-center gap-2" role="status">
                         <i title="Berhasil" class="fa fa-check-circle fa-lg"/>
                         <span>Terhubung ke PajakMu (<field name="environment" class="d-inline fw-bold" readonly="1"/>). Odoo siap mengirim e-Faktur.</span>
                     </div>
-                    <div class="alert alert-danger" role="alert" invisible="state != 'error'">
+                    <div attrs="{'invisible': [('state', '!=', 'error')]}" class="alert alert-danger" role="alert">
                         <strong><i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> Koneksi gagal.</strong>
                         <field name="last_error" class="d-block mt-1" readonly="1"/>
                     </div>
-                    <div class="alert alert-info" role="status" invisible="state != 'draft'">
+                    <div attrs="{'invisible': [('state', '!=', 'draft')]}" class="alert alert-info" role="status">
                         <i title="Info" class="fa fa-info-circle"/> Isi <b>Alamat PajakMu</b> dan <b>API Key</b> di bawah, simpan, lalu klik <b>Uji koneksi</b>.
                     </div>
                     <div class="oe_title">
@@ -55,7 +54,7 @@
                             <field name="sync_method" widget="radio"/>
                             <field name="last_sync"/>
                         </group>
-                        <group invisible="sync_method != 'webhook'">
+                        <group attrs="{'invisible': [('sync_method', '!=', 'webhook')]}">
                             <field name="webhook_url" widget="CopyClipboardChar"/>
                             <field name="webhook_secret" password="True" placeholder="whsec_…"/>
                         </group>
@@ -96,7 +95,7 @@
                             <li>Centang izin: <i>faktur:baca</i>, <i>faktur:tulis</i>, <i>faktur:kirim</i>, <i>bupot:*</i>, dan <i>status:baca</i>.</li>
                             <li>Salin API key (hanya ditampilkan sekali), tempel di kolom <b>API Key</b> di atas, lalu klik <b>Uji koneksi</b>.</li>
                         </ol>
-                        <p class="mb-1" invisible="sync_method != 'webhook'">
+                        <p attrs="{'invisible': [('sync_method', '!=', 'webhook')]}" class="mb-1">
                             <b>Webhook:</b> di PajakMu buka <b>Integrasi › Webhook</b>, tempel <b>Alamat webhook untuk PajakMu</b> di atas,
                             pilih event <i>faktur.*</i> dan <i>bupot.*</i>, lalu salin <b>Webhook Secret</b> (whsec_…) ke kolomnya.
                         </p>

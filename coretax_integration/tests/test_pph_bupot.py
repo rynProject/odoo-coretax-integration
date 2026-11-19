@@ -48,7 +48,11 @@ class TestPphBupot(PphTestCommon):
             bill.action_post()
 
     def test_foreign_currency_bill_dpp_in_idr(self):
-        usd = self.setup_other_currency("USD", rates=[("2026-01-01", 0.0001)])  # 1 USD = 10.000 IDR
+        # Odoo 16 belum punya setup_other_currency
+        usd = self.env.ref("base.USD")
+        usd.active = True
+        self.env["res.currency.rate"].create({"name": "2026-01-01", "rate": 0.0001, "currency_id": usd.id,
+                                              "company_id": self.company_data["company"].id})  # 1 USD = 10.000 IDR
         bill = self._bill([(1_000, self.pph23)], currency_id=usd.id)
         self.assertEqual(bill.coretax_bupot_ids.jumlah_bruto, 10_000_000)
         self.assertEqual(bill.coretax_bupot_ids.pph_gl, 200_000)
@@ -229,7 +233,7 @@ class TestPphBupot(PphTestCommon):
         user = self._plain_user("account.group_account_readonly")
         self.assertFalse(user.has_group("coretax_integration.group_coretax_user"))
         self.env.invalidate_all()
-        res = bill.with_user(user).web_read({"name": {}, "coretax_bupot_count": {}, "coretax_has_pph": {}})
+        res = bill.with_user(user).read(["name", "coretax_bupot_count", "coretax_has_pph"])
         self.assertEqual(res[0]["coretax_bupot_count"], 2)
         self.assertTrue(res[0]["coretax_has_pph"])
         arch = self.env["account.move"].with_user(user).get_view(

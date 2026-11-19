@@ -39,7 +39,7 @@ class AccountMoveLine(models.Model):
                 # journal item pajak menerima nilainya lewat grouping key; jangan dikosongkan
                 line.coretax_tax_object_id = line.coretax_tax_object_id
 
-    # ── journal item PPh per kode objek (mesin pajak Odoo 17) ──────────
+    # ── journal item PPh per kode objek (mesin pajak Odoo 16) ──────────
     # Kunci pengelompokan journal item pajak (compute_all_tax di baris dasar, tax_key di baris pajak) diberi kode
     # objek PPh, sehingga satu pajak PPh dengan kode objek berbeda menjadi journal item terpisah. Kunci yang sama
     # menjadi nilai journal item pajak baru, jadi kode objeknya ikut tersimpan. Pajak selain PPh memakai False.

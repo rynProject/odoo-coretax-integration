@@ -36,14 +36,13 @@ class AccountMove(models.Model):
         return action
 
     def _get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line(self):
-        # EXTENDS 'account': Odoo 17 menyimpan jumlah pajak tanpa diskon dalam dict per repartition line, sehingga
+        # EXTENDS 'account': Odoo 16 menyimpan jumlah pajak tanpa diskon dalam dict per repartition line, sehingga
         # journal item PPh yang dipecah per kode objek saling menimpa (hanya baris terakhir yang terhitung).
-        # Selisih pajak diskon dikoreksi dengan bagian yang hilang itu; baris dasar terbesar menampung kebalikannya
-        # agar total tetap sama dengan termin (seperti koreksi pembulatan Odoo).
+        # Odoo 16 lalu menaruh selisihnya (koreksi pembulatan) di baris pajak terakhir. Selisih pajak diskon PPh
+        # dikoreksi dengan bagian yang hilang itu dan kebalikannya dikembalikan ke baris pajak terakhir, sehingga
+        # total tetap sama dengan termin. Odoo 16 bisa punya beberapa baris termin berdiskon, jadi per termin.
         res = super()._get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line()
-        term_line = self.line_ids.filtered(lambda l: l.display_type == "payment_term")
-        tax_entries = res["tax_lines"].get(term_line) if term_line else None
-        if not tax_entries or not self.amount_total:
+        if not self.amount_total:
             return res
         missing = {}  # id repartition refund -> [amount_currency, balance] yang hilang karena ditimpa
         by_rep = defaultdict(list)
@@ -57,23 +56,26 @@ class AccountMove(models.Model):
                 missing[rep_id] = [sum(l.amount_currency for l in lines[:-1]), sum(l.balance for l in lines[:-1])]
         if not missing:
             return res
-        percentage_paid = abs(term_line.amount_residual_currency / self.amount_total)
-        shift_currency = shift_balance = 0.0
-        for key, vals in tax_entries.items():
-            if key.get("tax_repartition_line_id") not in missing:
+        for term_line in self.line_ids.filtered(lambda l: l.display_type == "payment_term"):
+            tax_entries = res["tax_lines"].get(term_line)
+            if not tax_entries:
                 continue
-            amount_currency, balance = missing[key["tax_repartition_line_id"]]
-            fix_currency = term_line.currency_id.round(amount_currency * percentage_paid)
-            fix_balance = term_line.company_currency_id.round(balance * percentage_paid)
-            vals["amount_currency"] -= fix_currency
-            vals["balance"] -= fix_balance
-            shift_currency += fix_currency
-            shift_balance += fix_balance
-        base_entries = res["base_lines"].get(term_line)
-        if base_entries and (shift_currency or shift_balance):
-            biggest = max(base_entries.values(), key=lambda v: v["amount_currency"])
-            biggest["amount_currency"] += shift_currency
-            biggest["balance"] += shift_balance
+            percentage_paid = abs(term_line.amount_residual_currency / self.amount_total)
+            shift_currency = shift_balance = 0.0
+            for key, vals in tax_entries.items():
+                if key.get("tax_repartition_line_id") not in missing:
+                    continue
+                amount_currency, balance = missing[key["tax_repartition_line_id"]]
+                fix_currency = term_line.currency_id.round(amount_currency * percentage_paid)
+                fix_balance = term_line.company_currency_id.round(balance * percentage_paid)
+                vals["amount_currency"] -= fix_currency
+                vals["balance"] -= fix_balance
+                shift_currency += fix_currency
+                shift_balance += fix_balance
+            if shift_currency or shift_balance:
+                last = list(tax_entries.values())[-1]
+                last["amount_currency"] += shift_currency
+                last["balance"] += shift_balance
         return res
 
     def _coretax_pph_family(self):
@@ -198,9 +200,12 @@ class AccountMove(models.Model):
 
     def button_cancel(self):
         self._coretax_bupot_guard(_("membatalkan"))
-        # nota kredit terposting melewati button_draft (yang sudah menyinkronkan induknya) sebelum dibatalkan
+        # Odoo 16 membatalkan dokumen terposting langsung (tanpa button_draft), jadi induk nota kredit
+        # terposting disinkronkan di sini; induk nota kredit draft sudah disinkronkan saat reset ke draft.
+        parents = self.filtered(lambda m: m.state == "posted")._coretax_refund_parents()
         res = super().button_cancel()
         self._coretax_delete_editable_bupots(_("Bukti potong yang belum dikirim dihapus karena tagihan dibatalkan."))
+        parents._coretax_sync_bupot()
         return res
 
     def unlink(self):

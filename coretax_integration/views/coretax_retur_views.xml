@@ -29,7 +29,7 @@
         <field name="arch" type="xml">
             <tree string="Nota Retur" create="0" decoration-danger="state in ('error', 'rejected')"
                   decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'">
-                <field name="company_id" column_invisible="1"/>
+                <field name="company_id" invisible="1"/>
                 <field name="tanggal_retur"/>
                 <field name="name"/>
                 <field name="sisi"/>
@@ -41,7 +41,7 @@
                        decoration-danger="state in ('error', 'rejected')" decoration-info="state in ('submitted', 'cancel_requested')"
                        decoration-warning="state in ('new', 'draft')"/>
                 <field name="last_error" optional="hide" string="Keterangan"/>
-                <field name="currency_id" column_invisible="1"/>
+                <field name="currency_id" invisible="1"/>
             </tree>
         </field>
     </record>
@@ -52,46 +52,42 @@
         <field name="arch" type="xml">
             <form string="Nota Retur" create="0">
                 <header>
-                    <button name="action_send" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
-                            invisible="state not in ('new', 'draft', 'error')"/>
-                    <button name="action_open_cancel_wizard" type="object" string="Batalkan nota retur" icon="fa-ban"
-                            invisible="state != 'approved'"/>
-                    <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh"
-                            invisible="not aksatax_id"/>
+                    <button name="action_send" attrs="{'invisible': [('state', 'not in', ['new', 'draft', 'error'])]}" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"/>
+                    <button name="action_open_cancel_wizard" attrs="{'invisible': [('state', '!=', 'approved')]}" type="object" string="Batalkan nota retur" icon="fa-ban"/>
+                    <button name="action_refresh" attrs="{'invisible': [('aksatax_id', '=', False)]}" type="object" string="Perbarui status" icon="fa-refresh"/>
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>
                 </header>
                 <sheet>
                     <field name="company_id" invisible="1"/>
-                    <div class="alert alert-danger" role="alert" invisible="not last_error">
+                    <div attrs="{'invisible': [('last_error', '=', False)]}" class="alert alert-danger" role="alert">
                         <field name="last_error" readonly="1"/>
                     </div>
                     <div class="oe_title"><h1><field name="name"/></h1></div>
                     <group>
                         <group>
-                            <field name="sisi" readonly="state != 'new'"/>
-                            <field name="move_id" readonly="state != 'new'"/>
+                            <field name="sisi" attrs="{'readonly': [('state', '!=', 'new')]}"/>
+                            <field name="move_id" attrs="{'readonly': [('state', '!=', 'new')]}"/>
                             <field name="origin_move_id"/>
-                            <field name="faktur_id" readonly="state != 'new'" invisible="sisi != 'keluaran'"/>
-                            <field name="nomor_faktur" readonly="state not in ('new', 'error')"/>
-                            <field name="partner_id" readonly="state != 'new'"/>
+                            <field name="faktur_id" attrs="{'readonly': [('state', '!=', 'new')], 'invisible': [('sisi', '!=', 'keluaran')]}"/>
+                            <field name="nomor_faktur" attrs="{'readonly': [('state', 'not in', ['new', 'error'])]}"/>
+                            <field name="partner_id" attrs="{'readonly': [('state', '!=', 'new')]}"/>
                         </group>
                         <group>
-                            <field name="nomor_dokumen_retur" readonly="state not in ('new', 'error')"/>
-                            <field name="tanggal_retur" readonly="state not in ('new', 'error')"/>
+                            <field name="nomor_dokumen_retur" attrs="{'readonly': [('state', 'not in', ['new', 'error'])]}"/>
+                            <field name="tanggal_retur" attrs="{'readonly': [('state', 'not in', ['new', 'error'])]}"/>
                             <field name="masa"/>
                             <field name="tahun"/>
                             <field name="nilai_dpp" readonly="1"/>
                             <field name="nilai_ppn" readonly="1"/>
                             <field name="nilai_ppnbm" readonly="1"/>
-                            <field name="is_creditable" invisible="sisi != 'masukan'"
-                                   readonly="state not in ('new', 'error')"/>
-                            <field name="referensi" readonly="state not in ('new', 'error')"/>
+                            <field name="is_creditable" attrs="{'invisible': [('sisi', '!=', 'masukan')], 'readonly': [('state', 'not in', ['new', 'error'])]}"/>
+                            <field name="referensi" attrs="{'readonly': [('state', 'not in', ['new', 'error'])]}"/>
                             <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
-                    <field name="line_ids" invisible="sisi != 'masukan'" readonly="state not in ('new', 'error')">
+                    <field name="line_ids" attrs="{'invisible': [('sisi', '!=', 'masukan')], 'readonly': [('state', 'not in', ['new', 'error'])]}">
                         <tree editable="bottom" create="0">
-                            <field name="index" column_invisible="1"/>
+                            <field name="index" invisible="1"/>
                             <field name="nama"/>
                             <field name="retur_jumlah"/>
                             <field name="retur_diskon" optional="hide"/>
@@ -101,11 +97,11 @@
                             <field name="retur_ppnbm" optional="hide"/>
                         </tree>
                     </field>
-                    <group string="PajakMu" invisible="not aksatax_id">
+                    <group attrs="{'invisible': [('aksatax_id', '=', False)]}" string="PajakMu">
                         <field name="aksatax_id"/>
-                        <field name="faktur_masukan_id" invisible="not faktur_masukan_id"/>
+                        <field name="faktur_masukan_id" attrs="{'invisible': [('faktur_masukan_id', '=', False)]}"/>
                         <field name="last_sync"/>
-                        <field name="alasan_batal" invisible="not alasan_batal"/>
+                        <field name="alasan_batal" attrs="{'invisible': [('alasan_batal', '=', False)]}"/>
                     </group>
                 </sheet>
                 <div class="oe_chatter">

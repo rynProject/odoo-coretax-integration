@@ -17,7 +17,7 @@ class CoretaxWebhookController(http.Controller):
     sama) dengan Webhook Secret koneksi. Jawaban 2xx berarti diterima -
     PajakMu mengulang kiriman yang gagal (maks. 5 kali)."""
 
-    # readonly=False: rute auth='none' di Odoo 18/19 bawaannya read-only (Odoo 17 mengabaikan opsi ini), padahal webhook menulis status & riwayat.
+    # readonly=False: rute auth='none' di Odoo 18/19 bawaannya read-only (Odoo 16/17 mengabaikan opsi ini), padahal webhook menulis status & riwayat.
     @http.route("/coretax/webhook/<int:connection_id>", type="http", auth="none", methods=["POST"], csrf=False,
                 save_session=False, readonly=False)
     def receive(self, connection_id, **_kwargs):

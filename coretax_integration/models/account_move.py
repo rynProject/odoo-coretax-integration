@@ -157,10 +157,9 @@ class AccountMove(models.Model):
         for line in lines:
             line._l10n_id_coretax_build_invoice_line_vals(vals)
         result = []
-        ChartTemplate = self.env["account.chart.template"].with_company(self.company_id)
-        luxury_groups = {ChartTemplate.ref(xmlid, raise_if_not_found=False)
-                         for xmlid in ("l10n_id_tax_group_luxury_goods", "l10n_id_tax_group_stlg")}
-        luxury_groups.discard(False)
+        # Odoo 16: grup pajak l10n_id bersifat global (bukan per perusahaan) dan belum ada grup STLG
+        luxury_groups = {self.env.ref("l10n_id.l10n_id_tax_group_luxury_goods", raise_if_not_found=False)}
+        luxury_groups.discard(None)
         for line, val in zip(lines, vals.get("lines", [])):
             unit = val.get("Unit") or line.product_uom_id.name or "UNIT"
             result.append({
@@ -429,7 +428,8 @@ class AccountMove(models.Model):
             # hanya pajak 11% (DPP nilai lain 11/12) yang memakai aturan non-mewah PajakMu
             group = "ppn_generic" if tax.amount > 0 else None
             return [(group, tax.amount)] if group else []
-        if group == "ppnbm":
+        if group == "ppn_luxury" and abs(tax.amount - 12) > 1e-9:
+            # Odoo 16 menaruh PPnBM (mis. 20%) di grup barang mewah yang sama dengan PPN 12% barang mewah
             return [("ppnbm", tax.amount)] if tax.amount > 0 else []
         if group:
             return [(group, 0)]
@@ -444,13 +444,11 @@ class AccountMove(models.Model):
         dengan `faktur` (e-Faktur asal yang disetujui): retur penuh memakai total e-Faktur, retur sebagian
         dibatasi sisa e-Faktur setelah dikurangi nota retur lain yang masih berlaku."""
         self.ensure_one()
-        template = self.env["account.chart.template"].with_company(self.company_id)
         groups = {}
         for xmlid, kind in (("l10n_id_tax_group_non_luxury_goods", "ppn_non_luxury"),
                             ("l10n_id_tax_group_luxury_goods", "ppn_luxury"),
-                            ("l10n_id_tax_group_0", "ppn_zero"), ("l10n_id_tax_group_exempt", "ppn_zero"),
-                            ("l10n_id_tax_group_stlg", "ppnbm")):
-            group = template.ref(xmlid, raise_if_not_found=False)
+                            ("l10n_id_tax_group_0", "ppn_zero"), ("l10n_id_tax_group_exempt", "ppn_zero")):
+            group = self.env.ref("l10n_id.%s" % xmlid, raise_if_not_found=False)
             if group:
                 groups[group.id] = kind
         by_kind = {}  # (jenis, tarif) -> baris yang kena PPN

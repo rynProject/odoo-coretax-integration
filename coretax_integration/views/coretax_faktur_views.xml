@@ -35,9 +35,9 @@
         <field name="arch" type="xml">
             <tree string="e-Faktur" create="0" decoration-danger="attention" decoration-success="state == 'approved'"
                   decoration-info="in_progress" decoration-muted="state in ('cancelled', 'replaced')">
-                <field name="company_id" column_invisible="1"/>
-                <field name="attention" column_invisible="1"/>
-                <field name="in_progress" column_invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="attention" invisible="1"/>
+                <field name="in_progress" invisible="1"/>
                 <field name="invoice_date"/>
                 <field name="move_id" string="Faktur Odoo"/>
                 <field name="partner_id"/>
@@ -50,7 +50,7 @@
                 <field name="last_error" optional="show" string="Keterangan"/>
                 <field name="write_date" string="Diperbarui" optional="hide"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
-                <field name="currency_id" column_invisible="1"/>
+                <field name="currency_id" invisible="1"/>
             </tree>
         </field>
     </record>
@@ -90,28 +90,20 @@
         <field name="arch" type="xml">
             <form string="e-Faktur" create="0">
                 <header>
-                    <button name="action_send_to_djp" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
-                            invisible="state not in ('draft', 'validated') or not aksatax_id"
+                    <button name="action_send_to_djp" attrs="{'invisible': ['|', ('state', 'not in', ['draft', 'validated']), ('aksatax_id', '=', False)]}" type="object" string="Kirim ke DJP" class="btn-primary" icon="fa-paper-plane"
                             confirm="Kirim e-Faktur ini ke DJP sekarang?"/>
-                    <button name="action_refresh" type="object" string="Perbarui status" icon="fa-refresh"
-                            invisible="not aksatax_id"/>
-                    <button name="action_recreate" type="object" string="Buat ulang e-Faktur" class="btn-primary" icon="fa-repeat"
-                            invisible="state not in ('rejected', 'cancelled', 'error') or not active"/>
-                    <button name="action_open_cancel_wizard" type="object" string="Batalkan e-Faktur" icon="fa-ban"
-                            invisible="state != 'approved' or not active"
+                    <button name="action_refresh" attrs="{'invisible': [('aksatax_id', '=', False)]}" type="object" string="Perbarui status" icon="fa-refresh"/>
+                    <button name="action_recreate" attrs="{'invisible': ['|', ('state', 'not in', ['rejected', 'cancelled', 'error']), ('active', '=', False)]}" type="object" string="Buat ulang e-Faktur" class="btn-primary" icon="fa-repeat"/>
+                    <button name="action_open_cancel_wizard" attrs="{'invisible': ['|', ('state', '!=', 'approved'), ('active', '=', False)]}" type="object" string="Batalkan e-Faktur" icon="fa-ban"
                             groups="coretax_integration.group_coretax_user"/>
-                    <button name="action_request_replacement" type="object" string="Ganti e-Faktur" icon="fa-exchange"
-                            invisible="state != 'approved' or replace_requested or replaces_id or not active"
+                    <button name="action_request_replacement" attrs="{'invisible': ['|', '|', '|', ('state', '!=', 'approved'), ('replace_requested', '!=', False), ('replaces_id', '!=', False), ('active', '=', False)]}" type="object" string="Ganti e-Faktur" icon="fa-exchange"
                             groups="coretax_integration.group_coretax_user"
                             confirm="Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki."/>
-                    <button name="action_cancel_replacement" type="object" string="Batalkan penggantian" icon="fa-undo"
-                            invisible="not replace_requested or not active"
+                    <button name="action_cancel_replacement" attrs="{'invisible': ['|', ('replace_requested', '=', False), ('active', '=', False)]}" type="object" string="Batalkan penggantian" icon="fa-undo"
                             groups="coretax_integration.group_coretax_user"/>
-                    <button name="action_download_pdf" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
-                            invisible="state not in ('approved', 'cancel_requested', 'cancelled', 'replaced') or not aksatax_id"
+                    <button name="action_download_pdf" attrs="{'invisible': ['|', ('state', 'not in', ['approved', 'cancel_requested', 'cancelled', 'replaced']), ('aksatax_id', '=', False)]}" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
                             groups="coretax_integration.group_coretax_user"/>
-                    <button name="action_open_aksatax" type="object" string="Buka di PajakMu" icon="fa-external-link"
-                            invisible="not aksatax_id"/>
+                    <button name="action_open_aksatax" attrs="{'invisible': [('aksatax_id', '=', False)]}" type="object" string="Buka di PajakMu" icon="fa-external-link"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,processing,approved"/>
                 </header>
                 <sheet>
@@ -124,48 +116,48 @@
                             <field name="log_count" widget="statinfo" string="Riwayat"/>
                         </button>
                     </div>
-                    <widget name="web_ribbon" title="Versi lama" bg_color="text-bg-secondary" invisible="active"/>
+                    <widget name="web_ribbon" attrs="{'invisible': [('active', '!=', False)]}" title="Versi lama" bg_color="text-bg-secondary"/>
                     <field name="active" invisible="1"/>
                     <field name="aksatax_id" invisible="1"/>
                     <field name="attention" invisible="1"/>
                     <field name="replace_requested" invisible="1"/>
 
-                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="not replace_requested">
+                    <div attrs="{'invisible': [('replace_requested', '=', False)]}" class="alert alert-warning d-flex gap-2" role="status">
                         <i title="Penggantian" class="fa fa-exchange fa-lg mt-1"/>
                         <div><strong>Penggantian dibuka.</strong> Reset faktur Odoo ke draft, perbaiki, posting, lalu klik Kirim e-Faktur.</div>
                     </div>
-                    <div class="alert alert-secondary d-flex gap-2" role="status" invisible="state != 'replaced'">
+                    <div attrs="{'invisible': [('state', '!=', 'replaced')]}" class="alert alert-secondary d-flex gap-2" role="status">
                         <i title="Diganti" class="fa fa-exchange fa-lg mt-1"/>
                         <div>e-Faktur ini sudah diganti oleh <field name="replaced_by_id" class="d-inline fw-bold" readonly="1"/>.</div>
                     </div>
 
-                    <div class="alert alert-success d-flex gap-2" role="status" invisible="state != 'approved'">
+                    <div attrs="{'invisible': [('state', '!=', 'approved')]}" class="alert alert-success d-flex gap-2" role="status">
                         <i title="Berhasil" class="fa fa-check-circle fa-lg mt-1"/>
                         <div>
                             <strong>Disetujui DJP.</strong> Nomor Faktur Pajak <field name="nomor_faktur" class="d-inline fw-bold" readonly="1"/>.
                             <div class="small">Untuk membatalkan faktur pajak, pakai tombol Batalkan e-Faktur di atas.</div>
                         </div>
                     </div>
-                    <div class="alert alert-info d-flex gap-2" role="status" invisible="state not in ('submitted', 'processing', 'cancel_requested')">
+                    <div attrs="{'invisible': [('state', 'not in', ['submitted', 'processing', 'cancel_requested'])]}" class="alert alert-info d-flex gap-2" role="status">
                         <i title="Sedang diproses" class="fa fa-hourglass-half fa-lg mt-1"/>
                         <div><strong>Sedang diproses DJP.</strong> Odoo memperbarui status otomatis setiap 5 menit - tidak perlu melakukan apa pun.</div>
                     </div>
-                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="state not in ('draft', 'pending_approval', 'validated') or attention">
+                    <div attrs="{'invisible': ['|', ('state', 'not in', ['draft', 'pending_approval', 'validated']), ('attention', '!=', False)]}" class="alert alert-warning d-flex gap-2" role="status">
                         <i title="Draft" class="fa fa-pencil-square-o fa-lg mt-1"/>
                         <div>
                             <strong>Masih draft di PajakMu.</strong> Klik <b>Kirim ke DJP</b>, atau setujui &amp; kirim dari PajakMu
                             (bila perusahaan Anda memakai alur persetujuan internal).
                         </div>
                     </div>
-                    <div class="alert alert-danger d-flex gap-2" role="alert" invisible="not attention">
+                    <div attrs="{'invisible': [('attention', '=', False)]}" class="alert alert-danger d-flex gap-2" role="alert">
                         <i title="Perlu tindakan" class="fa fa-exclamation-triangle fa-lg mt-1"/>
                         <div>
                             <strong>Perlu tindakan.</strong>
                             <field name="last_error" class="d-block" readonly="1"/>
                             <div class="small mt-1">
                                 Perbaiki datanya (di faktur, pelanggan, atau di PajakMu), lalu klik
-                                <b invisible="state not in ('rejected', 'cancelled', 'error')">Buat ulang e-Faktur</b>
-                                <b invisible="state in ('rejected', 'cancelled', 'error')">Kirim ke DJP</b>.
+                                <b attrs="{'invisible': [('state', 'not in', ['rejected', 'cancelled', 'error'])]}">Buat ulang e-Faktur</b>
+                                <b attrs="{'invisible': [('state', 'in', ['rejected', 'cancelled', 'error'])]}">Kirim ke DJP</b>.
                             </div>
                         </div>
                     </div>
@@ -181,8 +173,8 @@
                             <field name="invoice_date"/>
                             <field name="amount_total"/>
                             <field name="send_mode"/>
-                            <field name="replaces_id" invisible="not replaces_id"/>
-                            <field name="replaced_by_id" invisible="not replaced_by_id"/>
+                            <field name="replaces_id" attrs="{'invisible': [('replaces_id', '=', False)]}"/>
+                            <field name="replaced_by_id" attrs="{'invisible': [('replaced_by_id', '=', False)]}"/>
                         </group>
                         <group string="Faktur Pajak (DJP)">
                             <field name="nomor_faktur"/>
@@ -191,7 +183,7 @@
                             <div class="o_row"><field name="masa_pajak" options="{'enable_formatting': false}"/> / <field name="tahun_pajak" options="{'enable_formatting': false}"/></div>
                             <field name="kode_approval"/>
                             <field name="tanggal_approval"/>
-                            <field name="lapor_state" invisible="not lapor_state"/>
+                            <field name="lapor_state" attrs="{'invisible': [('lapor_state', '=', False)]}"/>
                         </group>
                     </group>
                     <group string="Nilai pajak (dihitung PajakMu)">

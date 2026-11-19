@@ -460,17 +460,12 @@ class TestRetur(CoretaxTestCommon):
         self.assertTrue(retur.exists())
 
     def test_amounts_ppnbm_and_pph(self):
-        template = self.env["account.chart.template"].with_company(self.company_data["company"])
-        stlg = template.ref("l10n_id_tax_group_stlg", raise_if_not_found=False)
-        self.assertTrue(stlg, "grup STLG tidak ada di chart uji")
-        stlg_tax = self.env["account.tax"].search([
-            ("tax_group_id", "=", stlg.id), ("type_tax_use", "=", "purchase"),
-            ("company_id", "=", self.company_data["company"].id)], limit=1)
-        if not stlg_tax:
-            stlg_tax = self.env["account.tax"].create({
-                "name": "STLG uji", "amount": 20, "amount_type": "percent", "type_tax_use": "purchase",
-                "tax_group_id": stlg.id, "company_id": self.company_data["company"].id})
-        pph = template.ref("tax_pph23_2")
+        # Odoo 16 belum punya grup STLG: PPnBM ada di grup barang mewah dengan tarif selain 12%
+        luxury = self._chart_ref("l10n_id_tax_group_luxury_goods")
+        stlg_tax = self.env["account.tax"].create({
+            "name": "STLG uji", "amount": 20, "amount_type": "percent", "type_tax_use": "purchase",
+            "tax_group_id": luxury.id, "company_id": self.company_data["company"].id})
+        pph = self._chart_ref("tax_pph23_2")
         self.tax_purchase_a.amount = 12.0
         bill = self.env["account.move"].create({
             "move_type": "in_invoice", "partner_id": self.partner_a.id, "invoice_date": "2026-10-01",
@@ -501,10 +496,10 @@ class TestRetur(CoretaxTestCommon):
         return self._credit_note(invoice), faktur
 
     def _chart_tax(self, xmlid):
-        return self.env["account.chart.template"].with_company(self.company_data["company"]).ref(xmlid)
+        return self._chart_ref(xmlid)
 
     def test_amounts_non_luxury_rounding(self):
-        tax = self._chart_tax("tax_ST4")
+        tax = self._chart_tax("tax_ST1")
         tax.amount = 11  # bawaan chart (CoretaxTestCommon mengubahnya jadi 12 untuk uji lain)
         self.assertEqual(tax.tax_group_id.id, self._chart_tax("l10n_id_tax_group_non_luxury_goods").id)
         credit, _faktur = self._sale_credit(tax)
@@ -517,16 +512,16 @@ class TestRetur(CoretaxTestCommon):
     def test_amounts_luxury_and_per_line_floor(self):
         credit, _faktur = self._sale_credit(self._chart_tax("tax_ST3"), price=100001)
         self.assertEqual(credit._coretax_retur_amounts()["ppn"], 12000)
-        self._chart_tax("tax_ST4").amount = 11
+        self._chart_tax("tax_ST1").amount = 11
         line = (0, 0, {"product_id": self.product_a.id, "quantity": 1, "price_unit": 999,
-                       "tax_ids": [(6, 0, self._chart_tax("tax_ST4").ids)]})
-        credit, _faktur = self._sale_credit(self._chart_tax("tax_ST4"), price=999, extra_lines=[line])
+                       "tax_ids": [(6, 0, self._chart_tax("tax_ST1").ids)]})
+        credit, _faktur = self._sale_credit(self._chart_tax("tax_ST1"), price=999, extra_lines=[line])
         # per baris: floor(floor(999*11/12)*0.12) = 109, dua baris = 218 (bukan 219 dari total)
         self.assertEqual(credit._coretax_retur_amounts()["ppn"], 218)
 
     def test_amounts_wapu_pair(self):
         company = self.company_data["company"]
-        non_luxury = self._chart_tax("tax_ST4")
+        non_luxury = self._chart_tax("tax_ST1")
         group = self.env["account.tax"].create({
             "name": "WAPU uji", "amount_type": "group", "type_tax_use": "sale", "company_id": company.id,
             "tax_group_id": non_luxury.tax_group_id.id,
@@ -538,7 +533,14 @@ class TestRetur(CoretaxTestCommon):
                                          "tax_group_id": non_luxury.tax_group_id.id})]})
         credit, _faktur = self._sale_credit(group)
         self.assertEqual(credit._coretax_retur_amounts(), {"dpp": 1000000, "ppn": 109999, "ppnbm": 0, "tarif": 12})
-        credit, _faktur = self._sale_credit(self._chart_tax("tax_ST5"))  # pemungut: satu pajak +100%/-100%
+        # pemungut: satu pajak +100%/-100% (Odoo 16 tidak punya tax_ST5 seperti Odoo 17, jadi dibuat di sini)
+        company_account = non_luxury.invoice_repartition_line_ids.filtered(lambda r: r.repartition_type == "tax").account_id
+        reps = [(0, 0, {"repartition_type": "base"}),
+                (0, 0, {"repartition_type": "tax", "factor_percent": 100, "account_id": company_account.id}),
+                (0, 0, {"repartition_type": "tax", "factor_percent": -100, "account_id": company_account.id})]
+        wapu = non_luxury.copy({"name": "WAPU pemungut uji", "amount": 11, "invoice_repartition_line_ids": [(5, 0, 0)] + reps,
+                                "refund_repartition_line_ids": [(5, 0, 0)] + reps})
+        credit, _faktur = self._sale_credit(wapu)
         self.assertEqual(credit._coretax_retur_amounts()["ppn"], 109999)
 
     def test_amounts_keluaran_clamped_to_faktur_remainder(self):

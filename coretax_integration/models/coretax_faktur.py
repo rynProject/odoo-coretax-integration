@@ -169,8 +169,8 @@ class CoretaxFaktur(models.Model):
             rec.aksatax_url = f"{base}/faktur-keluaran/{rec.aksatax_id}" if base and rec.aksatax_id else False
 
     def _compute_log_count(self):
-        counts = dict(self.env["coretax.log"]._read_group(
-            [("res_model", "=", self._name), ("res_id", "in", self.ids)], ["res_id"], ["__count"]))
+        counts = {row["res_id"]: row["res_id_count"] for row in self.env["coretax.log"]._read_group(
+            [("res_model", "=", self._name), ("res_id", "in", self.ids)], ["res_id"], ["res_id"])}
         for rec in self:
             rec.log_count = counts.get(rec.id, 0)
 
@@ -402,10 +402,12 @@ class CoretaxFaktur(models.Model):
         # masa pajak berjalan, menurut tanggal faktur
         month_domain = domain + [("invoice_date", ">=", month_start),
                                  ("invoice_date", "<", month_start + relativedelta(months=1))]
-        [(approved_month, approved_dpp, approved_ppn)] = Faktur._read_group(
-            month_domain + [("state", "=", "approved")], [], ["__count", "total_dpp:sum", "total_ppn:sum"])
+        [approved] = Faktur._read_group(
+            month_domain + [("state", "=", "approved")], ["total_dpp:sum", "total_ppn:sum"], [])
+        approved_month, approved_dpp, approved_ppn = (approved["__count"], approved["total_dpp"] or 0.0,
+                                                      approved["total_ppn"] or 0.0)
         state_order = [state for state, _label in STATES]
-        by_state = sorted(Faktur._read_group(month_domain, ["state"], ["__count"]),
+        by_state = sorted(((row["state"], row["state_count"]) for row in Faktur._read_group(month_domain, ["state"], ["state"])),
                           key=lambda row: state_order.index(row[0]))
         month = {
             "start": fields.Date.to_string(month_start), "approved": approved_month,
@@ -451,7 +453,9 @@ class CoretaxFaktur(models.Model):
     def _readiness_domains(self):
         """Data master yang membuat e-Faktur kurang tepat: {jenis: (model, domain, judul)}."""
         generic_codes = [self.env.ref(xmlid, raise_if_not_found=False) for xmlid in GENERIC_PRODUCT_CODES]
-        uoms = self.env["product.template"]._read_group([("sale_ok", "=", True)], ["uom_id"])
+        uom_ids = [row["uom_id"][0] for row in self.env["product.template"]._read_group(
+            [("sale_ok", "=", True)], ["uom_id"], ["uom_id"]) if row["uom_id"]]
+        uoms = self.env["uom.uom"].browse(uom_ids)
         connection = self.env["coretax.connection"]._for_company(self.env.company, raise_if_missing=False)
         ready_moves = self.env["account.move"].search(self.env["account.move"]._coretax_ready_domain())
         partners = ready_moves.commercial_partner_id.filtered(lambda p: not p._coretax_identity(connection))
@@ -460,7 +464,7 @@ class CoretaxFaktur(models.Model):
                 ("sale_ok", "=", True), "|", ("l10n_id_product_code", "=", False),
                 ("l10n_id_product_code", "in", [code.id for code in generic_codes if code]),
             ], _("Produk berkode umum")),
-            "uoms_no_code": ("uom.uom", [("id", "in", [uom.id for (uom,) in uoms if uom and not uom.l10n_id_uom_code])],
+            "uoms_no_code": ("uom.uom", [("id", "in", uoms.filtered(lambda u: not u.l10n_id_uom_code).ids)],
                              _("Satuan tanpa kode Coretax")),
             "partners_no_id": ("res.partner", [("id", "in", partners.ids)], _("Pelanggan tanpa NPWP/NIK")),
         }

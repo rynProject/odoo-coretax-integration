@@ -57,10 +57,8 @@ class CoretaxTaxObject(models.Model):
 
     _sql_constraints = [("code_uniq", "unique(code)", "Kode objek pajak sudah ada.")]
 
-    @api.depends("code", "name")
-    def _compute_display_name(self):
-        for rec in self:
-            rec.display_name = f"{rec.code} – {rec.name}"
+    def name_get(self):
+        return [(rec.id, f"{rec.code} – {rec.name}") for rec in self]
 
     @api.constrains("code")
     def _check_code(self):
@@ -127,7 +125,7 @@ class CoretaxBupot(models.Model):
     pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_selisih")
 
     def init(self):
-        # Satu bukti potong aktif per tagihan dan kode objek pajak (Odoo 17/18 belum punya models.UniqueIndex).
+        # Satu bukti potong aktif per tagihan dan kode objek pajak (Odoo 16-18 belum punya models.UniqueIndex).
         self.env.cr.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS coretax_bupot_bill_unique
             ON coretax_bupot (move_id, tax_object_id)

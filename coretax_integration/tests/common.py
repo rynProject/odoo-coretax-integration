@@ -49,6 +49,21 @@ class FakeAksaTax:
         return FakeResponse(404, {"error": {"code": "NOT_FOUND", "message": f"Cannot {method} /api/v1/public{path}"}})
 
 
+def chart_ref(env, company, xmlid, raise_if_not_found=True):
+    """Pengganti account.chart.template.ref (Odoo 17+): pajak/akun per perusahaan atau grup pajak global."""
+    for name in (f"l10n_id.{company.id}_{xmlid}", f"coretax_integration.{company.id}_{xmlid}"):
+        record = env.ref(name, raise_if_not_found=False)
+        if record:
+            return record
+    for name in (f"l10n_id.{xmlid}", f"coretax_integration.{xmlid}"):
+        record = env.ref(name, raise_if_not_found=False)
+        if record and record._name == "account.tax.group":
+            return record
+    if raise_if_not_found:
+        raise ValueError(f"xmlid chart {xmlid} tidak ditemukan")
+    return None
+
+
 def faktur_body(status="DRAFT", **extra):
     return {"id": FAKTUR_ID, "status": status, "nomorFaktur": None, "referensi": "INV/1", "tanggalFaktur": "2026-10-01",
             "masaPajak": 10, "tahunPajak": 2026, "kdJenisTransaksi": "04",
@@ -61,7 +76,7 @@ class CoretaxTestCommon(AccountTestInvoicingCommon):
     """Perusahaan Indonesia, pelanggan ber-NPWP, dan koneksi PajakMu uji."""
 
     @classmethod
-    def setUpClass(cls, chart_template_ref="id"):
+    def setUpClass(cls, chart_template_ref="l10n_id.l10n_id_chart"):
         super().setUpClass(chart_template_ref=chart_template_ref)
         company = cls.company_data["company"]
         company.write({"vat": "1234567890123456", "street": "Jl. Uji", "phone": "123"})
@@ -71,6 +86,10 @@ class CoretaxTestCommon(AccountTestInvoicingCommon):
         cls.connection = cls.env["coretax.connection"].create({
             "company_id": company.id, "base_url": "https://aksatax.test", "api_key": "ak_test_" + "x" * 32,
         })
+
+    @classmethod
+    def _chart_ref(cls, xmlid, raise_if_not_found=True):
+        return chart_ref(cls.env, cls.company_data["company"], xmlid, raise_if_not_found)
 
     def _invoice(self, **vals):
         move = self.env["account.move"].create({
@@ -93,11 +112,10 @@ class PphTestCommon(CoretaxTestCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        template = cls.env["account.chart.template"].with_company(cls.company_data["company"])
-        cls.pph23 = template.ref("tax_pph23_2")
-        cls.pph23_skb = template.ref("tax_pph23_skb")
-        cls.pph42 = template.ref("tax_pph42_sewa_10")
-        cls.ppn = template.ref("tax_PT4")
+        cls.pph23 = cls._chart_ref("tax_pph23_2")
+        cls.pph23_skb = cls._chart_ref("tax_pph23_skb")
+        cls.pph42 = cls._chart_ref("tax_pph42_sewa_10")
+        cls.ppn = cls._chart_ref("tax_PT1")  # Odoo 16: PPN 11% pembelian
         cls.obj_teknik = cls.env.ref("coretax_integration.tax_object_24_104_01")
         cls.obj_konsultan = cls.env.ref("coretax_integration.tax_object_24_104_03")
         cls.obj_sewa = cls.env.ref("coretax_integration.tax_object_28_402_01")

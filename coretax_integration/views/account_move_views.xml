@@ -8,44 +8,38 @@
             <xpath expr="//header" position="inside">
                 <field name="coretax_can_send" invisible="1"/>
                 <field name="coretax_state" invisible="1"/>
-                <button name="action_coretax_send" type="object" string="Kirim e-Faktur" class="btn-primary"
-                        icon="fa-paper-plane" invisible="not coretax_can_send"
+                <button name="action_coretax_send" attrs="{'invisible': [('coretax_can_send', '=', False)]}" type="object" string="Kirim e-Faktur" class="btn-primary"
+                        icon="fa-paper-plane"
                         groups="coretax_integration.group_coretax_user"
                         help="Kirim faktur ini ke DJP lewat PajakMu (Coretax)."/>
-                <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
-                        invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
+                <button name="action_coretax_refresh" attrs="{'invisible': [('coretax_state', 'not in', ['submitted', 'processing', 'cancel_requested', 'draft', 'validated'])]}" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
                         groups="coretax_integration.group_coretax_user"/>
-                <button name="action_coretax_download_pdf" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
-                        invisible="coretax_state not in ('approved', 'cancel_requested', 'cancelled', 'replaced')"
+                <button name="action_coretax_download_pdf" attrs="{'invisible': [('coretax_state', 'not in', ['approved', 'cancel_requested', 'cancelled', 'replaced'])]}" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
                         groups="coretax_integration.group_coretax_user"/>
-                <button name="action_coretax_cancel_efaktur" type="object" string="Batalkan e-Faktur" icon="fa-ban"
-                        invisible="coretax_state != 'approved'"
+                <button name="action_coretax_cancel_efaktur" attrs="{'invisible': [('coretax_state', '!=', 'approved')]}" type="object" string="Batalkan e-Faktur" icon="fa-ban"
                         groups="coretax_integration.group_coretax_user"/>
                 <field name="coretax_is_replacement" invisible="1"/>
-                <button name="action_coretax_request_replacement" type="object" string="Ganti e-Faktur" icon="fa-exchange"
-                        invisible="coretax_state != 'approved' or coretax_is_replacement"
+                <button name="action_coretax_request_replacement" attrs="{'invisible': ['|', ('coretax_state', '!=', 'approved'), ('coretax_is_replacement', '!=', False)]}" type="object" string="Ganti e-Faktur" icon="fa-exchange"
                         groups="coretax_integration.group_coretax_user"
                         confirm="Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki."/>
-                <button name="action_coretax_create_bupot" type="object" string="Buat Bukti Potong" icon="fa-file-text"
-                        invisible="move_type not in ('in_invoice', 'in_receipt') or state != 'posted' or coretax_has_pph"
+                <button name="action_coretax_create_bupot" attrs="{'invisible': ['|', '|', ('move_type', 'not in', ['in_invoice', 'in_receipt']), ('state', '!=', 'posted'), ('coretax_has_pph', '!=', False)]}" type="object" string="Buat Bukti Potong" icon="fa-file-text"
                         groups="coretax_integration.group_coretax_user"
                         help="Siapkan bukti potong PPh (mis. PPh 23) untuk tagihan vendor ini."/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <field name="coretax_retur_live" invisible="1"/>
-                <button name="action_coretax_open_retur_wizard" type="object" string="Kirim nota retur" icon="fa-undo"
-                        invisible="move_type != 'in_refund' or state != 'posted' or coretax_retur_live"
+                <button name="action_coretax_open_retur_wizard" attrs="{'invisible': ['|', '|', ('move_type', '!=', 'in_refund'), ('state', '!=', 'posted'), ('coretax_retur_live', '!=', False)]}" type="object" string="Kirim nota retur" icon="fa-undo"
                         groups="coretax_integration.group_coretax_user"
                         help="Kirim nota retur untuk nota kredit ini ke DJP lewat PajakMu."/>
             </xpath>
             <xpath expr="//group[@id='other_tab_group']" position="inside">
-                <field name="coretax_vendor_tax_number" invisible="move_type != 'in_invoice'"/>
+                <field name="coretax_vendor_tax_number" attrs="{'invisible': [('move_type', '!=', 'in_invoice')]}"/>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="inside">
                 <field name="coretax_faktur_count" invisible="1"/>
                 <field name="coretax_retur_count" invisible="1"/>
-                <button name="action_coretax_view_retur" type="object" class="oe_stat_button" icon="fa-undo"
-                        invisible="not coretax_retur_count" groups="coretax_integration.group_coretax_user">
+                <button name="action_coretax_view_retur" attrs="{'invisible': [('coretax_retur_count', '=', False)]}" type="object" class="oe_stat_button" icon="fa-undo"
+                        groups="coretax_integration.group_coretax_user">
                     <div class="o_stat_info">
                         <span class="o_stat_text">Nota Retur</span>
                         <span class="o_stat_value"><field name="coretax_retur_count"/></span>
@@ -53,15 +47,15 @@
                 </button>
                 <field name="coretax_bupot_count" invisible="1" groups="coretax_integration.group_coretax_user"/>
                 <field name="coretax_has_pph" invisible="1" groups="coretax_integration.group_coretax_user"/>
-                <button name="action_coretax_view_bupot" type="object" class="oe_stat_button" icon="fa-file-text"
-                        invisible="not coretax_bupot_count" groups="coretax_integration.group_coretax_user">
+                <button name="action_coretax_view_bupot" attrs="{'invisible': [('coretax_bupot_count', '=', False)]}" type="object" class="oe_stat_button" icon="fa-file-text"
+                        groups="coretax_integration.group_coretax_user">
                     <div class="o_stat_info">
                         <span class="o_stat_text">Bukti Potong</span>
                         <span class="o_stat_value"><field name="coretax_bupot_count"/></span>
                     </div>
                 </button>
-                <button name="action_coretax_view_faktur" type="object" class="oe_stat_button" icon="fa-university"
-                        invisible="not coretax_faktur_count" groups="coretax_integration.group_coretax_user">
+                <button name="action_coretax_view_faktur" attrs="{'invisible': [('coretax_faktur_count', '=', False)]}" type="object" class="oe_stat_button" icon="fa-university"
+                        groups="coretax_integration.group_coretax_user">
                     <div class="o_stat_info">
                         <span class="o_stat_text">e-Faktur</span>
                         <span class="o_stat_value"><field name="coretax_state" readonly="1"/></span>
@@ -69,21 +63,19 @@
                 </button>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="after">
-                <field name="coretax_tax_object_id" string="Kode objek" optional="show" options="{'no_create': True}"
-                       column_invisible="parent.move_type not in ('in_invoice', 'in_receipt', 'in_refund')"/>
+                <field name="coretax_tax_object_id" attrs="{'column_invisible': [('parent.move_type', 'not in', ['in_invoice', 'in_receipt', 'in_refund'])]}" string="Kode objek" optional="show" options="{'no_create': True}"/>
             </xpath>
             <xpath expr="//div[@name='button_box']" position="after">
-                <div class="alert alert-success py-2" role="status" invisible="coretax_state != 'approved'"
+                <div attrs="{'invisible': [('coretax_state', '!=', 'approved')]}" class="alert alert-success py-2" role="status"
                      groups="coretax_integration.group_coretax_user">
                     <i title="Berhasil" class="fa fa-check-circle"/> e-Faktur disetujui DJP · Nomor Faktur Pajak
                     <field name="coretax_nomor_faktur" class="d-inline fw-bold" readonly="1"/>
                 </div>
-                <div class="alert alert-info py-2" role="status"
-                     invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested')"
+                <div attrs="{'invisible': [('coretax_state', 'not in', ['submitted', 'processing', 'cancel_requested'])]}" class="alert alert-info py-2" role="status"
                      groups="coretax_integration.group_coretax_user">
                     <i title="Sedang diproses" class="fa fa-hourglass-half"/> e-Faktur sedang diproses DJP. Status diperbarui otomatis.
                 </div>
-                <div class="alert alert-danger py-2" role="alert" invisible="coretax_state not in ('rejected', 'error')"
+                <div attrs="{'invisible': [('coretax_state', 'not in', ['rejected', 'error'])]}" class="alert alert-danger py-2" role="alert"
                      groups="coretax_integration.group_coretax_user">
                     <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <b>e-Faktur perlu tindakan:</b>
                     <field name="coretax_last_error" class="d-inline" readonly="1"/>
@@ -149,7 +141,7 @@
                 <field name="amount_total" string="Total" sum="Total"/>
                 <field name="coretax_state" string="e-Faktur" widget="badge" optional="show"
                        decoration-danger="coretax_state in ('rejected', 'error')"/>
-                <field name="currency_id" column_invisible="1"/>
+                <field name="currency_id" invisible="1"/>
                 <button name="action_coretax_send" type="object" string="Kirim" icon="fa-paper-plane" class="btn-link"/>
             </tree>
         </field>

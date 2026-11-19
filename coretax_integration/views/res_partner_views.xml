@@ -6,18 +6,17 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="Coretax" name="coretax" groups="coretax_integration.group_coretax_user"
-                      invisible="not is_company and parent_id">
+                <page attrs="{'invisible': ['&amp;', ('is_company', '=', False), ('parent_id', '!=', False)]}" string="Coretax" name="coretax" groups="coretax_integration.group_coretax_user">
                     <field name="coretax_match_state" invisible="1"/>
-                    <div class="alert alert-success" role="status" invisible="coretax_match_state != 'matched'">
+                    <div attrs="{'invisible': [('coretax_match_state', '!=', 'matched')]}" class="alert alert-success" role="status">
                         <i title="Berhasil" class="fa fa-check-circle"/> Sudah tertaut ke lawan transaksi PajakMu
                         <b><field name="coretax_counterparty_name" class="d-inline" readonly="1"/></b>.
                     </div>
-                    <div class="alert alert-warning" role="status" invisible="coretax_match_state != 'unmatched'">
+                    <div attrs="{'invisible': [('coretax_match_state', '!=', 'unmatched')]}" class="alert alert-warning" role="status">
                         <i title="Belum dicocokkan" class="fa fa-link"/> Belum ada di PajakMu. Klik <b>Cocokkan dengan PajakMu</b>
                         bila sudah terdaftar, atau <b>Daftarkan ke PajakMu</b> untuk membuatnya sebagai lawan transaksi baru.
                     </div>
-                    <div class="alert alert-danger" role="alert" invisible="coretax_match_state != 'no_id'">
+                    <div attrs="{'invisible': [('coretax_match_state', '!=', 'no_id')]}" class="alert alert-danger" role="alert">
                         <i title="Identitas" class="fa fa-id-card-o"/> Isi <b>NPWP</b> (kolom Tax ID) atau NIK kontak ini dulu agar bisa dibuatkan e-Faktur/bukti potong.
                     </div>
                     <group>
@@ -28,14 +27,13 @@
                         </group>
                         <group>
                             <div class="d-flex flex-column gap-2" colspan="2">
-                                <button name="action_coretax_register" type="object" string="Daftarkan ke PajakMu"
-                                        class="btn-primary" icon="fa-user-plus" invisible="coretax_match_state != 'unmatched'"/>
-                                <button name="action_coretax_update_counterparty" type="object" string="Perbarui di PajakMu"
-                                        icon="fa-refresh" invisible="coretax_match_state != 'matched'"/>
-                                <button name="action_coretax_match" type="object" string="Cocokkan dengan PajakMu"
-                                        icon="fa-search" invisible="coretax_match_state == 'no_id'"/>
-                                <button name="action_coretax_unlink" type="object" string="Lepas tautan" class="btn-link"
-                                        invisible="coretax_match_state != 'matched'"
+                                <button name="action_coretax_register" attrs="{'invisible': [('coretax_match_state', '!=', 'unmatched')]}" type="object" string="Daftarkan ke PajakMu"
+                                        class="btn-primary" icon="fa-user-plus"/>
+                                <button name="action_coretax_update_counterparty" attrs="{'invisible': [('coretax_match_state', '!=', 'matched')]}" type="object" string="Perbarui di PajakMu"
+                                        icon="fa-refresh"/>
+                                <button name="action_coretax_match" attrs="{'invisible': [('coretax_match_state', '=', 'no_id')]}" type="object" string="Cocokkan dengan PajakMu"
+                                        icon="fa-search"/>
+                                <button name="action_coretax_unlink" attrs="{'invisible': [('coretax_match_state', '!=', 'matched')]}" type="object" string="Lepas tautan" class="btn-link"
                                         confirm="Lepas tautan kontak ini dari PajakMu?"/>
                             </div>
                         </group>
@@ -67,10 +65,8 @@
                 <field name="coretax_counterparty_name" string="Nama di PajakMu" optional="show"/>
                 <field name="coretax_vswp_status" optional="show"/>
                 <field name="email" optional="hide"/>
-                <button name="action_coretax_register" type="object" string="Daftarkan" icon="fa-user-plus"
-                        invisible="coretax_match_state != 'unmatched'"/>
-                <button name="action_coretax_match" type="object" string="Cocokkan" icon="fa-search"
-                        invisible="coretax_match_state == 'no_id'"/>
+                <button name="action_coretax_register" attrs="{'invisible': [('coretax_match_state', '!=', 'unmatched')]}" type="object" string="Daftarkan" icon="fa-user-plus"/>
+                <button name="action_coretax_match" attrs="{'invisible': [('coretax_match_state', '=', 'no_id')]}" type="object" string="Cocokkan" icon="fa-search"/>
             </tree>
         </field>
     </record>

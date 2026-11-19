@@ -1,6 +1,6 @@
 /** @odoo-module **/
 import { Component, onWillStart, useState } from "@odoo/owl";
-import { formatCurrency } from "@web/core/currency";
+import { formatMonetary } from "@web/views/fields/formatters";
 import { deserializeDate, deserializeDateTime, formatDateTime } from "@web/core/l10n/dates";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -114,7 +114,7 @@ export class CoretaxDashboard extends Component {
     }
 
     money(amount) {
-        return formatCurrency(amount || 0, this.d.currency_id, { digits: [16, 0] });
+        return formatMonetary(amount || 0, { currencyId: this.d.currency_id, digits: [16, 0] });
     }
 
     when(value) {

@@ -1,7 +1,7 @@
 from odoo.exceptions import ValidationError
 from odoo.tests import Form, tagged
 
-from odoo.addons.coretax_integration import _coretax_post_init
+from odoo.addons.coretax_integration import _coretax_load_pph
 
 from .common import PphTestCommon
 
@@ -14,7 +14,7 @@ class TestPphTax(PphTestCommon):
             (self.pph23, -2.0, "24-104-01", "21210020"),
             (self.pph23_skb, 0.0, "24-104-01", "21210020"),
             (self.pph42, -10.0, "28-402-01", "21210040"),
-            (self.env["account.chart.template"].ref("tax_pph26_20"), -20.0, "27-104-01", "21210060"),
+            (self._chart_ref("tax_pph26_20"), -20.0, "27-104-01", "21210060"),
         ]
         for tax, amount, code, account in expected:
             self.assertEqual(tax.type_tax_use, "purchase")
@@ -34,11 +34,10 @@ class TestPphTax(PphTestCommon):
             self.env["account.tax"].create({**base, "amount": -2, "type_tax_use": "sale"})
 
     def test_post_init_hook_restores_missing_taxes(self):
-        template = self.env["account.chart.template"]
-        template.ref("tax_pph26_20").unlink()
-        _coretax_post_init(self.env)
-        _coretax_post_init(self.env)
-        tax = template.ref("tax_pph26_20")
+        self._chart_ref("tax_pph26_20").unlink()
+        _coretax_load_pph(self.env)
+        _coretax_load_pph(self.env)
+        tax = self._chart_ref("tax_pph26_20")
         self.assertEqual(tax.amount, -20.0)
         self.assertEqual(self.env["account.tax"].search_count(
             [("name", "=", tax.name), ("company_id", "=", self.env.company.id)]), 1)
@@ -91,10 +90,11 @@ class TestPphTax(PphTestCommon):
             bill.invoice_line_ids[0].coretax_tax_object_id = False
 
     def test_early_payment_discount_with_split_pph(self):
+        # Odoo 16: cara hitung ada di perusahaan, diskon di baris termin
+        self.company_data["company"].early_pay_discount_computation = "included"
         term = self.env["account.payment.term"].create({
-            "name": "2/10 net 30 PPh", "early_pay_discount_computation": "included",
-            "early_discount": True, "discount_percentage": 2, "discount_days": 10,
-            "line_ids": [(0, 0, {"value": "percent", "value_amount": 100, "nb_days": 30})],
+            "name": "2/10 net 30 PPh",
+            "line_ids": [(0, 0, {"value": "balance", "days": 30, "discount_percentage": 2, "discount_days": 10})],
         })
         bill = self._bill([(10_000_000, self.pph23), (5_000_000, self.pph23, self.obj_konsultan)],
                           invoice_payment_term_id=term.id)
@@ -105,6 +105,25 @@ class TestPphTax(PphTestCommon):
         tax_vals = [v for v in res["tax_lines"] if "PPh 23" in v["name"]]
         self.assertEqual(len(tax_vals), 1)
         self.assertAlmostEqual(abs(tax_vals[0]["balance"]), 6_000)
+
+    def test_early_payment_discount_with_split_pph_and_ppn(self):
+        # Odoo 16 menaruh koreksi pembulatan diskon dini di baris pajak terakhir; PPN tidak boleh ikut berubah
+        self.company_data["company"].early_pay_discount_computation = "included"
+        term = self.env["account.payment.term"].create({
+            "name": "2/10 net 30 PPh PPN",
+            "line_ids": [(0, 0, {"value": "balance", "days": 30, "discount_percentage": 2, "discount_days": 10})],
+        })
+        bill = self._bill([(10_000_000, self.pph23 | self.ppn), (5_000_000, self.pph23 | self.ppn, self.obj_konsultan)],
+                          invoice_payment_term_id=term.id)
+        term_line = bill.line_ids.filtered(lambda l: l.display_type == "payment_term")
+        res = self.env["account.move"]._get_invoice_counterpart_amls_for_early_payment_discount(
+            [{"aml": term_line, "amount_currency": term_line.amount_currency, "balance": term_line.balance}],
+            term_line.balance)
+        by_name = {v["name"]: abs(v["balance"]) for v in res["tax_lines"]}
+        [pph] = [amount for name, amount in by_name.items() if "PPh 23" in name]
+        [ppn] = [amount for name, amount in by_name.items() if self.ppn.name in name]
+        self.assertAlmostEqual(pph, 6_000)
+        self.assertAlmostEqual(ppn, 33_000)
 
     def test_bill_form_fills_object_and_buttons(self):
         with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as form:

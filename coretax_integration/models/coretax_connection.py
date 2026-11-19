@@ -142,9 +142,10 @@ class CoretaxConnection(models.Model):
             rec.webhook_url = f"{base.rstrip('/')}/coretax/webhook/{rec.id}" if rec.id else ""
 
     def _compute_log_count(self):
-        counts = dict(self.env["coretax.log"]._read_group([("connection_id", "in", self.ids)], ["connection_id"], ["__count"]))
+        counts = {row["connection_id"][0]: row["connection_id_count"] for row in self.env["coretax.log"]._read_group(
+            [("connection_id", "in", self.ids)], ["connection_id"], ["connection_id"])}
         for rec in self:
-            rec.log_count = counts.get(rec, 0)
+            rec.log_count = counts.get(rec.id, 0)
 
     @api.onchange("api_key")
     def _onchange_api_key(self):

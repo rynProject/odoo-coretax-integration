@@ -34,7 +34,7 @@ baru upgrade modul ini.
 Data baris e-Faktur memakai penyusun data bawaan Odoo
 (l10n_id_efaktur_coretax), jadi angkanya sama dengan XML Coretax resmi.
 """,
-    "version": "17.0.1.6.0",
+    "version": "16.0.1.6.0",
     "category": "Accounting/Localizations/EDI",
     "author": "Aksa",
     "website": "https://www.aksa.id",
@@ -46,6 +46,7 @@ Data baris e-Faktur memakai penyusun data bawaan Odoo
         "security/ir.model.access.csv",
         "data/ir_cron.xml",
         "data/coretax_tax_object_data.xml",
+        "data/template_id_data.xml",
         "views/coretax_connection_views.xml",
         "views/coretax_faktur_views.xml",
         "views/coretax_bupot_views.xml",

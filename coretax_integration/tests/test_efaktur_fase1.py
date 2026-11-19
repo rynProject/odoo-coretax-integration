@@ -90,8 +90,7 @@ class TestEfakturFase1(CoretaxTestCommon):
     # ── kode transaksi 07/08 ──────────────────────────────────────────
     def _zero_tax(self):
         # Kode 07/08 mewajibkan PPN 0%, jadi buat pajak 0% dari grup pajak 0 l10n_id.
-        group = self.env["account.chart.template"].with_company(self.company_data["company"]).ref(
-            "l10n_id_tax_group_0")
+        group = self._chart_ref("l10n_id_tax_group_0")
         return self.tax_sale_a.copy({"name": "PPN 0% uji", "amount": 0.0, "tax_group_id": group.id})
 
     def _invoice_code(self, code, add_info=None):
@@ -114,8 +113,8 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertEqual(self._errors(move), [])
 
     def test_code_07_two_digit_keterangan(self):
-        move = self._invoice_code("07", "TD.00530")
-        self.assertEqual(move._coretax_payload(CP_ID)["idKeteranganTambahan"], "30")
+        move = self._invoice_code("07", "TD.00527")  # Odoo 16: pilihan sampai TD.00527
+        self.assertEqual(move._coretax_payload(CP_ID)["idKeteranganTambahan"], "27")
 
     def test_code_08_sends_keterangan(self):
         move = self._invoice_code("08", "TD.00510")
@@ -437,13 +436,13 @@ class TestEfakturFase1(CoretaxTestCommon):
         move_arch = etree.fromstring(self.env["account.move"].get_view(
             self.env.ref("account.view_move_form").id, "form")["arch"])
         [button] = move_arch.xpath("//button[@name='action_coretax_request_replacement']")
-        self.assertIn("coretax_is_replacement", button.get("invisible"))
+        self.assertIn("coretax_is_replacement", button.get("modifiers"))  # Odoo 16: attrs -> modifiers
         self.assertEqual(button.get("confirm"),
                          "Buka penggantian e-Faktur ini? Faktur Odoo lalu bisa di-reset ke draft dan diperbaiki.")
         faktur_arch = etree.fromstring(self.env["coretax.faktur"].get_view(
             self.env.ref("coretax_integration.view_coretax_faktur_form").id, "form")["arch"])
         [button] = faktur_arch.xpath("//button[@name='action_request_replacement']")
-        self.assertIn("replaces_id", button.get("invisible"))
+        self.assertIn("replaces_id", button.get("modifiers"))
 
     def test_original_invoice_is_not_marked_replacement(self):
         move, faktur = self._approved_faktur()

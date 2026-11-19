@@ -42,8 +42,7 @@
         <field name="arch" type="xml">
             <form string="Riwayat" create="0" edit="0">
                 <header>
-                    <button name="action_open_document" type="object" string="Buka dokumen" icon="fa-file-o"
-                            invisible="not res_id"/>
+                    <button name="action_open_document" attrs="{'invisible': [('res_id', '=', False)]}" type="object" string="Buka dokumen" icon="fa-file-o"/>
                 </header>
                 <sheet>
                     <field name="res_id" invisible="1"/>
@@ -60,7 +59,7 @@
                             <field name="duration_ms"/>
                         </group>
                     </group>
-                    <group string="Pesan" invisible="not message">
+                    <group attrs="{'invisible': [('message', '=', False)]}" string="Pesan">
                         <field name="message" nolabel="1" colspan="2"/>
                     </group>
                     <notebook>
