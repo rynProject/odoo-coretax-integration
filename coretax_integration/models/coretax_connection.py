@@ -28,9 +28,11 @@ REFRESH_BATCH = 40
 # Pemetaan data lawan transaksi -> field kontak Odoo bawaan.
 DEFAULT_PARTNER_MAPPING = {
     "npwp": "vat",
-    "nik": "l10n_id_nik",
+    # Odoo 20: NIK = nomor dokumen pembeli (jenis dokumen NIK); field l10n_id_nik sudah tidak ada.
+    "nik": "l10n_id_buyer_document_number",
     "doc_number": "l10n_id_buyer_document_number",
-    "tku": "l10n_id_tku",
+    # Odoo 20: TKU dari additional_identifiers (ID_TKU) lewat _l10n_id_efaktur_tku_branch(); bukan field biasa.
+    "tku": "__l10n_id_tku_branch__",
     "name": "name",
     "address": "contact_address",
     "email": "email",
@@ -106,7 +108,7 @@ class CoretaxConnection(models.Model):
         default=lambda self: self._default_map("doc_number"), ondelete="set null")
     map_tku_field_id = fields.Many2one("ir.model.fields", string="Field NITKU / TKU", domain=PARTNER_FIELD_DOMAIN,
                                        default=lambda self: self._default_map("tku"), ondelete="set null",
-                                       help="22 digit NITKU, atau 6 digit nomor cabang (digabung dengan NPWP).")
+                                       help="22 digit NITKU, atau 6 digit nomor cabang (digabung dengan NPWP). Kosong = ID TKU bawaan kontak Odoo 20 (identitas tambahan).")
     map_name_field_id = fields.Many2one("ir.model.fields", string="Field nama", domain=PARTNER_FIELD_DOMAIN,
                                         default=lambda self: self._default_map("name"), ondelete="set null")
     map_address_field_id = fields.Many2one("ir.model.fields", string="Field alamat", domain=PARTNER_FIELD_DOMAIN,
@@ -135,7 +137,7 @@ class CoretaxConnection(models.Model):
 
     @api.depends("company_id")
     def _compute_webhook_url(self):
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url", "")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url", "")
         for rec in self:
             rec.webhook_url = f"{base.rstrip('/')}/coretax/webhook/{rec.id}" if rec.id else ""
 

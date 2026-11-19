@@ -33,31 +33,4 @@
     <record id="account.group_account_manager" model="res.groups">
         <field name="implied_ids" eval="[(4, ref('group_coretax_manager'))]"/>
     </record>
-
-    <!-- multi-perusahaan: setiap data hanya terlihat di perusahaannya -->
-    <record id="rule_coretax_connection_company" model="ir.rule">
-        <field name="name">Koneksi PajakMu: perusahaan sendiri</field>
-        <field name="model_id" ref="model_coretax_connection"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-    </record>
-    <record id="rule_coretax_faktur_company" model="ir.rule">
-        <field name="name">e-Faktur Coretax: perusahaan sendiri</field>
-        <field name="model_id" ref="model_coretax_faktur"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-    </record>
-    <record id="rule_coretax_bupot_company" model="ir.rule">
-        <field name="name">Bukti Potong Coretax: perusahaan sendiri</field>
-        <field name="model_id" ref="model_coretax_bupot"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-    </record>
-    <record id="rule_coretax_retur_company" model="ir.rule">
-        <field name="name">Nota Retur Coretax: perusahaan sendiri</field>
-        <field name="model_id" ref="model_coretax_retur"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-    </record>
-    <record id="rule_coretax_log_company" model="ir.rule">
-        <field name="name">Riwayat PajakMu: perusahaan sendiri</field>
-        <field name="model_id" ref="model_coretax_log"/>
-        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
-    </record>
 </odoo>

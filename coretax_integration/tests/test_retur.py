@@ -538,7 +538,9 @@ class TestRetur(CoretaxTestCommon):
                                          "tax_group_id": non_luxury.tax_group_id.id})]})
         credit, _faktur = self._sale_credit(group)
         self.assertEqual(credit._coretax_retur_amounts(), {"dpp": 1000000, "ppn": 109999, "ppnbm": 0, "tarif": 12})
-        credit, _faktur = self._sale_credit(self._chart_tax("tax_ST5"))  # pemungut: satu pajak +100%/-100%
+        # Odoo 20: pemungut PPN = grup tax_ST4 (PPN 11/12) + tax_wapu; tarif bawaan tax_ST4 dikembalikan ke 11
+        self._chart_tax("tax_ST4").amount = 11
+        credit, _faktur = self._sale_credit(self._chart_tax("tax_pemungut_ppn"))
         self.assertEqual(credit._coretax_retur_amounts()["ppn"], 109999)
 
     def test_amounts_keluaran_clamped_to_faktur_remainder(self):

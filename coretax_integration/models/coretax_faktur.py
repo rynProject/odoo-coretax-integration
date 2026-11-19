@@ -175,7 +175,7 @@ class CoretaxFaktur(models.Model):
             rec.log_count = counts.get(rec.id, 0)
 
     def _idempotency_base(self):
-        uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
+        uuid = self.env["ir.config_parameter"].sudo().get_str("database.uuid", "odoo")
         return f"odoo-{uuid}-move-{self.move_id.id}-v{self.version}"
 
     # ── pembaruan dari PajakMu ────────────────────────────────────────

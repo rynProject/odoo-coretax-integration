@@ -34,7 +34,7 @@ class ResPartner(models.Model):
                                            search="_search_coretax_match_state")
 
     @api.depends_context("company")
-    @api.depends("vat", "l10n_id_nik", "l10n_id_buyer_document_number", "l10n_id_buyer_document_type")
+    @api.depends("vat", "l10n_id_buyer_document_number", "l10n_id_buyer_document_type")
     def _compute_coretax_match_state(self):
         connection = self._coretax_connection()
         for partner in self:
@@ -65,6 +65,9 @@ class ResPartner(models.Model):
         self.ensure_one()
         connection = connection if connection is not None else self._coretax_connection()
         name = connection.sudo()._partner_field_name(key) if connection else DEFAULT_PARTNER_MAPPING[key]
+        if name == "__l10n_id_tku_branch__":
+            # TKU bawaan Odoo 20 (additional_identifiers ID_TKU, kosong = 000000)
+            return self._l10n_id_efaktur_tku_branch() if hasattr(self, "_l10n_id_efaktur_tku_branch") else ""
         if name == "contact_address":
             # alamat bawaan disusun sendiri: contact_address Odoo ikut memuat nama perusahaan dan negara
             return ", ".join(part for part in (self.street, self.street2, self.city, self.state_id.name, self.zip) if part)
@@ -119,7 +122,8 @@ class ResPartner(models.Model):
     @api.model
     def _coretax_unmatched_domain(self):
         npwp_field = self._coretax_identity_fields()[0]
-        return [("is_company", "=", True), (npwp_field, "!=", False), ("coretax_counterparty_id", "=", False),
+        # Odoo 20 menghitung is_company dari NPWP (l10n_id), jadi yang dipakai: kontak teratas (bukan kontak anak)
+        return [("parent_id", "=", False), (npwp_field, "!=", False), ("coretax_counterparty_id", "=", False),
                 ("customer_rank", ">", 0)]
 
     def _coretax_set_counterparty(self, row):
@@ -149,6 +153,8 @@ class ResPartner(models.Model):
         kind = self._coretax_kind(connection)
         npwp = digits(self._coretax_value("npwp", connection)) if kind == "NPWP" else ""
         tku = digits(self._coretax_value("tku", connection))
+        if tku == "000000":
+            tku = ""  # kantor pusat (bawaan l10n_id): kosong = TKU utama lawan transaksi
         if len(tku) == 6 and len(npwp) == 16:
             tku = npwp + tku
         address_lines = (self._coretax_value("address", connection) or "").splitlines()
@@ -190,7 +196,7 @@ class ResPartner(models.Model):
         self.ensure_one()
         payload = self._coretax_counterparty_payload(connection)
         client = connection._client(self)
-        uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
+        uuid = self.env["ir.config_parameter"].sudo().get_str("database.uuid", "odoo")
         # kunci stabil per kontak + isi, supaya kiriman ulang tidak membuat data ganda
         content = hashlib.sha1(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:12]
         try:
@@ -247,7 +253,7 @@ class ResPartner(models.Model):
         partners = self.filtered(lambda p: p._coretax_identity() and not p.coretax_counterparty_id) \
             if self else self.search(self._coretax_unmatched_domain())
         matched, skipped = 0, []
-        for partner in partners.filtered("is_company"):
+        for partner in partners.filtered(lambda p: not p.parent_id):
             try:
                 if partner.commercial_partner_id._coretax_auto_match(connection):
                     matched += 1

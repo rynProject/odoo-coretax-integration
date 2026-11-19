@@ -242,9 +242,9 @@ class TestPphBupot(PphTestCommon):
         user = self._plain_user("account.group_account_readonly")
         group = self.env["res.groups"].create({"name": "Hak tagihan penuh (uji)"})
         for model in ("account.move", "account.move.line"):
-            self.env["ir.model.access"].create({
+            self.env["ir.access"].create({
                 "name": "uji " + model, "model_id": self.env["ir.model"]._get(model).id, "group_id": group.id,
-                "perm_read": True, "perm_write": True, "perm_create": True, "perm_unlink": True})
+                "operation": "crud"})
         user.write({"group_ids": [(4, group.id)]})
         self.assertFalse(user.has_group("coretax_integration.group_coretax_user"))
         draft = self._three_lines(post=False)

@@ -38,7 +38,8 @@ class CoretaxWebhookController(http.Controller):
             event = json.loads(raw or b"{}")
         except ValueError:
             return request.make_json_response({"ok": False, "error": "invalid json"}, status=400)
-        connection = connection.with_company(connection.company_id)
+        # auth='none' tidak punya perusahaan aktif; with_company() Odoo 20 butuh allowed_company_ids
+        connection = connection.with_context(allowed_company_ids=connection.company_id.ids)
         handled = connection._process_event(event)
         env["coretax.log"].create({
             "connection_id": connection.id, "company_id": connection.company_id.id,

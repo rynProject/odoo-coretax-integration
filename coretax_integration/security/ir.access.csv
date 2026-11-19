@@ -1,0 +1,28 @@
+id,name,model_id,group_id/id,operation,domain
+access_coretax_connection_user,coretax.connection user,coretax.connection,group_coretax_user,r,
+access_coretax_connection_manager,coretax.connection manager,coretax.connection,group_coretax_manager,crud,
+access_coretax_faktur_user,coretax.faktur user,coretax.faktur,group_coretax_user,cru,
+access_coretax_faktur_manager,coretax.faktur manager,coretax.faktur,group_coretax_manager,crud,
+access_coretax_bupot_user,coretax.bupot user,coretax.bupot,group_coretax_user,crud,
+access_coretax_tax_object_user,coretax.tax.object user,coretax.tax.object,group_coretax_user,r,
+access_coretax_tax_object_manager,coretax.tax.object manager,coretax.tax.object,group_coretax_manager,crud,
+access_coretax_log_user,coretax.log user,coretax.log,group_coretax_user,r,
+access_coretax_log_manager,coretax.log manager,coretax.log,group_coretax_manager,rd,
+access_coretax_send_wizard_user,coretax.send.wizard user,coretax.send.wizard,group_coretax_user,crud,
+access_coretax_send_wizard_line_user,coretax.send.wizard.line user,coretax.send.wizard.line,group_coretax_user,crud,
+access_coretax_partner_match_wizard_user,coretax.partner.match.wizard user,coretax.partner.match.wizard,group_coretax_user,crud,
+access_coretax_partner_match_line_user,coretax.partner.match.line user,coretax.partner.match.line,group_coretax_user,crud,
+access_coretax_partner_register_wizard_user,coretax.partner.register.wizard user,coretax.partner.register.wizard,group_coretax_user,crud,
+access_coretax_partner_register_line_user,coretax.partner.register.line user,coretax.partner.register.line,group_coretax_user,crud,
+access_coretax_faktur_cancel_wizard_user,coretax.faktur.cancel.wizard user,coretax.faktur.cancel.wizard,group_coretax_user,crud,
+access_coretax_retur_user,coretax.retur user,coretax.retur,group_coretax_user,cru,
+access_coretax_retur_manager,coretax.retur manager,coretax.retur,group_coretax_manager,crud,
+access_coretax_retur_wizard_user,coretax.retur.wizard user,coretax.retur.wizard,group_coretax_user,crud,
+access_coretax_retur_cancel_wizard_user,coretax.retur.cancel.wizard user,coretax.retur.cancel.wizard,group_coretax_user,crud,
+access_coretax_retur_line_user,coretax.retur.line user,coretax.retur.line,group_coretax_user,crud,
+access_coretax_retur_wizard_line_user,coretax.retur.wizard.line user,coretax.retur.wizard.line,group_coretax_user,crud,
+rule_coretax_connection_company,Koneksi PajakMu: perusahaan sendiri,coretax.connection,,crud,"[('company_id', 'in', company_ids)]"
+rule_coretax_faktur_company,e-Faktur Coretax: perusahaan sendiri,coretax.faktur,,crud,"[('company_id', 'in', company_ids)]"
+rule_coretax_bupot_company,Bukti Potong Coretax: perusahaan sendiri,coretax.bupot,,crud,"[('company_id', 'in', company_ids)]"
+rule_coretax_retur_company,Nota Retur Coretax: perusahaan sendiri,coretax.retur,,crud,"[('company_id', 'in', company_ids)]"
+rule_coretax_log_company,Riwayat PajakMu: perusahaan sendiri,coretax.log,,crud,"[('company_id', 'in', company_ids + [False])]"

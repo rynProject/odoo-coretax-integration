@@ -66,7 +66,7 @@ class CoretaxTestCommon(AccountTestInvoicingCommon):
         super().setUpClass()
         company = cls.company_data["company"]
         company.write({"vat": "1234567890123456", "street": "Jl. Uji", "phone": "123"})
-        cls.partner_a.write({"vat": "1234567890123457", "l10n_id_pkp": True, "l10n_id_kode_transaksi": "04",
+        cls.partner_a.write({"vat": "1234567890123457", "l10n_id_kode_transaksi": "04",
                              "country_id": cls.env.ref("base.id").id, "is_company": True})
         cls.tax_sale_a.amount = 12.0
         cls.connection = cls.env["coretax.connection"].create({

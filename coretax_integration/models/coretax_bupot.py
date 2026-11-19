@@ -254,7 +254,7 @@ class CoretaxBupot(models.Model):
                     raise AksaTaxError(_("Penerima %s belum terdaftar di PajakMu. Klik 'Daftarkan ke PajakMu' di "
                                          "Coretax › Data Master › Lawan Transaksi, lalu kirim ulang.",
                                          partner.display_name), code="COUNTERPARTY_MISSING")
-                uuid = self.env["ir.config_parameter"].sudo().get_param("database.uuid", "odoo")
+                uuid = self.env["ir.config_parameter"].sudo().get_str("database.uuid", "odoo")
                 data = client.create_bupot_unifikasi(rec._payload(counterparty), f"odoo-{uuid}-bupot-{rec.id}-v{rec.version}")
             except AksaTaxError as exc:
                 rec.write({"state": "error", "last_error": exc.full_message(), "version": rec.version + 1})

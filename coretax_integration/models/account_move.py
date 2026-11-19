@@ -153,9 +153,16 @@ class AccountMove(models.Model):
         (l10n_id_efaktur_coretax), supaya angkanya sama dengan XML Coretax."""
         self.ensure_one()
         vals = {}
-        lines = self.invoice_line_ids.filtered(lambda l: l.display_type == "product" and l.tax_ids)
-        for line in lines:
-            line._l10n_id_coretax_build_invoice_line_vals(vals)
+        # Odoo 20: baris negatif (diskon global) dibagikan dulu ke baris lain yang pajaknya sama, seperti XML Coretax
+        base_lines, remaining = self._l10n_id_coretax_dispatch_negative_lines()
+        if remaining:
+            raise UserError(_("Faktur %s punya baris negatif yang tidak bisa dibagikan ke baris lain (pajaknya berbeda "
+                              "atau nilainya melebihi baris lain). Coretax menolak nilai negatif; samakan pajaknya "
+                              "atau ubah barisnya.", self.name))
+        lines = []
+        for base_line in base_lines:
+            base_line["record"]._l10n_id_coretax_build_invoice_line_vals(vals, base_line)
+            lines.append(base_line["record"])
         result = []
         ChartTemplate = self.env["account.chart.template"].with_company(self.company_id)
         luxury_groups = {ChartTemplate.ref(xmlid, raise_if_not_found=False)

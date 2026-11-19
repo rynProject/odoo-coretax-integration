@@ -1,4 +1,4 @@
-# Coretax Integration (PajakMu) untuk Odoo 19
+# Coretax Integration (PajakMu) untuk Odoo 20
 
 Modul Odoo yang mengirim **e-Faktur Keluaran** dan **Bukti Potong PPh** dari Odoo ke DJP (Coretax) melalui
 **PajakMu**. Hasil dari DJP — status, Nomor Faktur Pajak, kode persetujuan — kembali ke Odoo secara otomatis.
@@ -24,7 +24,7 @@ Modul ada di folder [`coretax_integration/`](coretax_integration/).
 | Bukti Potong PPh | Dibuat dari tagihan vendor (tombol **Buat Bukti Potong**) lalu dikirim ke PajakMu sebagai draft. Penandatanganan dan pengiriman ke DJP dilakukan di PajakMu. |
 | PPh di tagihan vendor | Pajak PPh adalah pajak pembelian bernilai negatif yang diberi **kode objek PPh (Coretax)**; empat pajak siap pakai tersedia untuk chart template `id` (PPh 23, PPh 23 SKB, PPh 4(2), dll). Tiap baris tagihan punya kolom **Kode objek** yang terisi otomatis dari pajaknya. Saat tagihan diposting, Odoo membuat satu bukti potong per kode objek (DPP dari baris, PPh dari jurnal). Pajak PPh tidak boleh dipasang di dalam pajak grup. |
 | Pengaman bukti potong | Tagihan yang bukti potongnya sudah ada di PajakMu tidak bisa direset, dibatalkan, atau dihapus. Bukti potong yang belum dikirim ikut diperbarui saat diposting ulang dan dihapus bila tagihan dibatalkan atau dihapus. Nota kredit mengurangi DPP; bila bukti potong sudah di PajakMu, muncul peringatan dan aktivitas pembetulan per bukti potong. |
-| Upgrade | Saat modul diupgrade ke 19.0.1.1.0, pajak PPh bawaan dimuat otomatis untuk perusahaan yang memakai chart template `id`. Tagihan lama tanpa PPh tidak berubah. |
+| Pajak PPh | Saat modul dipasang, pajak PPh bawaan (PPh 23, PPh 23 SKB, PPh 4(2) sewa, PPh 26) dimuat otomatis untuk perusahaan yang memakai chart template `id`. Tagihan lama tanpa PPh tidak berubah. |
 | Ringkasan | Satu layar berisi jumlah faktur siap dikirim, sedang diproses, disetujui bulan ini, dan perlu tindakan, plus aktivitas terbaru. Ada juga panduan "Mulai di sini". |
 | Riwayat Sinkronisasi | Setiap panggilan ke PajakMu tercatat selama 90 hari, termasuk ID Permintaan untuk dukungan PajakMu. API key tidak pernah ikut dicatat. |
 | Pengaman | Faktur yang e-Faktur-nya sedang diproses atau sudah disetujui DJP tidak bisa dikembalikan ke draft atau dibatalkan di Odoo sebelum e-Faktur-nya dibatalkan di PajakMu. |
@@ -57,7 +57,10 @@ Hak akses ada dua tingkat:
 
 ## Syarat
 
-- Odoo 19 dengan modul `account` dan `l10n_id_efaktur_coretax` (bawaan Odoo, ikut terpasang otomatis).
+- Odoo 20 dengan modul `account` dan `l10n_id_efaktur_coretax` (bawaan Odoo, ikut terpasang otomatis). Versi untuk
+  Odoo 17, 18, dan 19 ada di branch `17.0`, `18.0`, dan `19.0`.
+- Di Odoo 20, NIK pembeli diambil dari **Nomor Dokumen** kontak (jenis dokumen NIK) dan TKU dari identitas tambahan
+  **ID TKU** kontak (kosong = kantor pusat), mengikuti `l10n_id_efaktur_coretax` Odoo 20.
 - Akun PajakMu dengan **paket Business atau lebih tinggi**, karena paket Starter tidak mencakup Public API.
 - API key PajakMu yang dibuat oleh **Owner/Admin Pajak**, dengan izin `faktur:baca`, `faktur:tulis`, `faktur:kirim`,
   `bupot:tulis`, `master:baca`, dan `status:baca` (kunci lama dengan `bupot:*` tetap diterima). Prefiks `ak_…` atau
@@ -148,13 +151,13 @@ Coretax 17 digit menunggu spesifikasi dari PJAP. Modul ini hanya menampilkan nom
 
 ## Upgrade
 
-Versi 19.0.1.6.0 mengikuti Public API PajakMu terbaru: retur faktur masukan per barang/jasa
+Versi 20.0.1.6.0 mengikuti Public API PajakMu terbaru: retur faktur masukan per barang/jasa
 (`GET /nota-retur/faktur-masukan`, `…/{id}/items`), API key tingkat grup (`X-PajakMu-NPWP`), alias kunci `sk_`, header
 webhook `X-PajakMu-*`, serta event `faktur.amended`, `faktur.reported`, dan `bupot.amended`. Urutannya: perbarui
 PajakMu lebih dulu, baru upgrade modul Odoo. Dengan PajakMu lama, wizard nota retur menampilkan pesan "butuh PajakMu
 versi terbaru".
 
-Versi ini juga memperbaiki penerima webhook: di Odoo 19 rute `auth='none'` bawaannya read-only, sehingga webhook
+Versi ini juga memperbaiki penerima webhook: di Odoo 19/20 rute `auth='none'` bawaannya read-only, sehingga webhook
 sebelumnya selalu ditolak (401) dan status hanya datang dari polling 5 menit.
 
 ## Pengujian

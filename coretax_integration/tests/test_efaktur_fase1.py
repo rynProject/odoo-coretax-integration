@@ -548,7 +548,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         self.assertEqual(len(att), 1)
         self.assertEqual(att.name, "Faktur Pajak 0400260000000001.pdf")
         self.assertEqual(att.mimetype, "application/pdf")
-        self.assertEqual(att.raw, b"%PDF-1.7 dua")
+        self.assertEqual(bytes(att.raw), b"%PDF-1.7 dua")
         self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
 
     def test_download_pdf_from_move_uses_latest(self):
@@ -569,7 +569,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         att = self._attachments(move)
         self.assertEqual(len(att), 1)
         self.assertEqual(att.name, "Faktur Pajak 0400260000000002.pdf")
-        self.assertEqual(att.raw, b"%PDF-1.7 v2")
+        self.assertEqual(bytes(att.raw), b"%PDF-1.7 v2")
         self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
 
     def test_download_non_pdf_rejected(self):
@@ -584,7 +584,7 @@ class TestEfakturFase1(CoretaxTestCommon):
             faktur.action_download_pdf()
         att = self._attachments(move)
         self.assertEqual(len(att), 1)
-        self.assertEqual(att.raw, b"%PDF-1.7 lama")
+        self.assertEqual(bytes(att.raw), b"%PDF-1.7 lama")
 
     def test_download_pdf_as_readonly_coretax_user(self):
         """Pengguna Coretax dengan hak baca faktur saja tetap bisa menyimpan PDF sebagai lampiran."""
@@ -624,4 +624,4 @@ class TestEfakturFase1(CoretaxTestCommon):
             faktur.action_download_pdf()
         att = self._attachments(move)
         self.assertEqual(len(att), 1)
-        self.assertEqual(att.raw, b"%PDF-1.7 lama")
+        self.assertEqual(bytes(att.raw), b"%PDF-1.7 lama")
