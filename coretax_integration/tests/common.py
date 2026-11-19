@@ -61,9 +61,8 @@ class CoretaxTestCommon(AccountTestInvoicingCommon):
     """Perusahaan Indonesia, pelanggan ber-NPWP, dan koneksi PajakMu uji."""
 
     @classmethod
-    @AccountTestInvoicingCommon.setup_country("id")
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpClass(cls, chart_template_ref="id"):
+        super().setUpClass(chart_template_ref=chart_template_ref)
         company = cls.company_data["company"]
         company.write({"vat": "1234567890123456", "street": "Jl. Uji", "phone": "123"})
         cls.partner_a.write({"vat": "1234567890123457", "l10n_id_pkp": True, "l10n_id_kode_transaksi": "04",

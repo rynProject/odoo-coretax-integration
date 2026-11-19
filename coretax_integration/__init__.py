@@ -6,7 +6,8 @@ def _coretax_post_init(env):
     companies = env["res.company"].search([("chart_template", "=", "id"), ("parent_id", "=", False)],
                                           order="parent_path")
     for company in companies:
-        Template = env["account.chart.template"].with_company(company)
+        # sudo: di Odoo 17 env.company menolak perusahaan yang tidak bisa diakses pengguna aktif
+        Template = env["account.chart.template"].sudo().with_company(company)
         data = {
             "account.account": {
                 xmlid: values for xmlid, values in Template._get_id_coretax_account_account().items()

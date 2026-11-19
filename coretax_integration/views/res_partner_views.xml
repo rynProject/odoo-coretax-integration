@@ -50,7 +50,7 @@
         <field name="model">res.partner</field>
         <field name="priority">90</field>
         <field name="arch" type="xml">
-            <list string="Lawan Transaksi" create="0">
+            <tree string="Lawan Transaksi" create="0">
                 <header>
                     <button name="action_coretax_register" type="object" string="Daftarkan ke PajakMu" class="btn-primary"
                             icon="fa-user-plus"/>
@@ -71,7 +71,7 @@
                         invisible="coretax_match_state != 'unmatched'"/>
                 <button name="action_coretax_match" type="object" string="Cocokkan" icon="fa-search"
                         invisible="coretax_match_state == 'no_id'"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -104,7 +104,7 @@
     <record id="action_coretax_partner" model="ir.actions.act_window">
         <field name="name">Lawan Transaksi</field>
         <field name="res_model">res.partner</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_partner_list_coretax"/>
         <field name="domain">[('parent_id', '=', False), '|', ('customer_rank', '>', 0), ('supplier_rank', '>', 0)]</field>
         <field name="context">{'search_default_coretax_unmatched': 1, 'default_is_company': True}</field>

@@ -29,8 +29,9 @@
         <field name="name">coretax.bupot.list</field>
         <field name="model">coretax.bupot</field>
         <field name="arch" type="xml">
-            <list string="Bukti Potong" decoration-danger="state in ('error', 'rejected')" decoration-success="state == 'approved'"
+            <tree string="Bukti Potong" decoration-danger="state in ('error', 'rejected')" decoration-success="state == 'approved'"
                   decoration-muted="state in ('cancelled', 'replaced')">
+                <field name="company_id" column_invisible="1"/>
                 <field name="tanggal_pemotongan"/>
                 <field name="name"/>
                 <field name="partner_id"/>
@@ -42,7 +43,7 @@
                        decoration-warning="state in ('new', 'draft', 'pending_approval', 'validated')"/>
                 <field name="last_error" optional="hide" string="Keterangan"/>
                 <field name="currency_id" column_invisible="1"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -60,6 +61,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,pending_approval,approved"/>
                 </header>
                 <sheet>
+                    <field name="company_id" invisible="1"/>
                     <field name="aksatax_id" invisible="1"/>
                     <div class="alert alert-info" role="status" invisible="state != 'new'">
                         <i title="Info" class="fa fa-info-circle"/> Bukti potong dikirim ke PajakMu sebagai <b>draft</b>.
@@ -138,24 +140,27 @@
                                 </group>
                             </group>
                             <field name="source_line_ids" readonly="1">
-                                <list>
+                                <tree>
                                     <field name="move_id"/>
                                     <field name="product_id"/>
                                     <field name="name"/>
                                     <field name="balance" string="DPP (IDR)"/>
-                                </list>
+                                </tree>
                             </field>
                             <field name="tax_line_ids" readonly="1">
-                                <list>
+                                <tree>
                                     <field name="move_id"/>
                                     <field name="account_id"/>
                                     <field name="balance"/>
-                                </list>
+                                </tree>
                             </field>
                         </page>
                     </notebook>
                 </sheet>
-                <chatter/>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -163,7 +168,7 @@
     <record id="action_coretax_bupot" model="ir.actions.act_window">
         <field name="name">Bukti Potong PPh</field>
         <field name="res_model">coretax.bupot</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_coretax_bupot_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Buat bukti potong PPh pertama</p>
@@ -176,28 +181,28 @@
         <field name="name">coretax.tax.object.list</field>
         <field name="model">coretax.tax.object</field>
         <field name="arch" type="xml">
-            <list string="Kode Objek Pajak" editable="bottom">
+            <tree string="Kode Objek Pajak" editable="bottom">
                 <field name="code" placeholder="24-104-01"/>
                 <field name="name"/>
                 <field name="jenis"/>
                 <field name="pasal"/>
                 <field name="tarif"/>
                 <field name="active" widget="boolean_toggle"/>
-            </list>
+            </tree>
         </field>
     </record>
 
     <record id="action_coretax_tax_object" model="ir.actions.act_window">
         <field name="name">Kode Objek Pajak PPh</field>
         <field name="res_model">coretax.tax.object</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">tree</field>
         <field name="context">{'active_test': False}</field>
     </record>
 
     <record id="action_coretax_product_code" model="ir.actions.act_window">
         <field name="name">Kode Barang/Jasa Coretax</field>
         <field name="res_model">l10n_id_efaktur_coretax.product.code</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">tree</field>
         <field name="help" type="html">
             <p>Kode barang/jasa resmi Coretax. Pasang kodenya di setiap produk (tab Akuntansi › Kode Barang/Jasa e-Faktur).</p>
         </field>
@@ -206,6 +211,6 @@
     <record id="action_coretax_uom_code" model="ir.actions.act_window">
         <field name="name">Kode Satuan Coretax</field>
         <field name="res_model">l10n_id_efaktur_coretax.uom.code</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">tree</field>
     </record>
 </odoo>

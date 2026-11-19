@@ -595,7 +595,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         user = self.env["res.users"].create({
             "name": "Pembaca e-Faktur", "login": "pdf_reader", "company_id": company.id,
             "company_ids": [(6, 0, company.ids)], "groups_id": [(6, 0, groups.ids)]})
-        self.assertFalse(move.with_user(user).has_access("write"))
+        self.assertFalse(move.with_user(user).check_access_rights("write", raise_exception=False))
         self.env.invalidate_all()
         _fake, patcher = self._patch(self._pdf_route(b"%PDF-1.7 x"))
         with patcher:
@@ -603,7 +603,7 @@ class TestEfakturFase1(CoretaxTestCommon):
         att = self._attachments(move)
         self.assertEqual(len(att), 1)
         self.assertEqual(action["url"], f"/web/content/{att.id}?download=true")
-        self.assertTrue(att.with_user(user).has_access("read"))
+        att.with_user(user).check("read")  # AccessError bila pengguna tidak bisa membuka lampiran
 
     def test_pdf_requires_approved(self):
         move = self._invoice()

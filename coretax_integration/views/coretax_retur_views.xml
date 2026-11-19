@@ -27,8 +27,9 @@
         <field name="name">coretax.retur.list</field>
         <field name="model">coretax.retur</field>
         <field name="arch" type="xml">
-            <list string="Nota Retur" create="0" decoration-danger="state in ('error', 'rejected')"
+            <tree string="Nota Retur" create="0" decoration-danger="state in ('error', 'rejected')"
                   decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'">
+                <field name="company_id" column_invisible="1"/>
                 <field name="tanggal_retur"/>
                 <field name="name"/>
                 <field name="sisi"/>
@@ -41,7 +42,7 @@
                        decoration-warning="state in ('new', 'draft')"/>
                 <field name="last_error" optional="hide" string="Keterangan"/>
                 <field name="currency_id" column_invisible="1"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -60,6 +61,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>
                 </header>
                 <sheet>
+                    <field name="company_id" invisible="1"/>
                     <div class="alert alert-danger" role="alert" invisible="not last_error">
                         <field name="last_error" readonly="1"/>
                     </div>
@@ -88,7 +90,7 @@
                         </group>
                     </group>
                     <field name="line_ids" invisible="sisi != 'masukan'" readonly="state not in ('new', 'error')">
-                        <list editable="bottom" create="0">
+                        <tree editable="bottom" create="0">
                             <field name="index" column_invisible="1"/>
                             <field name="nama"/>
                             <field name="retur_jumlah"/>
@@ -97,7 +99,7 @@
                             <field name="retur_dpp_lain" optional="show"/>
                             <field name="retur_ppn" sum="Total PPN"/>
                             <field name="retur_ppnbm" optional="hide"/>
-                        </list>
+                        </tree>
                     </field>
                     <group string="PajakMu" invisible="not aksatax_id">
                         <field name="aksatax_id"/>
@@ -106,7 +108,10 @@
                         <field name="alasan_batal" invisible="not alasan_batal"/>
                     </group>
                 </sheet>
-                <chatter/>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -114,7 +119,7 @@
     <record id="action_coretax_retur" model="ir.actions.act_window">
         <field name="name">Nota Retur</field>
         <field name="res_model">coretax.retur</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_coretax_retur_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Belum ada nota retur</p>

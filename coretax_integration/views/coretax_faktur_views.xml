@@ -33,8 +33,9 @@
         <field name="name">coretax.faktur.list</field>
         <field name="model">coretax.faktur</field>
         <field name="arch" type="xml">
-            <list string="e-Faktur" create="0" decoration-danger="attention" decoration-success="state == 'approved'"
+            <tree string="e-Faktur" create="0" decoration-danger="attention" decoration-success="state == 'approved'"
                   decoration-info="in_progress" decoration-muted="state in ('cancelled', 'replaced')">
+                <field name="company_id" column_invisible="1"/>
                 <field name="attention" column_invisible="1"/>
                 <field name="in_progress" column_invisible="1"/>
                 <field name="invoice_date"/>
@@ -50,7 +51,7 @@
                 <field name="write_date" string="Diperbarui" optional="hide"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
                 <field name="currency_id" column_invisible="1"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -60,6 +61,7 @@
         <field name="arch" type="xml">
             <kanban default_group_by="state" create="0" group_create="0" group_delete="0" group_edit="0"
                     records_draggable="0" quick_create="0">
+                <field name="company_id"/>
                 <field name="currency_id"/>
                 <field name="attention"/>
                 <templates>
@@ -113,6 +115,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,processing,approved"/>
                 </header>
                 <sheet>
+                    <field name="company_id" invisible="1"/>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-file-text-o">
                             <div class="o_stat_info"><span class="o_stat_text">Faktur Odoo</span></div>
@@ -219,7 +222,10 @@
                         </page>
                     </notebook>
                 </sheet>
-                <chatter/>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -227,7 +233,7 @@
     <record id="action_coretax_faktur" model="ir.actions.act_window">
         <field name="name">Semua e-Faktur</field>
         <field name="res_model">coretax.faktur</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">tree,kanban,form</field>
         <field name="search_view_id" ref="view_coretax_faktur_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Belum ada e-Faktur</p>
@@ -239,7 +245,7 @@
     <record id="action_coretax_faktur_attention" model="ir.actions.act_window">
         <field name="name">e-Faktur perlu tindakan</field>
         <field name="res_model">coretax.faktur</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">tree,kanban,form</field>
         <field name="search_view_id" ref="view_coretax_faktur_search"/>
         <field name="context">{'search_default_attention': 1}</field>
         <field name="help" type="html">

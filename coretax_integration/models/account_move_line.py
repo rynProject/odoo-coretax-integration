@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import frozendict
 from odoo.tools.sql import column_exists, create_column
 
 
@@ -37,6 +38,34 @@ class AccountMoveLine(models.Model):
             else:
                 # journal item pajak menerima nilainya lewat grouping key; jangan dikosongkan
                 line.coretax_tax_object_id = line.coretax_tax_object_id
+
+    # ── journal item PPh per kode objek (mesin pajak Odoo 17) ──────────
+    # Kunci pengelompokan journal item pajak (compute_all_tax di baris dasar, tax_key di baris pajak) diberi kode
+    # objek PPh, sehingga satu pajak PPh dengan kode objek berbeda menjadi journal item terpisah. Kunci yang sama
+    # menjadi nilai journal item pajak baru, jadi kode objeknya ikut tersimpan. Pajak selain PPh memakai False.
+    @api.depends("coretax_tax_object_id")
+    def _compute_all_tax(self):
+        super()._compute_all_tax()
+        Repartition = self.env["account.tax.repartition.line"]
+        for line in self:
+            if not line.compute_all_tax:
+                continue
+            values = {}
+            for key, vals in line.compute_all_tax.items():
+                if "tax_repartition_line_id" in key:
+                    tax_object = False
+                    tax = Repartition.browse(key["tax_repartition_line_id"]).tax_id
+                    if tax.coretax_tax_object_id:
+                        tax_object = (line.coretax_tax_object_id or tax.coretax_tax_object_id).id
+                    key = frozendict({**key, "coretax_tax_object_id": tax_object})
+                values[key] = vals
+            line.compute_all_tax = values
+
+    @api.depends("coretax_tax_object_id")
+    def _compute_tax_key(self):
+        super()._compute_tax_key()
+        for line in self.filtered("tax_repartition_line_id"):
+            line.tax_key = frozendict({**line.tax_key, "coretax_tax_object_id": line.coretax_tax_object_id.id or False})
 
     @api.constrains("tax_ids", "coretax_tax_object_id")
     def _check_coretax_pph_line(self):

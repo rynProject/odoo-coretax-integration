@@ -469,10 +469,10 @@ class CoretaxFaktur(models.Model):
     def action_readiness(self, kind):
         model, domain, title = self._readiness_domains()[kind]
         views = {
-            "product.template": [[self.env.ref("coretax_integration.view_coretax_product_code_list").id, "list"],
+            "product.template": [[self.env.ref("coretax_integration.view_coretax_product_code_list").id, "tree"],
                                  [False, "form"]],
-            "uom.uom": [[self.env.ref("coretax_integration.view_coretax_uom_code_list").id, "list"]],
-            "res.partner": [[self.env.ref("coretax_integration.view_partner_list_coretax").id, "list"], [False, "form"]],
+            "uom.uom": [[self.env.ref("coretax_integration.view_coretax_uom_code_list").id, "tree"]],
+            "res.partner": [[self.env.ref("coretax_integration.view_partner_list_coretax").id, "tree"], [False, "form"]],
         }[model]
         return {"type": "ir.actions.act_window", "name": title, "res_model": model, "domain": domain,
                 "views": views, "target": "current", "context": {"create": False}}

@@ -24,7 +24,7 @@
         <field name="name">coretax.log.list</field>
         <field name="model">coretax.log</field>
         <field name="arch" type="xml">
-            <list string="Riwayat Sinkronisasi" create="0" edit="0" decoration-danger="not success">
+            <tree string="Riwayat Sinkronisasi" create="0" edit="0" decoration-danger="not success">
                 <field name="create_date" string="Waktu"/>
                 <field name="operation"/>
                 <field name="document_name" optional="show"/>
@@ -32,7 +32,7 @@
                 <field name="status_code" optional="hide"/>
                 <field name="duration_ms" optional="hide"/>
                 <field name="message" optional="show"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -86,7 +86,7 @@
     <record id="action_coretax_log" model="ir.actions.act_window">
         <field name="name">Riwayat Sinkronisasi</field>
         <field name="res_model">coretax.log</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_coretax_log_search"/>
         <field name="help" type="html">
             <p>Setiap komunikasi Odoo dengan PajakMu tercatat di sini (disimpan 90 hari).

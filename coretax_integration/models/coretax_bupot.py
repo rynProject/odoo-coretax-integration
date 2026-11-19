@@ -30,8 +30,8 @@ INACTIVE_STATES = ("rejected", "cancelled")
 # Journal item PPh tagihan dan nota kreditnya (tax_line_ids, pph_gl, pph_selisih dihitung dari sini).
 TAX_LINE_DEPENDS = (
     "origin", "move_id", "tax_object_id", "move_id.line_ids.balance", "move_id.line_ids.coretax_tax_object_id",
-    "move_id.line_ids.tax_line_id", "move_id.reversal_move_ids.state", "move_id.reversal_move_ids.line_ids.balance",
-    "move_id.reversal_move_ids.line_ids.coretax_tax_object_id",
+    "move_id.line_ids.tax_line_id", "move_id.reversal_move_id.state", "move_id.reversal_move_id.line_ids.balance",
+    "move_id.reversal_move_id.line_ids.coretax_tax_object_id",
 )
 FASILITAS = [
     ("NONE", "Tanpa fasilitas"), ("SKB", "Surat Keterangan Bebas (SKB)"), ("SKD", "Surat Keterangan Domisili (SKD/P3B)"),
@@ -127,7 +127,7 @@ class CoretaxBupot(models.Model):
     pph_selisih = fields.Monetary(string="Selisih PPh jurnal vs bukti potong", compute="_compute_pph_selisih")
 
     def init(self):
-        # Satu bukti potong aktif per tagihan dan kode objek pajak (Odoo 18 belum punya models.UniqueIndex).
+        # Satu bukti potong aktif per tagihan dan kode objek pajak (Odoo 17/18 belum punya models.UniqueIndex).
         self.env.cr.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS coretax_bupot_bill_unique
             ON coretax_bupot (move_id, tax_object_id)
@@ -140,9 +140,9 @@ class CoretaxBupot(models.Model):
             rec.tarif = rec.tax_object_id.tarif
 
     @api.depends("origin", "move_id", "tax_object_id", "move_id.line_ids.tax_ids",
-                 "move_id.line_ids.coretax_tax_object_id", "move_id.reversal_move_ids.state",
-                 "move_id.reversal_move_ids.line_ids.tax_ids",
-                 "move_id.reversal_move_ids.line_ids.coretax_tax_object_id")
+                 "move_id.line_ids.coretax_tax_object_id", "move_id.reversal_move_id.state",
+                 "move_id.reversal_move_id.line_ids.tax_ids",
+                 "move_id.reversal_move_id.line_ids.coretax_tax_object_id")
     def _compute_source_line_ids(self):
         for rec in self:
             if rec.origin == "bill" and rec.move_id:

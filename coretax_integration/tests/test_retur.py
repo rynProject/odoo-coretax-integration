@@ -605,7 +605,7 @@ class TestRetur(CoretaxTestCommon):
                       retur.move_id.message_ids[0].body)
 
     def test_views_not_creatable(self):
-        for view_type in ("list", "form"):
+        for view_type in ("tree", "form"):
             arch = self.env["coretax.retur"].get_view(view_type=view_type)["arch"]
             self.assertIn('create="0"', arch)
 

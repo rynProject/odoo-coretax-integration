@@ -68,7 +68,7 @@
                     </div>
                 </button>
             </xpath>
-            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="after">
+            <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="after">
                 <field name="coretax_tax_object_id" string="Kode objek" optional="show" options="{'no_create': True}"
                        column_invisible="parent.move_type not in ('in_invoice', 'in_receipt', 'in_refund')"/>
             </xpath>
@@ -98,7 +98,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_out_invoice_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//list" position="inside">
+            <xpath expr="//tree" position="inside">
                 <field name="coretax_state" string="e-Faktur" widget="badge" optional="show"
                        decoration-success="coretax_state == 'approved'"
                        decoration-danger="coretax_state in ('rejected', 'error')"
@@ -135,7 +135,7 @@
         <field name="model">account.move</field>
         <field name="priority">99</field>
         <field name="arch" type="xml">
-            <list string="Faktur siap dikirim" create="0" edit="0">
+            <tree string="Faktur siap dikirim" create="0" edit="0">
                 <header>
                     <button name="action_coretax_send" type="object" string="Kirim e-Faktur" class="btn-primary"
                             icon="fa-paper-plane"/>
@@ -151,14 +151,14 @@
                        decoration-danger="coretax_state in ('rejected', 'error')"/>
                 <field name="currency_id" column_invisible="1"/>
                 <button name="action_coretax_send" type="object" string="Kirim" icon="fa-paper-plane" class="btn-link"/>
-            </list>
+            </tree>
         </field>
     </record>
 
     <record id="action_coretax_invoice_ready" model="ir.actions.act_window">
         <field name="name">Faktur siap dikirim</field>
         <field name="res_model">account.move</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_coretax_invoice_ready_list"/>
         <field name="search_view_id" ref="account.view_account_invoice_filter"/>
         <field name="domain">[('move_type', '=', 'out_invoice')]</field>

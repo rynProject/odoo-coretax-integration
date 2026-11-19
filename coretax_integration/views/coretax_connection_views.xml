@@ -103,7 +103,10 @@
                         <p class="mb-0 text-muted">Satu API key mewakili satu NPWP. Untuk beberapa perusahaan, atur koneksi di setiap perusahaan.</p>
                     </div>
                 </sheet>
-                <chatter/>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -112,20 +115,20 @@
         <field name="name">coretax.connection.list</field>
         <field name="model">coretax.connection</field>
         <field name="arch" type="xml">
-            <list string="Koneksi PajakMu">
+            <tree string="Koneksi PajakMu">
                 <field name="name"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="environment"/>
                 <field name="state" widget="badge" decoration-success="state == 'ok'" decoration-danger="state == 'error'"/>
                 <field name="last_sync"/>
-            </list>
+            </tree>
         </field>
     </record>
 
     <record id="action_coretax_connection" model="ir.actions.act_window">
         <field name="name">Koneksi PajakMu</field>
         <field name="res_model">coretax.connection</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
     </record>
 
     <record id="action_coretax_connection_open" model="ir.actions.server">

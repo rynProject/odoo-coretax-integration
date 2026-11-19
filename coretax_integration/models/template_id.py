@@ -1,7 +1,7 @@
 from odoo import Command, models
 from odoo.addons.account.models.chart_template import template
 
-# Akun Hutang PPh di chart l10n_id Odoo 18: 21210020 = PPh 23, 21210040 = Pasal 4(2). Odoo 18 belum punya akun
+# Akun Hutang PPh di chart l10n_id Odoo 17/18: 21210020 = PPh 23, 21210040 = Pasal 4(2). Odoo 17/18 belum punya akun
 # Hutang PPh 26, jadi modul menambahkannya (nomor sama dengan Odoo 19).
 PPH_ACCOUNTS = {
     "l10n_id_21210060": {"code": "21210060", "name": "Hutang Pajak PPh 26", "account_type": "liability_current",

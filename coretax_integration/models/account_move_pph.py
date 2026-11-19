@@ -36,15 +36,50 @@ class AccountMove(models.Model):
         return action
 
     def _get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line(self):
-        # EXTENDS 'account': jumlahkan pajak per repartition line, bukan per kode objek PPh,
-        # supaya selisih diskon pembayaran dini PPh tidak saling menimpa.
-        return super(AccountMove, self.with_context(coretax_no_pph_split=True)) \
-            ._get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line()
+        # EXTENDS 'account': Odoo 17 menyimpan jumlah pajak tanpa diskon dalam dict per repartition line, sehingga
+        # journal item PPh yang dipecah per kode objek saling menimpa (hanya baris terakhir yang terhitung).
+        # Selisih pajak diskon dikoreksi dengan bagian yang hilang itu; baris dasar terbesar menampung kebalikannya
+        # agar total tetap sama dengan termin (seperti koreksi pembulatan Odoo).
+        res = super()._get_invoice_counterpart_amls_for_early_payment_discount_per_payment_term_line()
+        term_line = self.line_ids.filtered(lambda l: l.display_type == "payment_term")
+        tax_entries = res["tax_lines"].get(term_line) if term_line else None
+        if not tax_entries or not self.amount_total:
+            return res
+        missing = {}  # id repartition refund -> [amount_currency, balance] yang hilang karena ditimpa
+        by_rep = defaultdict(list)
+        for line in self.line_ids.filtered(lambda l: l.display_type == "tax"):
+            tax_rep = line.tax_repartition_line_id
+            tax = tax_rep.tax_id
+            index = list(tax.invoice_repartition_line_ids).index(tax_rep)
+            by_rep[tax.refund_repartition_line_ids[index].id].append(line)
+        for rep_id, lines in by_rep.items():
+            if len(lines) > 1:
+                missing[rep_id] = [sum(l.amount_currency for l in lines[:-1]), sum(l.balance for l in lines[:-1])]
+        if not missing:
+            return res
+        percentage_paid = abs(term_line.amount_residual_currency / self.amount_total)
+        shift_currency = shift_balance = 0.0
+        for key, vals in tax_entries.items():
+            if key.get("tax_repartition_line_id") not in missing:
+                continue
+            amount_currency, balance = missing[key["tax_repartition_line_id"]]
+            fix_currency = term_line.currency_id.round(amount_currency * percentage_paid)
+            fix_balance = term_line.company_currency_id.round(balance * percentage_paid)
+            vals["amount_currency"] -= fix_currency
+            vals["balance"] -= fix_balance
+            shift_currency += fix_currency
+            shift_balance += fix_balance
+        base_entries = res["base_lines"].get(term_line)
+        if base_entries and (shift_currency or shift_balance):
+            biggest = max(base_entries.values(), key=lambda v: v["amount_currency"])
+            biggest["amount_currency"] += shift_currency
+            biggest["balance"] += shift_balance
+        return res
 
     def _coretax_pph_family(self):
         """Tagihan ini beserta nota debit/kredit pembelian (in_refund) terposting yang membaliknya."""
         self.ensure_one()
-        return self | self.reversal_move_ids.filtered(lambda m: m.move_type == "in_refund" and m.state == "posted")
+        return self | self.reversal_move_id.filtered(lambda m: m.move_type == "in_refund" and m.state == "posted")
 
     def _coretax_pph_groups(self):
         """{kode objek: baris produk ber-PPh} dari tagihan dan nota kreditnya."""
