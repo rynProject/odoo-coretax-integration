@@ -1,331 +1,540 @@
-<!-- Hero -->
-<section style="background-color: #eef2fb; border: 1px solid #d6deef; padding: 56px 16px 0; border-radius: 16px; overflow: hidden;">
-    <div style="max-width: 1100px; margin: 0 auto; text-align: center;">
-        <span style="display: inline-block; background-color: #dde5f6; color: #1f377a; font-weight: 700; font-size: 13px; letter-spacing: 1px; padding: 6px 16px; border-radius: 20px;">ODOO 16 &middot; e-FAKTUR &middot; BUKTI POTONG PPh</span>
-        <h1 style="color: #13245a; font-weight: 800; font-size: 40px; line-height: 1.2; margin: 20px auto 12px; max-width: 820px;">e-Faktur dan Bukti Potong PPh ke Coretax, langsung dari Odoo</h1>
-        <p style="color: #3d4560; font-size: 18px; line-height: 1.6; max-width: 760px; margin: 0 auto;">
-            Faktur pelanggan Odoo dikirim ke DJP melalui PajakMu. Status DJP, Nomor Faktur Pajak, dan kode persetujuan
-            kembali ke Odoo secara otomatis, tanpa ekspor-impor file XML. PPh di tagihan vendor langsung menjadi
-            bukti potong per kode objek.
-        </p>
-        <div style="margin: 28px 0 20px;">
-            <span style="display: inline-block; background-color: #fff; border: 1px solid #c9d3ea; color: #13245a; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Status DJP otomatis</span>
-            <span style="display: inline-block; background-color: #fff; border: 1px solid #c9d3ea; color: #13245a; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Diperiksa sebelum dikirim</span>
-            <span style="display: inline-block; background-color: #fff; border: 1px solid #c9d3ea; color: #13245a; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Bukti potong PPh otomatis</span>
-            <span style="display: inline-block; background-color: #fff; border: 1px solid #c9d3ea; color: #13245a; font-weight: 600; padding: 8px 16px; border-radius: 8px; margin: 4px;">&#10003; Angka sama dengan XML Coretax</span>
-        </div>
-        <div style="margin: 0 0 36px;">
-            <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="display: inline-block; max-width: 100%; background-color: #e7f8ee; border: 2px solid #1a9e4b; color: #0b6b3a; font-weight: 700; font-size: 16px; line-height: 28px; padding: 10px 22px 10px 14px; border-radius: 8px; text-decoration: underline; margin: 4px;"><img src="whatsapp.png" alt="WhatsApp" width="28" height="28" style="width: 28px; height: 28px; vertical-align: middle; margin: 0 10px 0 0; border: 0;"/><span style="vertical-align: middle;">Berlangganan PajakMu via WhatsApp</span></a>
-            <div style="color: #3d4560; font-size: 15px; margin-top: 8px;">WhatsApp <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="color: #0b6b3a; font-weight: 700; text-decoration: underline;">0858-7571-6648</a></div>
-        </div>
-        <img src="dashboard_screenshot.png" alt="Ringkasan Coretax di Odoo" style="display: block; width: 100%; max-width: 1040px; margin: 0 auto; border-radius: 12px 12px 0 0; box-shadow: 0 -4px 40px rgba(10, 10, 60, 0.35);"/>
-    </div>
-</section>
+<!--
+    Halaman Odoo Apps Store. Desainnya mengikuti halaman produk PajakMu.
+    Odoo Apps membuang <style>, <script>, <svg>, dan properti CSS di luar whitelist
+    (position, box-shadow, gap, flex-*, ...), jadi semua style ditulis inline dan
+    tata letak memakai class Bootstrap. box-shadow hanya pelengkap; tanpa itu
+    tampilannya tetap utuh.
+-->
+<section style="background-color:#F6F8FC; color:#202C3C; font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; line-height:1.62; border:1px solid #E5EAF2; border-radius:16px;">
 
-<!-- Why -->
-<section style="padding: 56px 16px 24px;">
-    <div style="max-width: 1100px; margin: 0 auto;">
-        <h2 style="text-align: center; font-weight: 800; color: #1f2340; margin-bottom: 8px;">Kenapa Coretax Integration?</h2>
-        <p style="text-align: center; color: #5b6075; font-size: 16px; max-width: 700px; margin: 0 auto 32px;">Tim keuangan cukup bekerja di Odoo. Modul ini mengurus pengiriman, pemantauan status, dan tindak lanjutnya.</p>
+    <!-- Bar atas -->
+    <div class="d-flex align-items-center justify-content-between" style="padding:14px clamp(16px,4vw,48px); border-bottom:1px solid #E5EAF2;">
+        <div class="d-flex align-items-center">
+            <img src="icon.png" alt="" width="32" height="32" class="flex-shrink-0" style="width:32px; height:32px; border-radius:8px; margin-right:10px;"/>
+            <div style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-weight:700; font-size:16px; line-height:1.15; letter-spacing:-0.01em; color:#202C3C; white-space:nowrap;">Coretax Integration<span class="d-none d-sm-block" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-weight:500; font-size:12px; letter-spacing:0; color:#4F5C6D;">Modul Odoo dari Aksa</span></div>
+        </div>
+        <div class="d-none d-lg-block" style="font-size:15px; font-weight:500; white-space:nowrap;">
+            <a href="#alur" style="color:#4F5C6D; text-decoration:none; padding:8px 12px;">Alur kerja</a>
+            <a href="#efaktur" style="color:#4F5C6D; text-decoration:none; padding:8px 12px;">e-Faktur</a>
+            <a href="#pph" style="color:#4F5C6D; text-decoration:none; padding:8px 12px;">PPh</a>
+            <a href="#pengaturan" style="color:#4F5C6D; text-decoration:none; padding:8px 12px;">Pengaturan</a>
+            <a href="#mulai" style="color:#4F5C6D; text-decoration:none; padding:8px 12px;">Mulai</a>
+        </div>
+        <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" aria-label="Chat tim PajakMu di WhatsApp" style="display:inline-block; background-color:#256EF7; border:1px solid #256EF7; color:#FFFFFF; font-weight:600; font-size:15px; line-height:22px; padding:8px 12px; border-radius:10px; text-decoration:none; white-space:nowrap;"><img src="ico_chat.png" alt="" width="18" height="18" class="me-sm-2" style="width:18px; height:18px; vertical-align:-4px;"/><span class="d-none d-sm-inline">Chat WhatsApp</span></a>
+    </div>
+
+    <!-- Hero -->
+    <div id="atas" style="padding:clamp(36px,5vw,72px) clamp(16px,4vw,48px) clamp(56px,6vw,96px);">
+        <p style="margin:0 0 22px; color:#4F5C6D; font-size:14px; font-weight:500;">Modul Odoo 16 &nbsp;<span style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; font-weight:500; padding:2px 6px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">coretax_integration</span></p>
+        <h1 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(2.25rem,1rem + 3.4vw,3.9rem); font-weight:800; line-height:1.03; letter-spacing:-0.04em; color:#202C3C; max-width:19ch; margin:0 0 clamp(28px,3.4vw,48px);">e-Faktur dan Bukti Potong PPh ke Coretax, <span style="color:#1F5FD6;">langsung dari Odoo</span></h1>
+
         <div class="row">
-            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 22px; height: 100%;">
-                    <div style="font-size: 28px; line-height: 1; color: #d9930f; font-weight: 800;">01</div>
-                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Tanpa ekspor-impor</h4>
-                    <p style="color: #5b6075; margin: 0;">Kirim satu faktur atau puluhan sekaligus dengan satu klik. Tidak perlu lagi mengunduh XML lalu mengunggahnya ke Coretax.</p>
+            <div class="col-lg-6 pe-lg-5">
+                <p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.6; color:#4F5C6D; margin:0 0 26px;">Faktur pelanggan Odoo dikirim ke DJP melalui PajakMu. Status DJP, Nomor Faktur Pajak, dan kode persetujuan kembali ke Odoo secara otomatis, tanpa ekspor-impor file XML. PPh di tagihan vendor langsung menjadi bukti potong per kode objek.</p>
+                <div style="margin-bottom:10px;">
+                    <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="display:inline-block; background-color:#256EF7; border:1px solid #256EF7; color:#FFFFFF; font-weight:600; font-size:16px; line-height:24px; padding:12px 18px 12px 20px; border-radius:10px; text-decoration:none; white-space:nowrap; margin:0 8px 12px 0;">Berlangganan via WhatsApp<img src="ico_arrow_white.png" alt="" width="18" height="18" style="width:18px; height:18px; vertical-align:-3px; margin-left:10px;"/></a>
+                    <a href="#alur" style="display:inline-block; background-color:transparent; border:1px solid #CFD8E6; color:#202C3C; font-weight:600; font-size:16px; line-height:24px; padding:12px 20px; border-radius:10px; text-decoration:none; white-space:nowrap; margin:0 0 12px;">Lihat alur kerja</a>
+                </div>
+                <p style="margin:0 0 26px; font-size:14px; color:#4F5C6D;">WhatsApp PajakMu <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:600; font-size:16px; color:#202C3C; text-decoration:underline; margin-left:6px; white-space:nowrap;">0858-7571-6648</a></p>
+                <div style="border-top:1px solid #E5EAF2; padding-top:22px;">
+                    <div class="row">
+                        <div class="col-sm-6" style="margin-bottom:12px;">
+                            <div class="d-flex align-items-start"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:1px 10px 0 0;"/><span style="font-weight:600; font-size:15px; line-height:1.35; color:#202C3C;">Status DJP otomatis</span></div>
+                        </div>
+                        <div class="col-sm-6" style="margin-bottom:12px;">
+                            <div class="d-flex align-items-start"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:1px 10px 0 0;"/><span style="font-weight:600; font-size:15px; line-height:1.35; color:#202C3C;">Diperiksa sebelum dikirim</span></div>
+                        </div>
+                        <div class="col-sm-6" style="margin-bottom:12px;">
+                            <div class="d-flex align-items-start"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:1px 10px 0 0;"/><span style="font-weight:600; font-size:15px; line-height:1.35; color:#202C3C;">Bukti potong PPh otomatis</span></div>
+                        </div>
+                        <div class="col-sm-6" style="margin-bottom:12px;">
+                            <div class="d-flex align-items-start"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:1px 10px 0 0;"/><span style="font-weight:600; font-size:15px; line-height:1.35; color:#202C3C;">Angka sama dengan XML Coretax</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 22px; height: 100%;">
-                    <div style="font-size: 28px; line-height: 1; color: #d9930f; font-weight: 800;">02</div>
-                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Kesalahan ketahuan lebih awal</h4>
-                    <p style="color: #5b6075; margin: 0;">NPWP/NIK, kode transaksi, kode barang/jasa, mata uang, dan tanggal diperiksa sebelum dikirim, dengan pesan yang mudah dipahami.</p>
+
+            <!-- Faktur berangkat dari Odoo, hasilnya kembali ke faktur yang sama -->
+            <div class="col-lg-6 ps-lg-4 mt-5 mt-lg-0">
+                <div style="padding:24px 6px 0;">
+                    <div style="margin-left:32px; height:84px; border-top:2px solid #256EF7; border-bottom:2px solid #256EF7; border-right-style:solid; border-right-width:2px; border-right-color:#256EF7; border-top-right-radius:42px; border-bottom-right-radius:42px;">
+                        <div class="d-flex justify-content-between align-items-start" style="margin-top:-23px; margin-right:20px;">
+                            <div style="width:64px; margin-left:-32px; text-align:center;">
+                                <div style="width:44px; height:44px; margin:0 auto; padding-top:11px; border-radius:12px; background-color:#71639E; line-height:0;"><img src="ico_doc.png" alt="" width="22" height="22" style="width:22px; height:22px;"/></div>
+                                <div style="margin-top:8px; font-size:12.5px; font-weight:600; line-height:1.2; color:#4F5C6D; white-space:nowrap;">Odoo</div>
+                            </div>
+                            <div style="width:64px; text-align:center;">
+                                <img src="icon.png" alt="" width="44" height="44" style="display:block; width:44px; height:44px; margin:0 auto; border-radius:12px;"/>
+                                <div style="margin-top:8px; font-size:12.5px; font-weight:600; line-height:1.2; color:#4F5C6D; white-space:nowrap;">PajakMu</div>
+                            </div>
+                            <div style="width:64px; text-align:center;">
+                                <div style="width:44px; height:44px; margin:0 auto; padding-top:10px; border-radius:12px; border:1px solid #CFD8E6; background-color:#FFFFFF; line-height:0;"><img src="ico_bank.png" alt="" width="22" height="22" style="width:22px; height:22px;"/></div>
+                                <div style="margin-top:8px; font-size:12.5px; font-weight:600; line-height:1.2; color:#4F5C6D; white-space:nowrap;">DJP</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="height:0; margin-top:-11px; margin-left:32px; text-align:center; line-height:20px;"><span style="background-color:#F6F8FC; color:#4F5C6D; font-size:12px; font-weight:500; padding:2px 10px; border-radius:999px; white-space:nowrap;">hasil kembali ke faktur</span></div>
+                    <div style="margin:11px 0 0 31px; width:2px; height:12px; background-color:#256EF7;"></div>
+                    <div style="margin-left:25px; width:0; height:0; border-left-width:7px; border-left-style:solid; border-left-color:transparent; border-right-width:7px; border-right-style:solid; border-right-color:transparent; border-top:8px solid #256EF7;"></div>
                 </div>
-            </div>
-            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 22px; height: 100%;">
-                    <div style="font-size: 28px; line-height: 1; color: #d9930f; font-weight: 800;">03</div>
-                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Hasil DJP kembali sendiri</h4>
-                    <p style="color: #5b6075; margin: 0;">Odoo mengambil status terbaru setiap 5 menit, atau langsung lewat webhook bertanda tangan HMAC. Nomor Faktur Pajak tampil di faktur.</p>
+
+                <div style="margin-top:4px; background-color:#FFFFFF; border:1px solid #E5EAF2; border-radius:16px; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);">
+                    <div class="d-flex justify-content-between align-items-center" style="padding:9px 16px; background-color:#71639E; color:#FFFFFF; font-size:13px; font-weight:600; border-top-left-radius:15px; border-top-right-radius:15px;">
+                        <span>Odoo &middot; Faktur</span><span style="font-weight:500; opacity:.9;">INV/2026/00009</span>
+                    </div>
+                    <div style="padding:18px 20px;">
+                        <div class="d-flex justify-content-between align-items-start" style="margin-bottom:16px;">
+                            <div>
+                                <p style="margin:0; font-size:12px; font-weight:600; letter-spacing:.02em; color:#4F5C6D;">Faktur Pelanggan</p>
+                                <p style="margin:0; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1rem + .8vw,1.5rem); font-weight:700; line-height:1.2; letter-spacing:-0.02em; color:#202C3C;">INV/2026/00009</p>
+                                <p style="margin:0; font-size:14.4px; color:#4F5C6D;">PT Global Kreatif Media</p>
+                            </div>
+                            <span style="display:inline-block; margin-left:12px; padding:3px 10px; border-radius:999px; background-color:#E3F6EE; color:#0B7A55; font-size:12.5px; font-weight:600; line-height:1.5; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#0B7A55; vertical-align:middle; margin:0 6px 2px 0;"></span>Disetujui DJP</span>
+                        </div>
+                        <div style="padding:14px 0 8px; margin-bottom:16px; border-top:1px solid #E5EAF2; border-bottom:1px solid #E5EAF2; font-size:14.4px;">
+                            <div class="d-flex justify-content-between" style="margin-bottom:6px;"><span style="color:#4F5C6D;">Jumlah sebelum pajak</span><span style="font-weight:500; color:#202C3C;">Rp 24.500.000</span></div>
+                            <div class="d-flex justify-content-between" style="margin-bottom:6px;"><span style="color:#4F5C6D;">PPN</span><span style="font-weight:500; color:#202C3C;">Rp 2.695.000</span></div>
+                            <div class="d-flex justify-content-between" style="margin-bottom:6px;"><span style="font-weight:600; color:#202C3C;">Total</span><span style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-weight:800; font-size:16.5px; color:#163B70;">Rp 27.195.000</span></div>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-baseline" style="margin-bottom:16px;">
+                            <span style="margin-right:12px; font-size:12px; font-weight:600; letter-spacing:.02em; color:#4F5C6D;">Nomor Faktur Pajak</span>
+                            <span style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:clamp(1rem,.9rem + .45vw,1.18rem); font-weight:600; letter-spacing:.01em; color:#202C3C;">040.000-26.00031258</span>
+                        </div>
+                        <div style="padding:12px 14px 6px; border-radius:10px; background-color:#F6F8FC; font-size:13px; line-height:1.45; color:#202C3C;">
+                            <div class="d-flex" style="margin-bottom:6px;"><span class="flex-shrink-0" style="width:46px; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:#4F5C6D;">09.12</span><span>Faktur diposting</span></div>
+                            <div class="d-flex" style="margin-bottom:6px;"><span class="flex-shrink-0" style="width:46px; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:#4F5C6D;">09.18</span><span>e-Faktur dibuat di PajakMu (Dikirim ke DJP)</span></div>
+                            <div class="d-flex" style="margin-bottom:6px;"><span class="flex-shrink-0" style="width:46px; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:#4F5C6D;">09.32</span><span>e-Faktur disetujui DJP</span></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6 col-lg-3" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 22px; height: 100%;">
-                    <div style="font-size: 28px; line-height: 1; color: #d9930f; font-weight: 800;">04</div>
-                    <h4 style="font-weight: 700; color: #1f2340; margin: 12px 0 8px; font-size: 17px;">Angka yang konsisten</h4>
-                    <p style="color: #5b6075; margin: 0;">Baris e-Faktur disusun dengan penyusun data bawaan Odoo (<code>l10n_id_efaktur_coretax</code>), jadi angkanya sama dengan XML Coretax resmi. PPh di bukti potong sama dengan Utang PPh di jurnal.</p>
-                </div>
+                <p style="margin:14px 0 0; font-size:12.5px; line-height:1.5; color:#4F5C6D;">Contoh dengan data fiktif. Faktur berangkat dari Odoo, lalu status dan Nomor Faktur Pajak kembali ke faktur yang sama.</p>
             </div>
         </div>
     </div>
-</section>
 
-<!-- Flow -->
-<section style="padding: 8px 16px 40px;">
-    <div style="max-width: 1100px; margin: 0 auto; background-color: #eef2fb; border: 1px solid #d6deef; border-radius: 16px; padding: 32px 24px;">
-        <h3 style="color: #13245a; text-align: center; font-weight: 700; margin-bottom: 24px;">Alur kerja</h3>
-        <div class="row" style="text-align: center;">
-            <div class="col-md-3" style="margin-bottom: 16px;">
-                <div style="color: #8a5a00; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 1</div>
-                <div style="color: #13245a; font-weight: 700; font-size: 18px; margin: 6px 0;">Faktur Odoo</div>
-                <div style="color: #3d4560; font-size: 14px;">Faktur ber-PPN diposting lalu diperiksa</div>
-            </div>
-            <div class="col-md-3" style="margin-bottom: 16px;">
-                <div style="color: #8a5a00; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 2</div>
-                <div style="color: #13245a; font-weight: 700; font-size: 18px; margin: 6px 0;">PajakMu</div>
-                <div style="color: #3d4560; font-size: 14px;">e-Faktur dibuat, lalu langsung dikirim atau disetujui dulu di PajakMu</div>
-            </div>
-            <div class="col-md-3" style="margin-bottom: 16px;">
-                <div style="color: #8a5a00; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 3</div>
-                <div style="color: #13245a; font-weight: 700; font-size: 18px; margin: 6px 0;">DJP</div>
-                <div style="color: #3d4560; font-size: 14px;">e-Faktur diproses lalu disetujui atau ditolak</div>
-            </div>
-            <div class="col-md-3" style="margin-bottom: 16px;">
-                <div style="color: #8a5a00; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LANGKAH 4</div>
-                <div style="color: #13245a; font-weight: 700; font-size: 18px; margin: 6px 0;">Kembali ke Odoo</div>
-                <div style="color: #3d4560; font-size: 14px;">Status, nomor faktur pajak, dan alasan penolakan tercatat di faktur</div>
-            </div>
+    <!-- Ringkasan -->
+    <div style="padding:0 clamp(16px,4vw,48px) clamp(56px,2.5rem + 4vw,104px);">
+        <div class="row align-items-end" style="margin-bottom:28px;">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">Ringkasan satu layar</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:0;">Jumlah faktur siap dikirim, sedang diproses, disetujui bulan ini, dan perlu tindakan, serta DPP dan PPN masa pajak berjalan.</p></div>
         </div>
+        <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="dashboard_screenshot.png" alt="Ringkasan Coretax di Odoo: kartu Siap dikirim, Draft di PajakMu, Diproses DJP, dan Disetujui bulan ini, aktivitas terbaru, masa pajak, dan daftar Perlu dirapikan" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+        <p style="margin:12px 0 0; font-size:14px; color:#4F5C6D;"><span style="font-size:13px; font-weight:600; color:#202C3C; white-space:nowrap; margin-right:8px;">Coretax <span style="color:#4F5C6D; padding:0 4px;">&rsaquo;</span> Ringkasan</span>Data contoh fiktif.</p>
     </div>
-</section>
 
-<!-- Features with screenshots -->
-<section style="padding: 16px 16px 8px;">
-    <div style="max-width: 1100px; margin: 0 auto;">
-
-        <div class="row" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PEMERIKSAAN SEBELUM KIRIM</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Tahu mana yang siap, sebelum DJP menolak</h3>
-                <p style="color: #5b6075; font-size: 16px;">Pilih banyak faktur sekaligus dari daftar <b>Siap dikirim</b>. Setiap faktur langsung diberi tanda <b>Siap</b>, <b>Siap, ada catatan</b>, atau <b>Belum bisa dikirim</b> beserta alasannya. Faktur yang belum lengkap tidak ikut terkirim.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Pilih cara kirim: langsung ke DJP, atau simpan sebagai draft untuk disetujui di PajakMu.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="send_wizard.png" alt="Wizard Kirim e-Faktur dengan hasil pemeriksaan" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">STATUS DI FAKTUR</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Nomor Faktur Pajak langsung di faktur Odoo</h3>
-                <p style="color: #5b6075; font-size: 16px;">Setelah DJP menyetujui, faktur Odoo menampilkan status dan Nomor Faktur Pajak. Setiap langkah, termasuk penolakan dan pengiriman ulang, tercatat di chatter faktur.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Faktur yang e-Faktur-nya sedang diproses atau sudah disetujui DJP tidak bisa dikembalikan ke draft atau dibatalkan begitu saja di Odoo.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="invoice_efaktur.png" alt="Faktur Odoo dengan status e-Faktur disetujui DJP" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">SEMUA e-FAKTUR</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Semua e-Faktur, dikelompokkan per status</h3>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Lihat dalam bentuk daftar atau kanban: disetujui DJP, draft di PajakMu, menunggu persetujuan, diproses DJP, sampai yang gagal. Filter per bulan, masa pajak, atau pelanggan.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="efaktur_kanban.png" alt="Kanban e-Faktur per status" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #d63a4a; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PERLU TINDAKAN</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Penolakan DJP tidak akan terlewat</h3>
-                <p style="color: #5b6075; font-size: 16px;">e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasannya. Penanggung jawab faktur juga mendapat aktivitas "Perbaiki e-Faktur" di Odoo.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Perbaiki datanya, lalu klik <b>Buat ulang e-Faktur</b>. Versi lama tetap tersimpan sebagai riwayat.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="efaktur_rejected.png" alt="e-Faktur ditolak DJP dengan tombol Buat ulang" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">LAWAN TRANSAKSI</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Pelanggan dan vendor tertaut ke PajakMu</h3>
-                <p style="color: #5b6075; font-size: 16px;">Kontak dicocokkan dengan Lawan Transaksi PajakMu lewat NPWP: semua sekaligus, satu per satu, atau otomatis saat mengirim. Yang belum terdaftar bisa didaftarkan langsung dari Odoo.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">NPWP, NIK, paspor, NITKU/TKU, alamat, dan email diambil dari field kontak standar, dan bisa diganti field kustom atau Studio.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="lawan_transaksi.png" alt="Daftar Lawan Transaksi dengan status pencocokan" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PPh DI TAGIHAN VENDOR</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">PPh dipotong per baris, dicatat per kode objek</h3>
-                <p style="color: #5b6075; font-size: 16px;">Pasang pajak PPh di baris tagihan vendor, misalnya PPh 23 2% untuk jasa teknik dan PPh 4(2) 10% untuk sewa ruang, di tagihan yang sama. Kode objek pajak terisi otomatis dari pajaknya dan bisa diganti per baris.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Utang PPh tercatat per kode objek, terpisah dari PPN, dan hutang usaha langsung netto. Empat pajak siap pakai untuk perusahaan Indonesia: PPh 23 2%, PPh 23 SKB 0%, PPh 4(2) Sewa 10%, dan PPh 26 20%.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="pph_tagihan.png" alt="Tagihan vendor dengan PPh 23 dan PPh 4(2) per baris" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">BUKTI POTONG PPh</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Bukti potong terbentuk saat tagihan diposting</h3>
-                <p style="color: #5b6075; font-size: 16px;">Setiap kode objek di tagihan menjadi satu bukti potong, lengkap dengan penerima, DPP, tarif, dan dokumen dasar. Kirim ke PajakMu sebagai draft untuk ditandatangani di sana; nomor bukti potong dari DJP kembali ke Odoo.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Tagihan tanpa pajak PPh tetap bisa dibuatkan bukti potong lewat tombol <b>Buat Bukti Potong</b>.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="bukti_potong.png" alt="Bukti potong PPh 23 dari tagihan vendor, disetujui DJP" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">TERSAMBUNG KE JURNAL</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Setiap rupiah PPh bisa ditelusuri</h3>
-                <p style="color: #5b6075; font-size: 16px;">Tab <b>Sumber</b> menunjukkan baris tagihan dan journal item Utang PPh di balik setiap bukti potong, beserta selisih antara PPh di jurnal dan perkiraan PPh DJP.</p>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Nota kredit mengurangi DPP bukti potong yang belum dikirim. Tagihan yang bukti potongnya sudah di PajakMu tidak bisa direset, dibatalkan, atau dihapus, dan perubahan nilainya memicu aktivitas pembetulan.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="pph_sumber.png" alt="Tab Sumber bukti potong: baris tagihan dan Utang PPh di jurnal" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row" style="align-items: center; margin-bottom: 56px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">PENGATURAN</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Siap dalam beberapa menit</h3>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Isi alamat PajakMu dan API key, lalu klik <b>Uji koneksi</b>. Tentukan apakah e-Faktur dikirim manual, disimpan sebagai draft, atau dikirim otomatis saat faktur diposting. Setiap perusahaan di Odoo punya koneksi sendiri.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="koneksi.png" alt="Pengaturan Koneksi PajakMu" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-
-        <div class="row flex-row-reverse" style="align-items: center; margin-bottom: 40px;">
-            <div class="col-lg-5" style="margin-bottom: 20px;">
-                <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">RIWAYAT SINKRONISASI</div>
-                <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Setiap panggilan tercatat</h3>
-                <p style="color: #5b6075; font-size: 16px; margin: 0;">Semua komunikasi dengan PajakMu disimpan selama 90 hari, lengkap dengan ID Permintaan untuk tim dukungan PajakMu. API key tidak pernah ikut dicatat. Saat PajakMu sibuk, Odoo mencoba ulang sekali, dan setiap pengiriman memakai Idempotency-Key sehingga tidak ada dokumen ganda.</p>
-            </div>
-            <div class="col-lg-7">
-                <img src="riwayat.png" alt="Riwayat Sinkronisasi dengan PajakMu" style="width: 100%; border-radius: 10px; border: 1px solid #e3e6ef; box-shadow: 0 12px 32px rgba(31, 35, 64, 0.12);"/>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Batal, ganti, PDF, nota retur -->
-<section style="padding: 0 16px 16px;">
-    <div style="max-width: 1100px; margin: 0 auto;">
+    <!-- Kenapa -->
+    <div style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px); padding-top:0;">
         <div class="row">
-            <div class="col-lg-6" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 24px; height: 100%; border-top: 4px solid #d9930f;">
-                    <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">KELOLA e-FAKTUR</div>
-                    <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Batal, ganti, dan PDF e-Faktur dari Odoo</h3>
-                    <p style="color: #5b6075; font-size: 16px;">Tombol <b>Batalkan e-Faktur</b> meminta alasan (minimal 5 karakter). Statusnya menjadi <b>Proses batal</b>, lalu <b>Dibatalkan</b>. Pembatalan ditahan selama e-Faktur masih punya nota retur aktif.</p>
-                    <p style="color: #5b6075; font-size: 16px;">Tombol <b>Ganti e-Faktur</b> membuka faktur untuk diedit. Saat dikirim lagi, Odoo mengirim faktur pengganti dengan NSFP asli, dan e-Faktur lama menjadi <b>Diganti</b> setelah yang baru disetujui. Dari Odoo, e-Faktur bisa diganti satu kali; penggantian kedua dilakukan di PajakMu/DJP.</p>
-                    <p style="color: #5b6075; font-size: 16px; margin: 0;">Tombol <b>Unduh PDF Faktur Pajak</b> menyimpan PDF resmi sebagai satu lampiran di faktur, diperbarui setiap kali diunduh.</p>
-                </div>
+            <div class="col-xl-4 mb-4">
+                <h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">Tim keuangan cukup bekerja di Odoo</h2>
+                <p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:18px 0 0;">Modul ini mengurus pengiriman, pemantauan status, dan tindak lanjutnya.</p>
             </div>
-            <div class="col-lg-6" style="margin-bottom: 20px;">
-                <div style="background-color: #f1f4fb; border-radius: 12px; padding: 24px; height: 100%; border-top: 4px solid #d9930f;">
-                    <div style="color: #1e45a8; font-weight: 800; font-size: 13px; letter-spacing: 1px;">NOTA RETUR</div>
-                    <h3 style="font-weight: 800; color: #1f2340; margin: 8px 0 12px;">Nota retur dari nota kredit vendor</h3>
-                    <p style="color: #5b6075; font-size: 16px;">Dari nota kredit vendor yang sudah diposting, klik <b>Kirim nota retur</b>. Odoo mencari faktur masukannya di PajakMu lewat Nomor Faktur Pajak vendor, lalu menampilkan barang/jasa dari DJP beserta sisa yang masih bisa diretur. Nilai retur per barang/jasa terisi dari nota kredit dan masih bisa diubah. Retur atas faktur keluaran dibuat pembeli di Coretax.</p>
-                    <p style="color: #5b6075; font-size: 16px;"><b>Keluaran</b> butuh faktur asal yang e-Faktur-nya sudah disetujui. <b>Masukan</b> butuh isian <b>Nomor Faktur Pajak vendor</b> (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal.</p>
-                    <p style="color: #5b6075; font-size: 16px; margin: 0;">Status kembali otomatis. <b>Batalkan nota retur</b> meminta alasan. Selama nota retur aktif, nota kredit tidak bisa direset, dibatalkan, atau dihapus. Daftarnya ada di tombol pintar <b>Nota Retur</b> dan menu <b>Coretax &rsaquo; e-Faktur &rsaquo; Nota Retur</b>.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- More features -->
-<section style="padding: 8px 16px 40px;">
-    <div style="max-width: 1100px; margin: 0 auto;">
-        <h3 style="text-align: center; font-weight: 800; color: #1f2340; margin-bottom: 24px;">Juga termasuk</h3>
-        <div class="row">
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
-                    <h5 style="font-weight: 700; color: #1f2340;">Ringkasan satu layar</h5>
-                    <p style="color: #5b6075; margin: 0;">Jumlah siap dikirim, sedang diproses, disetujui bulan ini, perlu tindakan, serta DPP dan PPN masa pajak berjalan.</p>
-                </div>
-            </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
-                    <h5 style="font-weight: 700; color: #1f2340;">Kesiapan data</h5>
-                    <p style="color: #5b6075; margin: 0;">Produk berkode umum 000000, satuan tanpa kode Coretax, dan pelanggan tanpa NPWP/NIK, yang bisa langsung diperbaiki dari daftarnya.</p>
-                </div>
-            </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
-                    <h5 style="font-weight: 700; color: #1f2340;">Hak akses dua tingkat</h5>
-                    <p style="color: #5b6075; margin: 0;">Pengguna Invoicing otomatis menjadi Pengguna Coretax, dan Administrator Akuntansi otomatis menjadi Administrator Coretax.</p>
-                </div>
-            </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
-                    <h5 style="font-weight: 700; color: #1f2340;">Kode transaksi 07, 08, dan 10</h5>
-                    <p style="color: #5b6075; margin: 0;">e-Faktur bisa dikirim dengan kode 07 dan 08 (keterangan tambahan dari tab Info Lainnya; 07: 1-31, 08: 1-10) dan kode 10. Kode 10 butuh PajakMu versi terbaru.</p>
-                </div>
-            </div>
-            <div class="col-md-4" style="margin-bottom: 16px;">
-                <div style="border: 1px solid #e3e6ef; border-radius: 12px; padding: 18px; height: 100%;">
-                    <h5 style="font-weight: 700; color: #1f2340;">Perbarui lawan transaksi</h5>
-                    <p style="color: #5b6075; margin: 0;">Tombol <b>Perbarui di PajakMu</b> di kontak, juga sebagai aksi daftar, memperbarui lawan transaksi yang sudah cocok di PajakMu.</p>
+            <div class="col-xl-7 offset-xl-1">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div style="border-top:1px solid #CFD8E6; padding:26px 0 30px;">
+                            <img src="ico_send.png" alt="" width="26" height="26" style="display:block; width:26px; height:26px;"/>
+                            <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:16px 0 8px;">Tanpa ekspor-impor</h3>
+                            <p style="color:#4F5C6D; margin:0;">Kirim satu faktur atau puluhan sekaligus dengan satu klik. Tidak perlu lagi mengunduh XML lalu mengunggahnya ke Coretax.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="border-top:1px solid #CFD8E6; padding:26px 0 30px;">
+                            <img src="ico_scan.png" alt="" width="26" height="26" style="display:block; width:26px; height:26px;"/>
+                            <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:16px 0 8px;">Kesalahan ketahuan lebih awal</h3>
+                            <p style="color:#4F5C6D; margin:0;">NPWP/NIK, kode transaksi, kode barang/jasa, mata uang, dan tanggal diperiksa sebelum dikirim, dengan pesan yang mudah dipahami.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="border-top:1px solid #CFD8E6; padding:26px 0 30px;">
+                            <img src="ico_loop.png" alt="" width="26" height="26" style="display:block; width:26px; height:26px;"/>
+                            <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:16px 0 8px;">Hasil DJP kembali sendiri</h3>
+                            <p style="color:#4F5C6D; margin:0;">Odoo mengambil status terbaru setiap 5 menit, atau langsung lewat webhook bertanda tangan HMAC. Nomor Faktur Pajak tampil di faktur.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div style="border-top:1px solid #CFD8E6; padding:26px 0 30px;">
+                            <img src="ico_equal.png" alt="" width="26" height="26" style="display:block; width:26px; height:26px;"/>
+                            <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:16px 0 8px;">Angka yang konsisten</h3>
+                            <p style="color:#4F5C6D; margin:0;">Baris e-Faktur disusun dengan penyusun data bawaan Odoo (<span style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.86em; font-weight:500; padding:.1em .4em; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">l10n_id_efaktur_coretax</span>), jadi angkanya sama dengan XML Coretax resmi. PPh di bukti potong sama dengan Utang PPh di jurnal.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</section>
 
-<!-- Requirements & setup -->
-<section style="padding: 0 16px 40px;">
-    <div style="max-width: 1100px; margin: 0 auto; background-color: #f6f7fb; border-radius: 16px; padding: 32px 28px;">
+    <!-- Alur kerja (bab navy) -->
+    <div id="alur" style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px); background-color:#0D2550; color:#FFFFFF;">
+        <div class="row align-items-end" style="margin-bottom:clamp(56px,6vw,80px);">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#FFFFFF; margin:0;">Alur kerja: berangkat dari Odoo, kembali ke Odoo</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#C7D4EC; margin:0;">Empat langkah, dan dua di antaranya terjadi di faktur yang sama.</p></div>
+        </div>
+        <div class="d-none d-md-block" style="margin:0 12.5%; height:56px; border-top:2px dashed #5C92F9; border-left-style:dashed; border-left-width:2px; border-left-color:#5C92F9; border-right-style:dashed; border-right-width:2px; border-right-color:#5C92F9; border-top-left-radius:22px; border-top-right-radius:22px;">
+            <div style="margin-top:-13px; text-align:center; line-height:22px;"><span style="padding:2px 12px; background-color:#0D2550; color:#FFFFFF; font-size:13px; font-weight:600; white-space:nowrap;">hasil DJP kembali ke langkah 1</span></div>
+            <div style="margin:2px 0 0 -8px; width:0; height:0; border-left-width:7px; border-left-style:solid; border-left-color:transparent; border-right-width:7px; border-right-style:solid; border-right-color:transparent; border-top:8px solid #5C92F9;"></div>
+        </div>
+        <div class="d-none d-md-block" style="margin:0 12.5%; height:2px; background-color:#256EF7; background-image:linear-gradient(90deg,#256EF7,#7FA6F0);"></div>
+        <div class="row g-0" style="margin-top:-24px;">
+            <div class="col-md-3" style="margin-bottom:28px;">
+                <div class="d-flex d-md-block text-md-center px-md-3">
+                    <div class="flex-shrink-0 me-3 me-md-0" style="display:inline-block; width:46px; height:46px; line-height:44px; text-align:center; border-radius:12px; background-color:#163B70; border:1px solid rgba(255,255,255,.16); color:#FFFFFF; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17px; font-weight:700;">1</div>
+                    <div>
+                        <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18.4px; font-weight:700; line-height:1.3; color:#FFFFFF; margin:12px 0 6px;">Faktur Odoo</h3>
+                        <p class="mx-md-auto" style="max-width:24ch; margin-top:0; margin-bottom:0; font-size:15px; color:#C7D4EC;">Faktur ber-PPN diposting lalu diperiksa</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom:28px;">
+                <div class="d-flex d-md-block text-md-center px-md-3">
+                    <div class="flex-shrink-0 me-3 me-md-0" style="display:inline-block; width:46px; height:46px; line-height:44px; text-align:center; border-radius:12px; background-color:#163B70; border:1px solid rgba(255,255,255,.16); color:#FFFFFF; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17px; font-weight:700;">2</div>
+                    <div>
+                        <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18.4px; font-weight:700; line-height:1.3; color:#FFFFFF; margin:12px 0 6px;">PajakMu</h3>
+                        <p class="mx-md-auto" style="max-width:24ch; margin-top:0; margin-bottom:0; font-size:15px; color:#C7D4EC;">e-Faktur dibuat, lalu langsung dikirim atau disetujui dulu di PajakMu</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom:28px;">
+                <div class="d-flex d-md-block text-md-center px-md-3">
+                    <div class="flex-shrink-0 me-3 me-md-0" style="display:inline-block; width:46px; height:46px; line-height:44px; text-align:center; border-radius:12px; background-color:#163B70; border:1px solid rgba(255,255,255,.16); color:#FFFFFF; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17px; font-weight:700;">3</div>
+                    <div>
+                        <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18.4px; font-weight:700; line-height:1.3; color:#FFFFFF; margin:12px 0 6px;">DJP</h3>
+                        <p class="mx-md-auto" style="max-width:24ch; margin-top:0; margin-bottom:0; font-size:15px; color:#C7D4EC;">e-Faktur diproses lalu disetujui atau ditolak</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3" style="margin-bottom:28px;">
+                <div class="d-flex d-md-block text-md-center px-md-3">
+                    <div class="flex-shrink-0 me-3 me-md-0" style="display:inline-block; width:46px; height:46px; line-height:44px; text-align:center; border-radius:12px; background-color:#256EF7; border:1px solid #256EF7; color:#FFFFFF; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17px; font-weight:700;">4</div>
+                    <div>
+                        <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:18.4px; font-weight:700; line-height:1.3; color:#FFFFFF; margin:12px 0 6px;">Kembali ke Odoo</h3>
+                        <p class="mx-md-auto" style="max-width:24ch; margin-top:0; margin-bottom:0; font-size:15px; color:#C7D4EC;">Status, nomor faktur pajak, dan alasan penolakan tercatat di faktur</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- e-Faktur keluaran -->
+    <div id="efaktur" style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px);">
+        <div class="row align-items-end" style="margin-bottom:clamp(32px,4vw,56px);">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">e-Faktur keluaran, dari pemeriksaan sampai penolakan</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:0;">Empat layar yang paling sering dibuka tim keuangan.</p></div>
+        </div>
+
+        <!-- 1. Pemeriksaan -->
+        <div class="row align-items-center" style="margin-bottom:clamp(48px,6vw,80px);">
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:#1F5FD6;"><span style="display:inline-block; width:18px; height:2px; background-color:#1F5FD6; vertical-align:middle; margin-right:8px;"></span>Pemeriksaan sebelum kirim</p>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Tahu mana yang siap, sebelum DJP menolak</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Pilih banyak faktur sekaligus dari daftar <span style="font-weight:600; color:#202C3C;">Siap dikirim</span>. Setiap faktur langsung diberi tanda <span style="display:inline-block; padding:0 10px; border-radius:999px; background-color:#E3F6EE; color:#0B7A55; font-size:12.5px; font-weight:600; line-height:1.7; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#0B7A55; vertical-align:middle; margin:0 6px 2px 0;"></span>Siap</span>, <span style="display:inline-block; padding:0 10px; border-radius:999px; background-color:#FFF3D6; color:#8F5300; font-size:12.5px; font-weight:600; line-height:1.7; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#8F5300; vertical-align:middle; margin:0 6px 2px 0;"></span>Siap, ada catatan</span>, atau <span style="display:inline-block; padding:0 10px; border-radius:999px; background-color:#FDECEA; color:#B42318; font-size:12.5px; font-weight:600; line-height:1.7; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#B42318; vertical-align:middle; margin:0 6px 2px 0;"></span>Belum bisa dikirim</span> beserta alasannya. Faktur yang belum lengkap tidak ikut terkirim.</p>
+                <p style="margin:0; padding:12px 14px; border-radius:10px; background-color:#FFFFFF; border:1px solid #E5EAF2; font-size:15px; color:#4F5C6D;">Pilih cara kirim: langsung ke DJP, atau simpan sebagai draft untuk disetujui di PajakMu.</p>
+            </div>
+            <div class="col-lg-6 offset-lg-1">
+                <div class="d-none d-md-flex" style="margin-bottom:14px; border-bottom:1px solid #CFD8E6; font-size:13px; font-weight:600; line-height:1.25; color:#4F5C6D;">
+                    <div style="width:25%; padding:10px 6px 10px 0; color:#202C3C; border-bottom:2px solid #256EF7; margin-bottom:-1px;">Pemeriksaan</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Status di faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Semua e-Faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Perlu tindakan</div>
+                </div>
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="send_wizard.png" alt="Wizard Kirim e-Faktur ke Coretax dengan hasil pemeriksaan tiap faktur" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <p style="margin:12px 0 0; font-size:14px; color:#4F5C6D;">Wizard Kirim e-Faktur ke Coretax dengan hasil pemeriksaan tiap faktur</p>
+            </div>
+        </div>
+
+        <!-- 2. Status di faktur -->
+        <div class="row align-items-center" style="margin-bottom:clamp(48px,6vw,80px);">
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:#1F5FD6;"><span style="display:inline-block; width:18px; height:2px; background-color:#1F5FD6; vertical-align:middle; margin-right:8px;"></span>Status di faktur</p>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Nomor Faktur Pajak langsung di faktur Odoo</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Setelah DJP menyetujui, faktur Odoo menampilkan status dan Nomor Faktur Pajak. Setiap langkah, termasuk penolakan dan pengiriman ulang, tercatat di chatter faktur.</p>
+                <p style="margin:0; padding:12px 14px; border-radius:10px; background-color:#FFFFFF; border:1px solid #E5EAF2; font-size:15px; color:#4F5C6D;">Faktur yang e-Faktur-nya sedang diproses atau sudah disetujui DJP tidak bisa dikembalikan ke draft atau dibatalkan begitu saja di Odoo.</p>
+            </div>
+            <div class="col-lg-6 offset-lg-1">
+                <div class="d-none d-md-flex" style="margin-bottom:14px; border-bottom:1px solid #CFD8E6; font-size:13px; font-weight:600; line-height:1.25; color:#4F5C6D;">
+                    <div style="width:25%; padding:10px 6px 10px 0;">Pemeriksaan</div>
+                    <div style="width:25%; padding:10px 6px 10px 0; color:#202C3C; border-bottom:2px solid #256EF7; margin-bottom:-1px;">Status di faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Semua e-Faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Perlu tindakan</div>
+                </div>
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="invoice_efaktur.png" alt="Faktur Odoo dengan status e-Faktur disetujui DJP dan Nomor Faktur Pajak" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <p style="margin:12px 0 0; font-size:14px; color:#4F5C6D;">Faktur Odoo dengan status e-Faktur disetujui DJP dan Nomor Faktur Pajak</p>
+            </div>
+        </div>
+
+        <!-- 3. Semua e-Faktur -->
+        <div class="row align-items-center" style="margin-bottom:clamp(48px,6vw,80px);">
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:#1F5FD6;"><span style="display:inline-block; width:18px; height:2px; background-color:#1F5FD6; vertical-align:middle; margin-right:8px;"></span>Semua e-Faktur</p>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Semua e-Faktur, dikelompokkan per status</h3>
+                <p style="color:#4F5C6D; margin:0;">Lihat dalam bentuk daftar atau kanban: disetujui DJP, draft di PajakMu, menunggu persetujuan, diproses DJP, sampai yang gagal. Filter per bulan, masa pajak, atau pelanggan.</p>
+            </div>
+            <div class="col-lg-6 offset-lg-1">
+                <div class="d-none d-md-flex" style="margin-bottom:14px; border-bottom:1px solid #CFD8E6; font-size:13px; font-weight:600; line-height:1.25; color:#4F5C6D;">
+                    <div style="width:25%; padding:10px 6px 10px 0;">Pemeriksaan</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Status di faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0; color:#202C3C; border-bottom:2px solid #256EF7; margin-bottom:-1px;">Semua e-Faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Perlu tindakan</div>
+                </div>
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="efaktur_kanban.png" alt="Kanban e-Faktur yang dikelompokkan per status" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <p style="margin:12px 0 0; font-size:14px; color:#4F5C6D;">Kanban e-Faktur yang dikelompokkan per status</p>
+            </div>
+        </div>
+
+        <!-- 4. Perlu tindakan -->
+        <div class="row align-items-center">
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <p style="margin:0 0 12px; font-size:14px; font-weight:600; color:#1F5FD6;"><span style="display:inline-block; width:18px; height:2px; background-color:#1F5FD6; vertical-align:middle; margin-right:8px;"></span>Perlu tindakan</p>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Penolakan DJP tidak akan terlewat</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">e-Faktur yang ditolak DJP atau gagal dikirim dikumpulkan di satu daftar, lengkap dengan alasannya. Penanggung jawab faktur juga mendapat aktivitas "Perbaiki e-Faktur" di Odoo.</p>
+                <p style="margin:0; padding:12px 14px; border-radius:10px; background-color:#FFFFFF; border:1px solid #E5EAF2; font-size:15px; color:#4F5C6D;">Perbaiki datanya, lalu klik <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Buat ulang e-Faktur</span>. Versi lama tetap tersimpan sebagai riwayat.</p>
+            </div>
+            <div class="col-lg-6 offset-lg-1">
+                <div class="d-none d-md-flex" style="margin-bottom:14px; border-bottom:1px solid #CFD8E6; font-size:13px; font-weight:600; line-height:1.25; color:#4F5C6D;">
+                    <div style="width:25%; padding:10px 6px 10px 0;">Pemeriksaan</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Status di faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0;">Semua e-Faktur</div>
+                    <div style="width:25%; padding:10px 6px 10px 0; color:#202C3C; border-bottom:2px solid #256EF7; margin-bottom:-1px;">Perlu tindakan</div>
+                </div>
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="efaktur_rejected.png" alt="e-Faktur ditolak DJP dengan alasan penolakan dan tombol Buat ulang e-Faktur" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <p style="margin:12px 0 0; font-size:14px; color:#4F5C6D;">e-Faktur ditolak DJP dengan alasan penolakan dan tombol Buat ulang e-Faktur</p>
+            </div>
+        </div>
+
+        <!-- Batal, ganti, PDF, nota retur -->
+        <div class="row" style="margin-top:clamp(40px,5vw,72px);">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="h-100" style="background-color:#FFFFFF; border:1px solid #E5EAF2; border-radius:16px; padding:clamp(22px,2.6vw,36px);">
+                    <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 16px;">Batal, ganti, dan PDF e-Faktur dari Odoo</h3>
+                    <div style="border-top:1px solid #E5EAF2; padding:16px 0;">
+                        <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Batalkan e-Faktur</span>
+                        <p style="margin:8px 0 0; font-size:15px; color:#4F5C6D;">Meminta alasan (minimal 5 karakter). Pembatalan ditahan selama e-Faktur masih punya nota retur aktif.</p>
+                        <p style="margin:8px 0 0; font-size:13px; color:#4F5C6D;"><span style="display:inline-block; padding:0 10px; border-radius:999px; background-color:#FFF3D6; color:#8F5300; font-size:12.5px; font-weight:600; line-height:1.7; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#8F5300; vertical-align:middle; margin:0 6px 2px 0;"></span>Proses batal</span><img src="ico_arrow_muted.png" alt="lalu" width="16" height="16" style="width:16px; height:16px; vertical-align:-3px; margin:0 6px;"/><span style="display:inline-block; padding:0 10px; border-radius:999px; background-color:#EEF1F6; color:#4B5568; font-size:12.5px; font-weight:600; line-height:1.7; white-space:nowrap;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#4B5568; vertical-align:middle; margin:0 6px 2px 0;"></span>Dibatalkan</span></p>
+                    </div>
+                    <div style="border-top:1px solid #E5EAF2; padding:16px 0;">
+                        <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Ganti e-Faktur</span>
+                        <p style="margin:8px 0 0; font-size:15px; color:#4F5C6D;">Membuka faktur untuk diedit. Saat dikirim lagi, Odoo mengirim faktur pengganti dengan NSFP asli, dan e-Faktur lama menjadi <span style="font-weight:600; color:#202C3C;">Diganti</span> setelah yang baru disetujui. Dari Odoo, e-Faktur bisa diganti satu kali; penggantian kedua dilakukan di PajakMu/DJP.</p>
+                    </div>
+                    <div style="border-top:1px solid #E5EAF2; padding:16px 0 0;">
+                        <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Unduh PDF Faktur Pajak</span>
+                        <p style="margin:8px 0 0; font-size:15px; color:#4F5C6D;">Menyimpan PDF resmi sebagai satu lampiran di faktur, diperbarui setiap kali diunduh.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="h-100" style="background-color:#FFFFFF; border:1px solid #E5EAF2; border-radius:16px; padding:clamp(22px,2.6vw,36px);">
+                    <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 16px;">Nota retur dari nota kredit vendor</h3>
+                    <p style="color:#4F5C6D; margin:0 0 16px;">Dari nota kredit vendor yang sudah diposting, klik <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Kirim nota retur</span>. Odoo mencari faktur masukannya di PajakMu lewat Nomor Faktur Pajak vendor, lalu menampilkan barang/jasa dari DJP beserta sisa yang masih bisa diretur. Nilai retur per barang/jasa terisi dari nota kredit dan masih bisa diubah. Retur atas faktur keluaran dibuat pembeli di Coretax.</p>
+                    <div class="row" style="margin-bottom:8px;">
+                        <div class="col-sm-6" style="margin-bottom:10px;">
+                            <div class="h-100" style="padding:14px; border-radius:10px; background-color:#F6F8FC; border:1px solid #E5EAF2;">
+                                <h4 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700; color:#202C3C; margin:0 0 4px;">Keluaran</h4>
+                                <p style="margin:0; font-size:14.4px; color:#4F5C6D;">Butuh faktur asal yang e-Faktur-nya sudah disetujui.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6" style="margin-bottom:10px;">
+                            <div class="h-100" style="padding:14px; border-radius:10px; background-color:#F6F8FC; border:1px solid #E5EAF2;">
+                                <h4 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700; color:#202C3C; margin:0 0 4px;">Masukan</h4>
+                                <p style="margin:0; font-size:14.4px; color:#4F5C6D;">Butuh isian <span style="font-weight:600; color:#202C3C;">Nomor Faktur Pajak vendor</span> (13/16/17 digit, tab Info Lainnya) di tagihan vendor asal.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start" style="margin-bottom:10px; font-size:15px; color:#4F5C6D;"><img src="ico_check_blue.png" alt="" width="18" height="18" class="flex-shrink-0" style="width:18px; height:18px; margin:3px 10px 0 0;"/><span>Status kembali otomatis.</span></div>
+                    <div class="d-flex align-items-start" style="margin-bottom:10px; font-size:15px; color:#4F5C6D;"><img src="ico_check_blue.png" alt="" width="18" height="18" class="flex-shrink-0" style="width:18px; height:18px; margin:3px 10px 0 0;"/><span><span style="font-weight:600; color:#202C3C;">Batalkan nota retur</span> meminta alasan. Selama nota retur aktif, nota kredit tidak bisa direset, dibatalkan, atau dihapus.</span></div>
+                    <div class="d-flex align-items-start" style="font-size:15px; color:#4F5C6D;"><img src="ico_check_blue.png" alt="" width="18" height="18" class="flex-shrink-0" style="width:18px; height:18px; margin:3px 10px 0 0;"/><span>Daftarnya ada di tombol pintar <span style="font-weight:600; color:#202C3C;">Nota Retur</span> dan menu <span style="font-weight:600; color:#202C3C; white-space:nowrap;">Coretax <span style="color:#4F5C6D; padding:0 3px;">&rsaquo;</span> e-Faktur <span style="color:#4F5C6D; padding:0 3px;">&rsaquo;</span> Nota Retur</span>.</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lawan transaksi -->
+    <div style="padding:0 clamp(16px,4vw,48px) clamp(56px,2.5rem + 4vw,104px);">
+        <div class="row align-items-center">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0 0 18px;">Pelanggan dan vendor tertaut ke PajakMu</h2>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Kontak dicocokkan dengan Lawan Transaksi PajakMu lewat NPWP: semua sekaligus, satu per satu, atau otomatis saat mengirim. Yang belum terdaftar bisa didaftarkan langsung dari Odoo.</p>
+                <p style="color:#4F5C6D; margin:0 0 12px;">Data berikut diambil dari field kontak standar, dan bisa diganti field kustom atau Studio:</p>
+                <p style="margin:0;"><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">NPWP</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">NIK</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">paspor</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">NITKU/TKU</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">alamat</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">email</span></p>
+            </div>
+            <div class="col-lg-7 offset-lg-1">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="lawan_transaksi.png" alt="Daftar Lawan Transaksi dengan status pencocokan ke PajakMu dan status VSWP" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <p style="margin:12px 0 0; font-size:13px; font-weight:600; color:#202C3C;">Coretax <span style="color:#4F5C6D; padding:0 4px;">&rsaquo;</span> Data Master <span style="color:#4F5C6D; padding:0 4px;">&rsaquo;</span> Lawan Transaksi</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PPh -->
+    <div id="pph" style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px); background-color:#FFFFFF; border-top:1px solid #E5EAF2; border-bottom:1px solid #E5EAF2;">
+        <div class="row align-items-end" style="margin-bottom:clamp(32px,4vw,56px);">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">PPh dari tagihan vendor sampai bukti potong</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:0;">Tiga langkah, berurutan, dan setiap rupiah bisa ditelusuri balik ke jurnal.</p></div>
+        </div>
+
+        <div class="row align-items-start" style="margin-bottom:clamp(48px,6vw,72px);">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div style="display:inline-block; margin-bottom:20px; padding:7px 16px 7px 8px; border:1px solid #256EF7; border-radius:10px; background-color:#EAF2FF; color:#202C3C; font-size:15px; font-weight:600; line-height:30px; white-space:nowrap;"><span style="display:inline-block; width:30px; height:30px; margin-right:10px; border-radius:8px; background-color:#256EF7; color:#FFFFFF; text-align:center; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:14.4px; font-weight:700;">1</span>Tagihan vendor</div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">PPh dipotong per baris, dicatat per kode objek</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Pasang pajak PPh di baris tagihan vendor, misalnya PPh 23 2% untuk jasa teknik dan PPh 4(2) 10% untuk sewa ruang, di tagihan yang sama. Kode objek pajak terisi otomatis dari pajaknya dan bisa diganti per baris.</p>
+                <p style="color:#4F5C6D; margin:0;">Utang PPh tercatat per kode objek, terpisah dari PPN, dan hutang usaha langsung netto.</p>
+            </div>
+            <div class="col-lg-8">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="pph_tagihan.png" alt="Tagihan vendor dengan PPh 23 dan PPh 4(2) per baris dan kode objek pajak" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+            </div>
+        </div>
+
+        <div class="row align-items-start" style="margin-bottom:clamp(48px,6vw,72px);">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div style="display:inline-block; margin-bottom:20px; padding:7px 16px 7px 8px; border:1px solid #256EF7; border-radius:10px; background-color:#EAF2FF; color:#202C3C; font-size:15px; font-weight:600; line-height:30px; white-space:nowrap;"><span style="display:inline-block; width:30px; height:30px; margin-right:10px; border-radius:8px; background-color:#256EF7; color:#FFFFFF; text-align:center; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:14.4px; font-weight:700;">2</span>Bukti potong</div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Bukti potong terbentuk saat tagihan diposting</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Setiap kode objek di tagihan menjadi satu bukti potong, lengkap dengan penerima, DPP, tarif, dan dokumen dasar. Kirim ke PajakMu sebagai draft untuk ditandatangani di sana; nomor bukti potong dari DJP kembali ke Odoo.</p>
+                <p style="color:#4F5C6D; margin:0;">Tagihan tanpa pajak PPh tetap bisa dibuatkan bukti potong lewat tombol <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Buat Bukti Potong</span>.</p>
+            </div>
+            <div class="col-lg-8">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="bukti_potong.png" alt="Bukti potong PPh 23 dari tagihan vendor yang sudah disetujui DJP" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+            </div>
+        </div>
+
+        <div class="row align-items-start">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div style="display:inline-block; margin-bottom:20px; padding:7px 16px 7px 8px; border:1px solid #256EF7; border-radius:10px; background-color:#EAF2FF; color:#202C3C; font-size:15px; font-weight:600; line-height:30px; white-space:nowrap;"><span style="display:inline-block; width:30px; height:30px; margin-right:10px; border-radius:8px; background-color:#256EF7; color:#FFFFFF; text-align:center; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:14.4px; font-weight:700;">3</span>Tab Sumber</div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 14px;">Setiap rupiah PPh bisa ditelusuri</h3>
+                <p style="color:#4F5C6D; margin:0 0 14px;">Tab <span style="font-weight:600; color:#202C3C;">Sumber</span> menunjukkan baris tagihan dan journal item Utang PPh di balik setiap bukti potong, beserta selisih antara PPh di jurnal dan perkiraan PPh DJP.</p>
+                <p style="color:#4F5C6D; margin:0;">Nota kredit mengurangi DPP bukti potong yang belum dikirim. Tagihan yang bukti potongnya sudah di PajakMu tidak bisa direset, dibatalkan, atau dihapus, dan perubahan nilainya memicu aktivitas pembetulan.</p>
+            </div>
+            <div class="col-lg-8">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="pph_sumber.png" alt="Tab Sumber bukti potong: baris tagihan dan Utang PPh di jurnal" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+            </div>
+        </div>
+
+        <!-- Empat pajak siap pakai -->
+        <div class="row align-items-end" style="margin-top:clamp(48px,6vw,88px);">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 12px;">Empat pajak siap pakai</h3>
+                <p style="color:#4F5C6D; margin:0;">Untuk perusahaan Indonesia, langsung tersedia setelah modul dipasang.</p>
+            </div>
+            <div class="col-lg-8">
+                <div class="row g-0" style="border-top:2px solid #202C3C;">
+                    <div class="col-3" style="padding:18px 10px 4px 0;">
+                        <div style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.9rem,1.2rem + 2.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:-0.04em; color:#163B70;">2%</div>
+                        <div style="margin-top:6px; font-size:14.7px; font-weight:600; line-height:1.3; color:#202C3C;">PPh 23</div>
+                    </div>
+                    <div class="col-3" style="padding:18px 10px 4px 14px; border-left-width:1px; border-left-style:solid; border-left-color:#CFD8E6;">
+                        <div style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.9rem,1.2rem + 2.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:-0.04em; color:#163B70;">0%</div>
+                        <div style="margin-top:6px; font-size:14.7px; font-weight:600; line-height:1.3; color:#202C3C;">PPh 23 SKB</div>
+                    </div>
+                    <div class="col-3" style="padding:18px 10px 4px 14px; border-left-width:1px; border-left-style:solid; border-left-color:#CFD8E6;">
+                        <div style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.9rem,1.2rem + 2.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:-0.04em; color:#163B70;">10%</div>
+                        <div style="margin-top:6px; font-size:14.7px; font-weight:600; line-height:1.3; color:#202C3C;">PPh 4(2) Sewa</div>
+                    </div>
+                    <div class="col-3" style="padding:18px 0 4px 14px; border-left-width:1px; border-left-style:solid; border-left-color:#CFD8E6;">
+                        <div style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.9rem,1.2rem + 2.6vw,3.4rem); font-weight:800; line-height:1; letter-spacing:-0.04em; color:#163B70;">20%</div>
+                        <div style="margin-top:6px; font-size:14.7px; font-weight:600; line-height:1.3; color:#202C3C;">PPh 26</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pengaturan dan riwayat -->
+    <div id="pengaturan" style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px);">
+        <div class="row align-items-end" style="margin-bottom:clamp(32px,4vw,56px);">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">Pengaturan dan riwayat</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:0;">Setiap perusahaan di Odoo punya koneksi sendiri ke PajakMu.</p></div>
+        </div>
+        <div class="row align-items-start">
+            <div class="col-lg-7">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="koneksi.png" alt="Pengaturan Koneksi PajakMu di Odoo dengan tombol Uji koneksi" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:22px 0 12px;">Siap dalam beberapa menit</h3>
+                <p style="color:#4F5C6D; margin:0;">Isi alamat PajakMu dan API key, lalu klik <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Uji koneksi</span>. Tentukan apakah e-Faktur dikirim manual, disimpan sebagai draft, atau dikirim otomatis saat faktur diposting.</p>
+            </div>
+            <div class="col-lg-5 mt-5 pt-lg-5">
+                <div style="border:1px solid #CFD8E6; border-radius:16px; background-color:#FFFFFF; line-height:0; box-shadow:0 1px 2px rgba(22,59,112,.06),0 18px 40px -18px rgba(22,59,112,.28);"><img src="riwayat.png" alt="Riwayat Sinkronisasi dengan PajakMu, termasuk satu percobaan ulang saat PajakMu sibuk" style="display:block; width:100%; height:auto; border-radius:15px;"/></div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:22px 0 12px;">Setiap panggilan tercatat</h3>
+                <p style="color:#4F5C6D; margin:0 0 16px;">Semua komunikasi dengan PajakMu disimpan selama 90 hari, lengkap dengan ID Permintaan untuk tim dukungan PajakMu. API key tidak pernah ikut dicatat.</p>
+                <p style="margin:0;"><span style="display:inline-block; margin:0 8px 8px 0; padding:6px 12px; border-radius:999px; background-color:#FFFFFF; border:1px solid #CFD8E6; font-size:13.6px; font-weight:600; line-height:1.3; color:#202C3C;">Coba ulang sekali saat PajakMu sibuk</span><span style="display:inline-block; margin:0 8px 8px 0; padding:6px 12px; border-radius:999px; background-color:#FFFFFF; border:1px solid #CFD8E6; font-size:13.6px; font-weight:600; line-height:1.3; color:#202C3C;">Idempotency-Key di setiap pengiriman</span><span style="display:inline-block; margin:0 8px 8px 0; padding:6px 12px; border-radius:999px; background-color:#FFFFFF; border:1px solid #CFD8E6; font-size:13.6px; font-weight:600; line-height:1.3; color:#202C3C;">Tidak ada dokumen ganda</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Juga termasuk -->
+    <div style="padding:0 clamp(16px,4vw,48px) clamp(40px,2rem + 3vw,72px);">
+        <h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0 0 clamp(24px,3vw,40px);">Juga termasuk</h2>
+        <div style="border-top:1px solid #CFD8E6;">
+            <div class="row g-0" style="padding:22px 0; border-bottom:1px solid #CFD8E6;">
+                <div class="col-md-4"><h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17.6px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:0 0 6px; padding-right:24px;">Kesiapan data</h3></div>
+                <div class="col-md-8"><p style="color:#4F5C6D; margin:0;">Produk berkode umum 000000, satuan tanpa kode Coretax, dan pelanggan tanpa NPWP/NIK, yang bisa langsung diperbaiki dari daftarnya.</p></div>
+            </div>
+            <div class="row g-0" style="padding:22px 0; border-bottom:1px solid #CFD8E6;">
+                <div class="col-md-4"><h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17.6px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:0 0 6px; padding-right:24px;">Hak akses dua tingkat</h3></div>
+                <div class="col-md-8"><p style="color:#4F5C6D; margin:0;">Pengguna Invoicing otomatis menjadi Pengguna Coretax, dan Administrator Akuntansi otomatis menjadi Administrator Coretax.</p></div>
+            </div>
+            <div class="row g-0" style="padding:22px 0; border-bottom:1px solid #CFD8E6;">
+                <div class="col-md-4"><h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17.6px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:0 0 6px; padding-right:24px;">Kode transaksi 07, 08, dan 10</h3></div>
+                <div class="col-md-8"><p style="color:#4F5C6D; margin:0;">e-Faktur bisa dikirim dengan kode 07 dan 08 (keterangan tambahan dari tab Info Lainnya; 07: 1-31, 08: 1-10) dan kode 10. Kode 10 butuh PajakMu versi terbaru.</p></div>
+            </div>
+            <div class="row g-0" style="padding:22px 0; border-bottom:1px solid #CFD8E6;">
+                <div class="col-md-4"><h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:17.6px; font-weight:700; line-height:1.3; letter-spacing:-0.015em; color:#202C3C; margin:0 0 6px; padding-right:24px;">Perbarui lawan transaksi</h3></div>
+                <div class="col-md-8"><p style="color:#4F5C6D; margin:0;">Tombol <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Perbarui di PajakMu</span> di kontak, juga sebagai aksi daftar, memperbarui lawan transaksi yang sudah cocok di PajakMu.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mulai -->
+    <div id="mulai" style="padding:clamp(56px,2.5rem + 4vw,104px) clamp(16px,4vw,48px);">
+        <div class="row align-items-end" style="margin-bottom:clamp(32px,4vw,56px);">
+            <div class="col-lg-7 mb-3 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.8rem,1.15rem + 2vw,2.75rem); font-weight:800; line-height:1.08; letter-spacing:-0.035em; color:#202C3C; margin:0;">Mulai dalam 6 langkah</h2></div>
+            <div class="col-lg-5"><p style="font-size:clamp(1.05rem,1rem + .28vw,1.2rem); line-height:1.55; color:#4F5C6D; margin:0;">Siapkan syaratnya dulu, lalu ikuti urutan langkahnya.</p></div>
+        </div>
         <div class="row">
-            <div class="col-md-6" style="margin-bottom: 16px;">
-                <h3 style="font-weight: 800; color: #1f2340;">Syarat</h3>
-                <ul style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
-                    <li>Odoo 16 dengan modul <code>account</code> dan <code>l10n_id_efaktur_coretax</code> (bawaan Odoo, ikut terpasang otomatis).</li>
-                    <li>Akun <a href="https://aksatax.id" target="_blank">PajakMu</a> paket <b>Business</b> atau lebih tinggi, karena paket Starter tidak mencakup Public API.</li>
-                    <li>API key dari Owner/Admin Pajak dengan izin <code>faktur:baca</code>, <code>faktur:tulis</code>, <code>faktur:kirim</code>, <code>bupot:tulis</code>, <code>master:baca</code>, dan <code>status:baca</code>.</li>
-                    <li>API key per entitas mewakili satu NPWP. API key tingkat grup juga bisa dipakai: isi <b>NPWP entitas</b> di Koneksi PajakMu untuk setiap perusahaan.</li>
-                    <li>Modul ini mengikuti Public API PajakMu terbaru. Perbarui PajakMu lebih dulu, baru upgrade modul Odoo.</li>
+            <div class="col-lg-5 mb-5 mb-lg-0">
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 20px;">Syarat</h3>
+                <div class="d-flex align-items-start" style="margin-bottom:16px; color:#4F5C6D;"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:3px 12px 0 0;"/><span>Odoo 16 dengan modul <span style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.86em; font-weight:500; padding:.1em .4em; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">account</span> dan <span style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.86em; font-weight:500; padding:.1em .4em; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">l10n_id_efaktur_coretax</span> (bawaan Odoo, ikut terpasang otomatis).</span></div>
+                <div class="d-flex align-items-start" style="margin-bottom:16px; color:#4F5C6D;"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:3px 12px 0 0;"/><span>Akun <a href="https://aksatax.id" target="_blank" rel="noopener" style="color:#1F5FD6;">PajakMu</a> paket <span style="font-weight:600; color:#202C3C;">Business</span> atau lebih tinggi, karena paket Starter tidak mencakup Public API.</span></div>
+                <div class="d-flex align-items-start" style="margin-bottom:16px; color:#4F5C6D;"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:3px 12px 0 0;"/><span>API key dari Owner/Admin Pajak dengan izin:<span style="display:block; margin-top:8px;"><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">faktur:baca</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">faktur:tulis</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">faktur:kirim</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">bupot:tulis</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">master:baca</span><span style="display:inline-block; margin:0 6px 6px 0; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; font-weight:500; padding:1px 7px; border-radius:5px; background-color:#EAF2FF; color:#202C3C; white-space:nowrap;">status:baca</span></span></span></div>
+                <div class="d-flex align-items-start" style="margin-bottom:20px; color:#4F5C6D;"><img src="ico_check_green.png" alt="" width="20" height="20" class="flex-shrink-0" style="width:20px; height:20px; margin:3px 12px 0 0;"/><span>API key per entitas mewakili satu NPWP. API key tingkat grup juga bisa dipakai: isi <span style="font-weight:600; color:#202C3C;">NPWP entitas</span> di Koneksi PajakMu untuk setiap perusahaan.</span></div>
+                <p style="margin:0; padding:14px 16px; border-radius:10px; background-color:#EAF2FF; border:1px solid #C9DCFD; font-size:15px; color:#202C3C;">Modul ini mengikuti Public API PajakMu terbaru. Perbarui PajakMu lebih dulu, baru upgrade modul Odoo.</p>
+            </div>
+            <div class="col-lg-6 offset-lg-1">
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 20px;">Langkah</h3>
+                <div class="d-flex align-items-center" style="padding:16px 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">1</span><p style="margin:0; color:#4F5C6D;">Pasang modul <span style="font-weight:600; color:#202C3C;">Coretax Integration (PajakMu)</span>.</p></div>
+                <div class="d-flex align-items-center" style="padding:16px 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">2</span><p style="margin:0; color:#4F5C6D;">Buka <span style="font-weight:600; color:#202C3C;">Coretax <span style="color:#4F5C6D; padding:0 3px;">&rsaquo;</span> Pengaturan <span style="color:#4F5C6D; padding:0 3px;">&rsaquo;</span> Koneksi PajakMu</span>, isi alamat dan API key, lalu klik <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Uji koneksi</span>.</p></div>
+                <div class="d-flex align-items-center" style="padding:16px 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">3</span><p style="margin:0; color:#4F5C6D;">Pilih cara kirim: manual dari faktur atau otomatis saat diposting. Webhook bersifat opsional.</p></div>
+                <div class="d-flex align-items-center" style="padding:16px 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">4</span><p style="margin:0; color:#4F5C6D;">Klik <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Cocokkan semua pelanggan</span>.</p></div>
+                <div class="d-flex align-items-center" style="padding:16px 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">5</span><p style="margin:0; color:#4F5C6D;">Pasang <span style="font-weight:600; color:#202C3C;">Kode Barang/Jasa Coretax</span> di produk.</p></div>
+                <div class="d-flex align-items-center" style="padding:16px 0 0; border-top:1px solid #E5EAF2;"><span class="flex-shrink-0" style="display:inline-block; width:34px; height:34px; line-height:32px; text-align:center; margin-right:14px; border-radius:9px; background-color:#FFFFFF; border:1px solid #CFD8E6; color:#1F5FD6; font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; font-weight:700;">6</span><p style="margin:0; color:#4F5C6D;">Untuk PPh, pasang pajak PPh di baris tagihan vendor. Kode objek pajak terisi dari pajaknya.</p></div>
+            </div>
+        </div>
+
+        <!-- Batasan saat ini -->
+        <div class="d-flex flex-column flex-sm-row" style="margin-top:clamp(48px,6vw,80px); padding:clamp(22px,3vw,36px); border-radius:16px; background-color:#FFFFFF; border:1px solid #E5EAF2;">
+            <img src="ico_info.png" alt="" width="28" height="28" class="flex-shrink-0 align-self-start" style="width:28px; height:28px; margin:0 22px 16px 0;"/>
+            <div>
+                <h3 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(1.2rem,1.08rem + .45vw,1.45rem); font-weight:700; line-height:1.22; letter-spacing:-0.02em; color:#202C3C; margin:0 0 12px;">Batasan saat ini</h3>
+                <p style="color:#4F5C6D; margin:0 0 12px;">Hal berikut belum dikerjakan dari Odoo, jadi dilakukan langsung di aplikasi PajakMu. Tombol <span style="display:inline-block; padding:0 9px; border:1px solid #CFD8E6; border-radius:6px; background-color:#EEF1F6; color:#202C3C; font-weight:600; font-size:.86em; line-height:1.7; white-space:nowrap;">Buka di PajakMu</span> membuka dokumennya.</p>
+                <ul style="color:#4F5C6D; margin:0 0 12px; padding-left:1.2em;">
+                    <li style="margin-bottom:6px;">penandatanganan dan pengiriman Bukti Potong ke DJP;</li>
+                    <li>tarik Faktur Masukan dari DJP, retur atas faktur keluaran (dibuat pembeli di Coretax), dan SPT.</li>
                 </ul>
-            </div>
-            <div class="col-md-6" style="margin-bottom: 16px;">
-                <h3 style="font-weight: 800; color: #1f2340;">Mulai dalam 6 langkah</h3>
-                <ol style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
-                    <li>Pasang modul <b>Coretax Integration (PajakMu)</b>.</li>
-                    <li>Buka <b>Coretax &rsaquo; Pengaturan &rsaquo; Koneksi PajakMu</b>, isi alamat dan API key, lalu klik <b>Uji koneksi</b>.</li>
-                    <li>Pilih cara kirim: manual dari faktur atau otomatis saat diposting. Webhook bersifat opsional.</li>
-                    <li>Klik <b>Cocokkan semua pelanggan</b>.</li>
-                    <li>Pasang <b>Kode Barang/Jasa Coretax</b> di produk.</li>
-                    <li>Untuk PPh, pasang pajak PPh di baris tagihan vendor. Kode objek pajak terisi dari pajaknya.</li>
-                </ol>
+                <p style="color:#4F5C6D; margin:0;">PPh dicatat saat tagihan vendor diposting. PPh yang baru dipotong saat pembayaran, PPh yang dipotong pelanggan, dan kurs pajak KMK untuk tagihan valas belum didukung.</p>
             </div>
         </div>
     </div>
-</section>
 
-<!-- Limitations -->
-<section style="padding: 0 16px 40px;">
-    <div style="max-width: 1100px; margin: 0 auto;">
-        <h3 style="font-weight: 800; color: #1f2340;">Batasan saat ini</h3>
-        <p style="color: #5b6075; font-size: 15px;">Hal berikut belum dikerjakan dari Odoo, jadi dilakukan langsung di aplikasi PajakMu. Tombol <b>Buka di PajakMu</b> membuka dokumennya.</p>
-        <ul style="color: #5b6075; padding-left: 20px; font-size: 15px; line-height: 1.7;">
-            <li>penandatanganan dan pengiriman Bukti Potong ke DJP;</li>
-            <li>tarik Faktur Masukan dari DJP, retur atas faktur keluaran (dibuat pembeli di Coretax), dan SPT.</li>
-        </ul>
-        <p style="color: #5b6075; font-size: 15px; margin: 12px 0 0;">PPh dicatat saat tagihan vendor diposting. PPh yang baru dipotong saat pembayaran, PPh yang dipotong pelanggan, dan kurs pajak KMK untuk tagihan valas belum didukung.</p>
-        <p style="color: #8a8fa3; font-size: 13px; margin: 16px 0 0;">Screenshot di halaman ini memakai data contoh fiktif.</p>
+    <!-- CTA (bab navy) -->
+    <div style="padding:clamp(64px,8vw,112px) clamp(16px,4vw,48px) clamp(32px,4vw,48px); background-color:#0D2550; color:#FFFFFF; border-bottom-left-radius:15px; border-bottom-right-radius:15px;">
+        <div class="row align-items-end">
+            <div class="col-lg-7 mb-4 mb-lg-0"><h2 style="font-family:'Plus Jakarta Sans',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; font-size:clamp(2.1rem,1.2rem + 3vw,3.6rem); font-weight:800; line-height:1.03; letter-spacing:-0.04em; color:#FFFFFF; margin:0;">Mulai berlangganan PajakMu</h2></div>
+            <div class="col-lg-5">
+                <p style="margin:0 0 22px; color:#C7D4EC;">Modul ini butuh akun PajakMu paket Business atau lebih tinggi. Chat tim PajakMu di WhatsApp untuk berlangganan atau bertanya.</p>
+                <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="display:inline-block; background-color:#FFFFFF; border:1px solid #FFFFFF; color:#0D2550; font-weight:600; font-size:16px; line-height:24px; padding:12px 18px 12px 20px; border-radius:10px; text-decoration:none; white-space:nowrap; margin:0 0 20px;">Berlangganan via WhatsApp<img src="ico_arrow_navy.png" alt="" width="18" height="18" style="width:18px; height:18px; vertical-align:-3px; margin-left:10px;"/></a>
+                <p style="margin:0 0 14px; font-size:14px; color:#C7D4EC;">WhatsApp <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:600; font-size:16px; color:#FFFFFF; text-decoration:underline; margin-left:6px; white-space:nowrap;">0858-7571-6648</a></p>
+                <p style="margin:0;"><a href="https://www.aksa.id" target="_blank" rel="noopener" style="color:#FFFFFF; font-weight:500; text-decoration:underline;">Kunjungi www.aksa.id</a></p>
+            </div>
+        </div>
+        <div style="margin-top:clamp(48px,6vw,72px); padding-top:20px; border-top:1px solid rgba(255,255,255,.16); font-size:13.5px; line-height:1.55; color:#C7D4EC;">
+            <p style="margin:0 0 6px;">Screenshot di halaman ini memakai data contoh fiktif.</p>
+            <p style="margin:0;">Coretax adalah sistem milik Direktorat Jenderal Pajak. Modul ini dan PajakMu tidak dibuat atau dikelola oleh DJP. Odoo adalah merek milik Odoo S.A.</p>
+        </div>
     </div>
-</section>
 
-<!-- CTA -->
-<section style="padding: 0 16px 24px;">
-    <div style="max-width: 1100px; margin: 0 auto; background-color: #eef2fb; border: 1px solid #d6deef; border-radius: 16px; padding: 36px 24px; text-align: center;">
-        <h3 style="color: #13245a; font-weight: 800; margin-bottom: 8px;">Mulai berlangganan PajakMu</h3>
-        <p style="color: #3d4560; font-size: 16px; margin-bottom: 20px;">Modul ini butuh akun PajakMu paket Business atau lebih tinggi. Chat tim PajakMu di WhatsApp <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="color: #0b6b3a; font-weight: 700; text-decoration: underline;">0858-7571-6648</a> untuk berlangganan atau bertanya.</p>
-        <a href="https://wa.me/6285875716648?text=Halo%20PajakMu%2C%20saya%20ingin%20berlangganan%20PajakMu%20untuk%20integrasi%20Odoo." target="_blank" rel="noopener" style="display: inline-block; max-width: 100%; background-color: #e7f8ee; border: 2px solid #1a9e4b; color: #0b6b3a; font-weight: 700; font-size: 16px; line-height: 28px; padding: 10px 22px 10px 14px; border-radius: 8px; text-decoration: underline; margin: 4px;"><img src="whatsapp.png" alt="WhatsApp" width="28" height="28" style="width: 28px; height: 28px; vertical-align: middle; margin: 0 10px 0 0; border: 0;"/><span style="vertical-align: middle;">Berlangganan PajakMu via WhatsApp</span></a>
-        <a href="https://www.aksa.id" target="_blank" rel="noopener" style="display: inline-block; max-width: 100%; background-color: #fff; border: 2px solid #1f377a; color: #1f377a; font-weight: 700; font-size: 16px; line-height: 28px; padding: 10px 22px; border-radius: 8px; text-decoration: underline; margin: 4px;">Kunjungi www.aksa.id</a>
-    </div>
 </section>
