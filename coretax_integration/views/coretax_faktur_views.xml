@@ -147,7 +147,17 @@
                         <i title="Sedang diproses" class="fa fa-hourglass-half fa-lg mt-1"/>
                         <div><strong>Sedang diproses DJP.</strong> Odoo memperbarui status otomatis setiap 5 menit - tidak perlu melakukan apa pun.</div>
                     </div>
-                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="state not in ('draft', 'pending_approval', 'validated') or attention">
+                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="state != 'pending_approval'">
+                        <i title="Menunggu persetujuan" class="fa fa-hourglass-start fa-lg mt-1"/>
+                        <div>
+                            <strong>Menunggu persetujuan di PajakMu.</strong>
+                            <span invisible="not approval_step"><field name="approval_step" class="d-inline" readonly="1"/>.</span>
+                            Setelah disetujui, PajakMu mengirimnya ke DJP otomatis dan Odoo memperbarui statusnya - tidak perlu
+                            mengirim dari Odoo.
+                            <div class="small">Faktur Odoo terkunci selama menunggu. Untuk mengubahnya, tarik dulu pengajuannya di PajakMu.</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning d-flex gap-2" role="status" invisible="state not in ('draft', 'validated') or attention">
                         <i title="Draft" class="fa fa-pencil-square-o fa-lg mt-1"/>
                         <div>
                             <strong>Masih draft di PajakMu.</strong> Klik <b>Kirim ke DJP</b>, atau setujui &amp; kirim dari PajakMu
@@ -212,6 +222,7 @@
                                 </group>
                                 <group>
                                     <field name="submitted_at"/>
+                                    <field name="approval_step" invisible="not approval_step"/>
                                     <field name="last_sync"/>
                                     <field name="company_id" groups="base.group_multi_company"/>
                                 </group>

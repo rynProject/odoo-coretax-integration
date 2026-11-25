@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 # Event PajakMu yang diikuti Odoo (lewat webhook maupun /public/events).
 EVENT_TYPES = [
     "faktur.submitted", "faktur.approved", "faktur.rejected", "faktur.cancelled", "faktur.amended", "faktur.reported",
+    "faktur.approval_rejected", "faktur.approval_withdrawn",
     "bupot.approved", "bupot.rejected", "bupot.cancelled", "bupot.amended",
     "retur.approved", "retur.rejected", "retur.cancelled",
 ]
@@ -307,7 +308,8 @@ class CoretaxConnection(models.Model):
         count = 0
         fakturs = self.env["coretax.faktur"].sudo().search([
             ("company_id", "=", self.company_id.id), ("aksatax_id", "!=", False),
-            ("state", "in", ["submitted", "processing", "cancel_requested"]),
+            # menunggu persetujuan internal PajakMu: bisa ditolak/ditarik (kembali draft) atau disetujui tanpa terkirim
+            ("state", "in", ["pending_approval", "validated", "submitted", "processing", "cancel_requested"]),
             "|", ("last_sync", "=", False), ("last_sync", "<", threshold),
         ], limit=REFRESH_BATCH, order="last_sync asc")
         for faktur in fakturs:
@@ -330,7 +332,7 @@ class CoretaxConnection(models.Model):
                 continue
         returs = self.env["coretax.retur"].sudo().search([
             ("company_id", "=", self.company_id.id), ("aksatax_id", "!=", False),
-            ("state", "in", ["draft", "submitted", "cancel_requested"]),
+            ("state", "in", ["draft", "pending_approval", "submitted", "cancel_requested"]),
             "|", ("last_sync", "=", False), ("last_sync", "<", threshold),
         ], limit=REFRESH_BATCH, order="last_sync asc")
         for retur in returs:
