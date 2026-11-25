@@ -33,8 +33,9 @@ REMOTE_STATES = {
 # Status lapor SPT Masa PPN (turunan PajakMu, field `dilaporkan`).
 LAPOR_STATES = [("YA", "Sudah dilaporkan"), ("BELUM", "Belum dilaporkan"), ("PEMBETULAN", "Perlu pembetulan SPT")]
 # Status yang masih "hidup" - faktur Odoo yang punya e-Faktur seperti ini tidak
-# dikirim ulang dan tidak boleh dikembalikan ke draft.
-LOCKING_STATES = ("submitted", "processing", "approved", "cancel_requested")
+# dikirim ulang dan tidak boleh dikembalikan ke draft. "Menunggu persetujuan" ikut
+# mengunci: setelah disetujui, PajakMu mengirim isi lama ke DJP otomatis.
+LOCKING_STATES = ("pending_approval", "submitted", "processing", "approved", "cancel_requested")
 # Bisa dikirim ke DJP dari Odoo (endpoint /kirim memvalidasi draft dulu).
 SENDABLE_STATES = ("draft", "validated")
 # Boleh dibuat ulang dari Odoo (dokumen lama diarsipkan).
@@ -42,6 +43,10 @@ RECREATE_STATES = ("rejected", "cancelled", "error")
 # PDF resmi faktur pajak tersedia setelah disetujui DJP (juga untuk yang sudah diminta batal/diganti).
 PDF_STATES = ("approved", "cancel_requested", "cancelled", "replaced")
 ATTENTION_STATES = ("rejected", "error")
+# Sudah sampai ke DJP: dari "menunggu persetujuan" ke sini berarti disetujui lalu dikirim PajakMu.
+SENT_STATES = ("submitted", "processing", "approved", "rejected")
+# Peran penyetuju di PajakMu (`persetujuan.peran`), label seperti di aplikasi PajakMu.
+APPROVER_ROLES = {"REVIEWER": "Reviewer", "ADMIN_PAJAK": "Admin Pajak", "OWNER": "Owner"}
 IN_PROGRESS_STATES = ("pending_approval", "validated", "submitted", "processing", "cancel_requested")
 # Kode barang/jasa umum 000000 yang diberikan Odoo ke produk baru (l10n_id_efaktur_coretax).
 GENERIC_PRODUCT_CODES = ("l10n_id_efaktur_coretax.product_code_000000_goods",
@@ -119,6 +124,8 @@ class CoretaxFaktur(models.Model):
                                      ondelete="set null")
     send_attempt = fields.Integer(string="Percobaan kirim", default=0, readonly=True, copy=False)
     submitted_at = fields.Datetime(string="Dikirim ke DJP pada", readonly=True, copy=False)
+    approval_step = fields.Char(string="Tahap persetujuan", readonly=True, copy=False,
+                                help="Langkah persetujuan internal PajakMu yang sedang ditunggu.")
     last_sync = fields.Datetime(string="Diperbarui dari PajakMu", readonly=True, copy=False)
     lapor_state = fields.Selection(LAPOR_STATES, string="Lapor SPT Masa PPN", readonly=True, copy=False,
                                    help="Status lapor dari PajakMu: apakah faktur ini sudah termasuk SPT Masa PPN "
@@ -147,7 +154,14 @@ class CoretaxFaktur(models.Model):
         if state in ("cancel_requested", "cancelled") and "replace_requested" not in vals:
             # Pembatalan (juga dari PajakMu web) menutup penggantian yang masih dibuka.
             vals = {**vals, "replace_requested": False}
+        left_approval = self.browse()
+        if state and state != "pending_approval":
+            left_approval = self.filtered(lambda r: r.state == "pending_approval")
+            if "approval_step" not in vals:
+                vals = {**vals, "approval_step": False}
         result = super().write(vals)
+        for rec in left_approval:
+            rec._notify_approval_result()
         if state == "approved":
             for rec in self:
                 old = rec.replaces_id
@@ -161,6 +175,47 @@ class CoretaxFaktur(models.Model):
                 rec.move_id.message_post(body=_("Pembatalan e-Faktur tidak berhasil: %s. e-Faktur tetap berlaku.",
                                                 reason or _("tanpa keterangan")))
         return result
+
+    def _notify_approval_result(self):
+        """Catat di faktur Odoo hasil persetujuan internal PajakMu (status baru saja keluar dari
+        "Menunggu persetujuan"), dari polling, event, maupun Perbarui status."""
+        self.ensure_one()
+        if self.state in SENT_STATES:
+            if not self.submitted_at:
+                self.write({"submitted_at": fields.Datetime.now()})
+            body = _("e-Faktur disetujui di PajakMu dan dikirim ke DJP.")
+        elif self.state == "validated":
+            body = _("e-Faktur disetujui di PajakMu, tetapi belum terkirim ke DJP. "
+                     "Klik Kirim ke DJP di e-Faktur untuk mengirimnya.")
+        elif self.state == "draft" and self.last_error:
+            # PajakMu: lastError "Dikembalikan penyetuju: <alasan>"; awalannya tidak diulang di pesan
+            reason = re.sub(r"^Dikembalikan penyetuju:\s*", "", self.last_error).strip().rstrip(".")
+            body = _("e-Faktur dikembalikan ke draft oleh penyetuju di PajakMu: %s. "
+                     "Perbaiki datanya, lalu kirim lagi ke DJP.", reason or _("tanpa keterangan"))
+        elif self.state == "draft":
+            body = _("Pengajuan persetujuan e-Faktur ditarik di PajakMu. e-Faktur kembali menjadi draft.")
+        else:
+            return
+        self.move_id.message_post(body=body)
+
+    def _notify_pending_approval(self):
+        self.ensure_one()
+        step = f" ({self.approval_step})" if self.approval_step else ""
+        self.move_id.message_post(body=_(
+            "e-Faktur menunggu persetujuan di PajakMu%s. Setelah disetujui, PajakMu mengirimnya ke DJP otomatis.", step))
+
+    def _approval_step_label(self, persetujuan):
+        """`persetujuan` PajakMu {langkah, jumlah, peran} -> "Langkah 1 dari 2, menunggu Admin Pajak"."""
+        if not isinstance(persetujuan, dict) or not persetujuan.get("langkah"):
+            return False
+        if persetujuan.get("jumlah"):
+            label = _("Langkah %(langkah)s dari %(jumlah)s", langkah=persetujuan["langkah"],
+                      jumlah=persetujuan["jumlah"])
+        else:
+            label = _("Langkah %s", persetujuan["langkah"])
+        role = APPROVER_ROLES.get(persetujuan.get("peran"))
+        # peran kosong = penyetuju mana pun
+        return _("%(langkah)s, menunggu %(peran)s", langkah=label, peran=role) if role else label
 
     def _compute_aksatax_url(self):
         for rec in self:
@@ -203,6 +258,8 @@ class CoretaxFaktur(models.Model):
             vals["last_error"] = data.get("lastError") or False
         if state and state not in ATTENTION_STATES and "lastError" not in data:
             vals["last_error"] = False
+        if (state or self.state) == "pending_approval" and "persetujuan" in data:
+            vals["approval_step"] = self._approval_step_label(data.get("persetujuan"))
         self.write(vals)
 
     def _apply_event(self, event, connection):
@@ -216,6 +273,9 @@ class CoretaxFaktur(models.Model):
             lapor = data.get("dilaporkan") or "YA"
             self.write({"last_sync": fields.Datetime.now(),
                         "lapor_state": lapor if lapor in dict(LAPOR_STATES) else False})
+            return
+        if event.get("type") in ("faktur.approval_rejected", "faktur.approval_withdrawn"):
+            self._apply_approval_event(event, connection)
             return
         state = REMOTE_STATES.get((data.get("status") or "").upper()) or {
             "faktur.submitted": "submitted", "faktur.approved": "approved",
@@ -249,6 +309,23 @@ class CoretaxFaktur(models.Model):
                 "e-Faktur %(nomor)s diganti oleh faktur pengganti %(pengganti)s yang dibuat di PajakMu.",
                 nomor=self.nomor_faktur or "-", pengganti=data.get("nomorPengganti") or "-"))
 
+    def _apply_approval_event(self, event, connection):
+        """Persetujuan internal PajakMu ditolak penyetuju / pengajuannya ditarik: faktur kembali DRAFT.
+        Status diambil ulang dari PajakMu (event bisa terlambat, mis. faktur sudah diajukan lagi);
+        data event dipakai bila PajakMu tidak bisa dibaca. Pesan di faktur Odoo ditulis oleh write()."""
+        self.ensure_one()
+        try:
+            remote = connection._client(self).get_faktur(self.aksatax_id)
+        except AksaTaxError:
+            if self.state not in ("pending_approval", "draft"):
+                return  # event lama untuk e-Faktur yang sudah dikirim; status menyusul saat sinkronisasi
+            data = event.get("data") or {}
+            remote = {"status": data.get("status") or "DRAFT", "lastError": None}
+            if event.get("type") == "faktur.approval_rejected":
+                # bentuk lastError PajakMu untuk penolakan penyetuju
+                remote["lastError"] = f"Dikembalikan penyetuju: {data.get('alasan') or ''}".strip()
+        self._apply_remote(remote)
+
     def _schedule_fix_activity(self, summary):
         """Aktivitas 'perbaiki' untuk penanggung jawab faktur, supaya penolakan
         tidak luput (muncul di lonceng aktivitas & chatter faktur)."""
@@ -269,15 +346,43 @@ class CoretaxFaktur(models.Model):
             if rec.state not in SENDABLE_STATES or not rec.aksatax_id:
                 raise UserError(_("e-Faktur %s tidak dalam status yang bisa dikirim ke DJP.", rec.display_name))
             connection = self.env["coretax.connection"]._for_company(rec.company_id)
+            client = connection._client(rec)
             try:
-                result = connection._client(rec).send_faktur(
-                    rec.aksatax_id, f"{rec._idempotency_base()}-kirim-{rec.send_attempt + 1}")
+                result = client.send_faktur(rec.aksatax_id, f"{rec._idempotency_base()}-kirim-{rec.send_attempt + 1}")
             except AksaTaxError as exc:
-                rec.write({"last_error": exc.full_message()})
-                raise UserError(exc.full_message()) from exc
-            rec.write({"state": REMOTE_STATES.get(result.get("status"), "submitted"), "send_mode": "send",
-                       "send_attempt": rec.send_attempt + 1, "submitted_at": fields.Datetime.now(), "last_error": False})
+                result = rec._pending_after_conflict(client, exc)
+                if not result:
+                    rec.write({"last_error": exc.full_message()})
+                    raise UserError(exc.full_message()) from exc
+            rec._record_send_result(result, rec.send_attempt + 1)
         return True
+
+    def _record_send_result(self, result, attempt):
+        """Jawaban POST /faktur/{id}/kirim. PENDING_APPROVAL = masuk antrean persetujuan internal PajakMu:
+        belum terkirim ke DJP (submitted_at kosong); PajakMu mengirimnya otomatis setelah disetujui."""
+        self.ensure_one()
+        state = REMOTE_STATES.get((result.get("status") or "").upper(), "submitted")
+        vals = {"state": state, "send_mode": "send", "send_attempt": attempt, "last_error": False}
+        if state == "pending_approval":
+            vals["approval_step"] = self._approval_step_label(result.get("persetujuan"))
+        else:
+            vals["submitted_at"] = fields.Datetime.now()
+        self.write(vals)
+        if state == "pending_approval":
+            self._notify_pending_approval()
+
+    def _pending_after_conflict(self, client, exc):
+        """PajakMu lama menjawab 409 (bukan 202 PENDING_APPROVAL) bila faktur masuk persetujuan internal.
+        Status sebenarnya dibaca dari GET /faktur/{id}, bukan dari teks galat. Mengembalikan data faktur
+        bila memang menunggu persetujuan, selain itu None (galat tetap galat)."""
+        self.ensure_one()
+        if exc.status != 409 or not self.aksatax_id:
+            return None
+        try:
+            data = client.get_faktur(self.aksatax_id)
+        except AksaTaxError:
+            return None
+        return data if (data.get("status") or "").upper() == "PENDING_APPROVAL" else None
 
     def _check_no_live_retur(self):
         """e-Faktur yang punya nota retur berlaku tidak boleh dibatalkan/diganti."""

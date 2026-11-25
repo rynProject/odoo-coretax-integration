@@ -41,6 +41,11 @@
                         <i title="Berhasil" class="fa fa-check-circle"/> <field name="sent_count" class="d-inline fw-bold"/> e-Faktur berhasil dikirim.
                         Hasil dari DJP akan diperbarui otomatis.
                     </div>
+                    <div class="alert alert-warning" role="status" invisible="not pending_count">
+                        <i title="Menunggu persetujuan" class="fa fa-hourglass-start"/> <field name="pending_count" class="d-inline fw-bold"/> e-Faktur
+                        menunggu persetujuan di PajakMu dan belum terkirim ke DJP. Setelah disetujui, PajakMu mengirimnya ke DJP otomatis;
+                        statusnya di Odoo diperbarui otomatis.
+                    </div>
                     <div class="alert alert-danger" role="alert" invisible="not failed_count">
                         <i title="Perlu tindakan" class="fa fa-exclamation-triangle"/> <field name="failed_count" class="d-inline fw-bold"/> e-Faktur gagal -
                         lihat keterangannya di bawah. Setelah diperbaiki, kirim ulang dari faktur atau menu <b>Perlu tindakan</b>.
@@ -49,7 +54,8 @@
 
                 <field name="line_ids" readonly="1" nolabel="1">
                     <tree create="0" delete="0" decoration-danger="level == 'error' or result == 'failed'"
-                          decoration-warning="level == 'warning' and not result" decoration-success="result in ('sent', 'draft')">
+                          decoration-warning="(level == 'warning' and not result) or result == 'pending'"
+                          decoration-success="result in ('sent', 'draft')">
                         <field name="move_id"/>
                         <field name="partner_id"/>
                         <field name="invoice_date" optional="show"/>
@@ -59,7 +65,8 @@
                                decoration-success="level == 'ok'" decoration-warning="level == 'warning'" decoration-danger="level == 'error'"/>
                         <field name="messages" column_invisible="parent.step == 'done'"/>
                         <field name="result" widget="badge" column_invisible="parent.step != 'done'"
-                               decoration-success="result in ('sent', 'draft')" decoration-danger="result == 'failed'"/>
+                               decoration-success="result in ('sent', 'draft')" decoration-warning="result == 'pending'"
+                               decoration-danger="result == 'failed'"/>
                         <field name="result_message" column_invisible="parent.step != 'done'"/>
                         <field name="needs_match" column_invisible="1"/>
                         <button name="action_match_partner" type="object" string="Cocokkan pelanggan" icon="fa-link"
