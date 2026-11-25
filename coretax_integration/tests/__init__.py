@@ -8,3 +8,4 @@ from . import test_efaktur_fase1
 from . import test_efaktur_fase2
 from . import test_retur
 from . import test_api_pajakmu
+from . import test_persetujuan

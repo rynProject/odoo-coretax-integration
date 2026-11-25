@@ -1,3 +1,5 @@
+import re
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -6,6 +8,7 @@ from ..tools.client import AksaTaxError
 RETUR_STATES = [
     ("new", "Baru"),
     ("draft", "Draft di PajakMu"),
+    ("pending_approval", "Menunggu persetujuan di PajakMu"),
     ("submitted", "Dikirim"),
     ("approved", "Disetujui DJP"),
     ("rejected", "Ditolak DJP"),
@@ -14,12 +17,12 @@ RETUR_STATES = [
     ("error", "Gagal - perlu tindakan"),
 ]
 REMOTE_RETUR_STATES = {
-    # Menunggu persetujuan / siap kirim di PajakMu: masih draft dari sisi Odoo (belum terkirim ke DJP).
-    "DRAFT": "draft", "PENDING_APPROVAL": "draft", "VALIDATED": "draft", "SUBMITTED": "submitted", "APPROVED": "approved", "REJECTED": "rejected",
-    "CANCEL_REQUESTED": "cancel_requested", "CANCELLED": "cancelled",
+    # Siap kirim di PajakMu: masih draft dari sisi Odoo (belum terkirim ke DJP, bisa dikirim dari Odoo).
+    "DRAFT": "draft", "VALIDATED": "draft", "PENDING_APPROVAL": "pending_approval", "SUBMITTED": "submitted",
+    "APPROVED": "approved", "REJECTED": "rejected", "CANCEL_REQUESTED": "cancel_requested", "CANCELLED": "cancelled",
 }
 # Nota retur yang masih berlaku di PajakMu (menahan faktur kredit Odoo).
-LIVE_STATES = ("draft", "submitted", "approved", "cancel_requested")
+LIVE_STATES = ("draft", "pending_approval", "submitted", "approved", "cancel_requested")
 SENDABLE_STATES = ("new", "draft", "error")
 ATTENTION_STATES = ("rejected", "error")
 # Galat sementara: kiriman belum tentu diterima PajakMu, jadi percobaan ulang memakai kunci idempotensi yang sama.
@@ -125,15 +128,38 @@ class CoretaxRetur(models.Model):
         return self._write_state(vals)
 
     def _write_state(self, vals):
+        state = vals.get("state")
         # Kembali ke "approved" dari "cancel_requested" = DJP menolak pembatalan.
         cancel_rejected = (self.filtered(lambda r: r.state == "cancel_requested")
-                           if vals.get("state") == "approved" else self.browse())
+                           if state == "approved" else self.browse())
+        left_approval = (self.filtered(lambda r: r.state == "pending_approval")
+                         if state and state != "pending_approval" else self.browse())
         result = super().write(vals)
         for rec in cancel_rejected:
             rec.move_id.message_post(body=_(
                 "Pembatalan nota retur %(nomor)s tidak berhasil: %(alasan)s. Nota retur tetap berlaku.",
                 nomor=rec.nomor_dokumen_retur, alasan=rec.last_error or _("tanpa keterangan")))
+        for rec in left_approval:
+            rec._notify_approval_result()
         return result
+
+    def _notify_approval_result(self):
+        """Status baru saja keluar dari "Menunggu persetujuan di PajakMu" (polling / Perbarui status)."""
+        self.ensure_one()
+        nomor = self.nomor_dokumen_retur
+        if self.state in ("submitted", "approved", "rejected"):
+            body = _("Nota retur %s disetujui di PajakMu dan dikirim ke DJP.", nomor)
+        elif self.state == "draft" and self.last_error:
+            # PajakMu: lastError "Dikembalikan ke draf: <catatan>"; awalannya tidak diulang di pesan
+            reason = re.sub(r"^Dikembalikan ke draf:\s*", "", self.last_error).strip().rstrip(".")
+            body = _("Nota retur %(nomor)s dikembalikan ke draft di PajakMu: %(alasan)s.",
+                     nomor=nomor, alasan=reason or _("tanpa keterangan"))
+        elif self.state == "draft":
+            body = _("Nota retur %s tidak lagi menunggu persetujuan di PajakMu dan belum dikirim ke DJP. "
+                     "Klik Kirim ke DJP di nota retur untuk mengirimnya.", nomor)
+        else:
+            return
+        self.move_id.message_post(body=body)
 
     # ── kirim ke PajakMu ──────────────────────────────────────────────
     def _payload(self):
@@ -195,18 +221,38 @@ class CoretaxRetur(models.Model):
             try:
                 result = client.send_retur(rec.aksatax_id, f"{base}-kirim-{rec.send_attempt + 1}")
             except AksaTaxError as exc:
-                rec.write({"state": "draft", "last_error": exc.user_message, "error_code": exc.code or False,
-                           "last_sync": fields.Datetime.now()})
-                rec.message_post(body=_("Nota retur tersimpan sebagai draft di PajakMu, tetapi belum terkirim: %s",
-                                        exc.user_message))
-                continue
+                result = rec._pending_after_conflict(client, exc)
+                if not result:
+                    rec.write({"state": "draft", "last_error": exc.user_message, "error_code": exc.code or False,
+                               "last_sync": fields.Datetime.now()})
+                    rec.message_post(body=_("Nota retur tersimpan sebagai draft di PajakMu, tetapi belum terkirim: %s",
+                                            exc.user_message))
+                    continue
+            state = REMOTE_RETUR_STATES.get((result.get("status") or "").upper(), "submitted")
             rec.write({
-                "state": REMOTE_RETUR_STATES.get((result.get("status") or "").upper(), "submitted"),
-                "send_attempt": rec.send_attempt + 1, "last_error": False, "error_code": False,
+                "state": state, "send_attempt": rec.send_attempt + 1, "last_error": False, "error_code": False,
                 "last_sync": fields.Datetime.now(),
             })
-            rec.move_id.message_post(body=_("Nota retur %s dikirim ke DJP.", rec.nomor_dokumen_retur))
+            if state == "pending_approval":
+                # Belum terkirim ke DJP: PajakMu mengirimnya setelah disetujui penyetuju internal.
+                rec.move_id.message_post(body=_(
+                    "Nota retur %s menunggu persetujuan di PajakMu. Setelah disetujui, PajakMu mengirimnya ke DJP.",
+                    rec.nomor_dokumen_retur))
+            else:
+                rec.move_id.message_post(body=_("Nota retur %s dikirim ke DJP.", rec.nomor_dokumen_retur))
         return True
+
+    def _pending_after_conflict(self, client, exc):
+        """PajakMu lama menjawab 409 (bukan 202 PENDING_APPROVAL) untuk nota retur yang menunggu persetujuan
+        internal. Status sebenarnya dibaca dari GET /nota-retur/{id}, bukan dari teks galat."""
+        self.ensure_one()
+        if exc.status != 409 or not self.aksatax_id:
+            return None
+        try:
+            data = client.get_retur(self.aksatax_id)
+        except AksaTaxError:
+            return None
+        return data if (data.get("status") or "").upper() == "PENDING_APPROVAL" else None
 
     # ── pembaruan dari PajakMu ────────────────────────────────────────
     def _apply_remote(self, data):

@@ -106,6 +106,22 @@ Odoo (polling /api/v1/public/events setiap 5 menit, atau webhook)
   putus, PajakMu tidak membuat dokumen ganda.
 - Setelah ditolak atau dibatalkan, **Buat ulang e-Faktur** membuat versi baru. Versi lama tetap tersimpan sebagai riwayat.
 
+### Persetujuan internal di PajakMu
+
+Bila PajakMu memakai persetujuan berjenjang, kirim dari Odoo dijawab **Menunggu persetujuan di PajakMu** (beserta
+langkah yang ditunggu, mis. "Langkah 1 dari 2, menunggu Admin Pajak"). e-Faktur belum terkirim ke DJP: wizard kirim
+menghitungnya terpisah dari yang terkirim, dan **Dikirim ke DJP pada** baru terisi setelah disetujui.
+
+- Disetujui: PajakMu mengirimnya ke DJP otomatis (event `faktur.submitted`), Odoo mencatatnya di faktur.
+- Ditolak penyetuju atau pengajuannya ditarik: e-Faktur kembali **Draft di PajakMu** (event
+  `faktur.approval_rejected` / `faktur.approval_withdrawn`), alasan penolakan tampil di faktur.
+- Disetujui tetapi gagal diantrekan: status **Siap dikirim ke DJP**, kirim lagi dengan **Kirim ke DJP**.
+- Selama menunggu persetujuan, faktur Odoo tidak bisa direset ke draft atau dibatalkan, karena setelah disetujui PajakMu
+  mengirim isi yang lama. Tarik dulu pengajuannya di PajakMu, lalu klik **Perbarui status e-Faktur**.
+- Nota retur yang menunggu persetujuan berstatus **Menunggu persetujuan di PajakMu** dan diperbarui lewat polling.
+- PajakMu lama yang menjawab 409 untuk faktur/nota retur yang menunggu persetujuan tetap dikenali: Odoo membaca status
+  dokumennya dari PajakMu.
+
 ### Batalkan e-Faktur
 
 Tombol **Batalkan e-Faktur** membuka wizard alasan (minimal 5 karakter). Status menjadi **Proses batal**, lalu
@@ -159,6 +175,10 @@ versi terbaru".
 
 Versi ini juga memperbaiki penerima webhook: di Odoo 19/20 rute `auth='none'` bawaannya read-only, sehingga webhook
 sebelumnya selalu ditolak (401) dan status hanya datang dari polling 5 menit.
+
+Versi 20.0.1.7.0 mengikuti persetujuan internal PajakMu: jawaban 202 `PENDING_APPROVAL` dari `…/kirim`, field
+`persetujuan`, dan event `faktur.approval_rejected` / `faktur.approval_withdrawn` (lihat **Persetujuan internal di
+PajakMu**).
 
 ## Pengujian
 
