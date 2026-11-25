@@ -640,7 +640,71 @@ class TestRetur(CoretaxTestCommon):
             self.assertEqual(credit._coretax_retur_amounts(faktur=faktur),
                              {"dpp": 1000000, "ppn": 0, "ppnbm": 0, "tarif": 12}, xmlid)
 
-    def test_remote_pending_approval_is_draft(self):
-        retur = self._in_retur(state="submitted", aksatax_id=RETUR_ID)
+    def test_remote_pending_approval_state(self):
+        retur = self._in_retur(state="draft", aksatax_id=RETUR_ID)
         retur._apply_remote(retur_body("PENDING_APPROVAL"))
+        self.assertEqual(retur.state, "pending_approval")
+        # siap kirim di PajakMu: belum terkirim ke DJP, bisa dikirim dari Odoo
+        retur._apply_remote(retur_body("VALIDATED"))
         self.assertEqual(retur.state, "draft")
+
+    # ── persetujuan internal PajakMu ──────────────────────────────────
+    def test_send_pending_approval_not_sent(self):
+        retur = self._in_retur()
+        _fake, patcher = self._patch({
+            ("POST", "/nota-retur"): (201, retur_body()),
+            ("POST", f"/nota-retur/{RETUR_ID}/kirim"): (202, {"id": RETUR_ID, "status": "PENDING_APPROVAL"}),
+        })
+        with patcher:
+            retur.action_send()
+        self.assertEqual((retur.state, retur.send_attempt), ("pending_approval", 1))
+        self.assertFalse(retur.last_error)
+        bodies = " ".join(retur.move_id.message_ids.mapped("body"))
+        self.assertIn("Nota retur RTR/002 menunggu persetujuan di PajakMu", bodies)
+        self.assertNotIn("Nota retur RTR/002 dikirim ke DJP.", bodies)
+        self.assertTrue(retur.move_id.coretax_retur_live, "nota retur yang menunggu persetujuan masih berlaku")
+        with self.assertRaisesRegex(UserError, "punya nota retur RTR/002 di PajakMu"):
+            retur.move_id.button_draft()
+        with self.assertRaisesRegex(UserError, "tidak bisa dikirim pada status ini"):
+            retur.action_send()
+
+    def test_send_conflict_reads_pending_status(self):
+        # PajakMu lama: 409 NOT_VALIDATED untuk retur yang menunggu persetujuan internal
+        retur = self._in_retur()
+        fake, patcher = self._patch({
+            ("POST", "/nota-retur"): (201, retur_body()),
+            ("POST", f"/nota-retur/{RETUR_ID}/kirim"): (409, {"error": {
+                "code": "NOT_VALIDATED", "message": "Retur pajak RTR/002 masih menunggu persetujuan internal."}}),
+            ("GET", f"/nota-retur/{RETUR_ID}"): (200, retur_body("PENDING_APPROVAL")),
+        })
+        with patcher:
+            retur.action_send()
+        self.assertEqual(retur.state, "pending_approval")
+        self.assertFalse(retur.last_error)
+        self.assertEqual(fake.calls[-1]["path"], f"/nota-retur/{RETUR_ID}")
+
+    def _sync_pending_retur(self, remote):
+        retur = self._in_retur(state="pending_approval", aksatax_id=RETUR_ID,
+                               last_sync=fields.Datetime.now() - timedelta(hours=1))
+        _fake, patcher = self._patch({
+            ("GET", f"/nota-retur/{RETUR_ID}"): (200, remote),
+            ("GET", "/events"): (200, {"data": [], "next_after": 0, "has_more": False}),
+        })
+        with patcher:
+            self.connection._sync()
+        return retur, " ".join(retur.move_id.message_ids.mapped("body"))
+
+    def test_refresh_pending_approval_submitted(self):
+        retur, bodies = self._sync_pending_retur(retur_body("SUBMITTED"))
+        self.assertEqual(retur.state, "submitted")
+        self.assertIn("Nota retur RTR/001 disetujui di PajakMu dan dikirim ke DJP.", bodies)
+
+    def test_refresh_pending_approval_returned_to_draft(self):
+        retur, bodies = self._sync_pending_retur(retur_body("DRAFT", lastError="Dikembalikan ke draf: Nilai salah"))
+        self.assertEqual(retur.state, "draft")
+        self.assertIn("Nota retur RTR/001 dikembalikan ke draft di PajakMu: Nilai salah.", bodies)
+
+    def test_refresh_pending_approval_validated(self):
+        retur, bodies = self._sync_pending_retur(retur_body("VALIDATED"))
+        self.assertEqual(retur.state, "draft")
+        self.assertIn("tidak lagi menunggu persetujuan di PajakMu dan belum dikirim ke DJP", bodies)

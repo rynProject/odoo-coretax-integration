@@ -13,7 +13,7 @@
                         groups="coretax_integration.group_coretax_user"
                         help="Kirim faktur ini ke DJP lewat PajakMu (Coretax)."/>
                 <button name="action_coretax_refresh" type="object" string="Perbarui status e-Faktur" icon="fa-refresh"
-                        invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'validated')"
+                        invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested', 'draft', 'pending_approval', 'validated')"
                         groups="coretax_integration.group_coretax_user"/>
                 <button name="action_coretax_download_pdf" type="object" string="Unduh PDF Faktur Pajak" icon="fa-download"
                         invisible="coretax_state not in ('approved', 'cancel_requested', 'cancelled', 'replaced')"
@@ -82,6 +82,11 @@
                      invisible="coretax_state not in ('submitted', 'processing', 'cancel_requested')"
                      groups="coretax_integration.group_coretax_user">
                     <i title="Sedang diproses" class="fa fa-hourglass-half"/> e-Faktur sedang diproses DJP. Status diperbarui otomatis.
+                </div>
+                <div class="alert alert-warning py-2" role="status" invisible="coretax_state != 'pending_approval'"
+                     groups="coretax_integration.group_coretax_user">
+                    <i title="Menunggu persetujuan" class="fa fa-hourglass-start"/> e-Faktur menunggu persetujuan di PajakMu.
+                    Setelah disetujui, PajakMu mengirimnya ke DJP otomatis. Untuk mengubah faktur ini, tarik dulu pengajuannya di PajakMu.
                 </div>
                 <div class="alert alert-danger py-2" role="alert" invisible="coretax_state not in ('rejected', 'error')"
                      groups="coretax_integration.group_coretax_user">

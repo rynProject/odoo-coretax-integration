@@ -38,7 +38,7 @@
                 <field name="nilai_ppn" sum="Total PPN"/>
                 <field name="state" widget="badge" decoration-success="state == 'approved'"
                        decoration-danger="state in ('error', 'rejected')" decoration-info="state in ('submitted', 'cancel_requested')"
-                       decoration-warning="state in ('new', 'draft')"/>
+                       decoration-warning="state in ('new', 'draft', 'pending_approval')"/>
                 <field name="last_error" optional="hide" string="Keterangan"/>
                 <field name="currency_id" column_invisible="1"/>
             </list>
@@ -60,6 +60,10 @@
                     <field name="state" widget="statusbar" statusbar_visible="new,draft,submitted,approved"/>
                 </header>
                 <sheet>
+                    <div class="alert alert-warning" role="status" invisible="state != 'pending_approval'">
+                        <strong>Menunggu persetujuan di PajakMu.</strong> Setelah disetujui, PajakMu mengirim nota retur ini ke DJP;
+                        Odoo memperbarui statusnya otomatis.
+                    </div>
                     <div class="alert alert-danger" role="alert" invisible="not last_error">
                         <field name="last_error" readonly="1"/>
                     </div>
