@@ -6,7 +6,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 from ..tools.client import AksaTaxError
-from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, REMOTE_STATES, STATES
+from .coretax_faktur import LOCKING_STATES, RECREATE_STATES, STATES
 from .coretax_retur import LIVE_STATES as RETUR_LIVE_STATES
 
 _logger = logging.getLogger(__name__)
@@ -260,9 +260,14 @@ class AccountMove(models.Model):
             data = client.create_faktur(self._coretax_payload(counterparty), faktur._idempotency_base())
             faktur._apply_remote(data)
             if mode == "send":
-                result = client.send_faktur(faktur.aksatax_id, f"{faktur._idempotency_base()}-kirim-1")
-                faktur.write({"state": REMOTE_STATES.get(result.get("status"), "submitted"), "send_attempt": 1,
-                              "submitted_at": fields.Datetime.now()})
+                try:
+                    result = client.send_faktur(faktur.aksatax_id, f"{faktur._idempotency_base()}-kirim-1")
+                except AksaTaxError as exc:
+                    # PajakMu lama: 409 untuk faktur yang masuk persetujuan internal
+                    result = faktur._pending_after_conflict(client, exc)
+                    if not result:
+                        raise
+                faktur._record_send_result(result, 1)
         except AksaTaxError as caught:
             exc = self._coretax_explain_error(caught)
             if faktur.aksatax_id:
@@ -276,7 +281,8 @@ class AccountMove(models.Model):
             if self.env.context.get("coretax_auto"):
                 faktur._schedule_fix_activity(_("e-Faktur gagal dikirim otomatis"))
             return faktur
-        self.message_post(body=_("e-Faktur dibuat di PajakMu (%s).", dict(STATES).get(faktur.state)))
+        if faktur.state != "pending_approval":  # yang menunggu persetujuan sudah dicatat _record_send_result
+            self.message_post(body=_("e-Faktur dibuat di PajakMu (%s).", dict(STATES).get(faktur.state)))
         return faktur
 
     def action_coretax_send(self):
@@ -378,6 +384,13 @@ class AccountMove(models.Model):
         locks = [(move, faktur) for move, faktur in locks if faktur]
         if not locks:
             return
+        pending = [move for move, faktur in locks if faktur.state == "pending_approval"]
+        if pending:
+            # Setelah disetujui, PajakMu mengirim isi e-Faktur yang lama ke DJP otomatis.
+            raise UserError(_(
+                "Faktur %(moves)s sedang menunggu persetujuan di PajakMu, jadi belum bisa %(action)s. "
+                "Tarik pengajuannya di PajakMu dulu, lalu klik Perbarui status e-Faktur.",
+                moves=", ".join(move.name for move in pending), action=action_label))
         if allow_replacing:
             # reset ke draft: penggantian yang dibuka juga melepas kuncinya
             hint = _("Batalkan e-Faktur-nya dengan tombol Batalkan e-Faktur, atau buka penggantian dengan tombol "

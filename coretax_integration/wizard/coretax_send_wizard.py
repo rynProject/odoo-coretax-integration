@@ -28,6 +28,7 @@ class CoretaxSendWizard(models.TransientModel):
     warning_count = fields.Integer(compute="_compute_summary")
     blocked_count = fields.Integer(compute="_compute_summary")
     sent_count = fields.Integer(compute="_compute_summary")
+    pending_count = fields.Integer(compute="_compute_summary")
     failed_count = fields.Integer(compute="_compute_summary")
 
     @api.model
@@ -71,6 +72,7 @@ class CoretaxSendWizard(models.TransientModel):
             wiz.warning_count = len(wiz.line_ids.filtered(lambda l: l.level == "warning"))
             wiz.blocked_count = len(wiz.line_ids.filtered(lambda l: l.level == "error"))
             wiz.sent_count = len(wiz.line_ids.filtered(lambda l: l.result in ("sent", "draft")))
+            wiz.pending_count = len(wiz.line_ids.filtered(lambda l: l.result == "pending"))
             wiz.failed_count = len(wiz.line_ids.filtered(lambda l: l.result == "failed"))
 
     def _reopen(self):
@@ -99,10 +101,19 @@ class CoretaxSendWizard(models.TransientModel):
                 continue
             failed = faktur.state == "error" or (faktur.last_error and faktur.state in ("draft", "validated")
                                                  and self.mode == "send")
+            if failed:
+                result, message = "failed", faktur.last_error
+            elif faktur.state == "pending_approval":
+                # belum terkirim ke DJP: PajakMu mengirimnya setelah disetujui penyetuju internal
+                result = "pending"
+                message = _("PajakMu mengirimnya ke DJP otomatis setelah disetujui.")
+                if faktur.approval_step:
+                    message = f"{faktur.approval_step}. {message}"
+            else:
+                result = "sent" if self.mode == "send" else "draft"
+                message = labels.get(faktur.state)
             line.write({
-                "faktur_id": faktur.id,
-                "result": "failed" if failed else ("sent" if self.mode == "send" else "draft"),
-                "result_message": faktur.last_error if failed else labels.get(faktur.state),
+                "faktur_id": faktur.id, "result": result, "result_message": message,
                 "needs_match": failed and faktur.error_code == "COUNTERPARTY_MISSING",
             })
         self.line_ids.filtered(lambda l: l.level == "error").write({"result": "skipped",
@@ -133,8 +144,9 @@ class CoretaxSendWizardLine(models.TransientModel):
     level = fields.Selection([("ok", "Siap"), ("warning", "Siap, ada catatan"), ("error", "Belum bisa dikirim")],
                              string="Pemeriksaan", required=True, default="ok")
     messages = fields.Text(string="Catatan")
-    result = fields.Selection([("sent", "Terkirim ke DJP"), ("draft", "Tersimpan di PajakMu"),
-                               ("failed", "Gagal"), ("skipped", "Dilewati")], string="Hasil")
+    result = fields.Selection([("sent", "Terkirim ke DJP"), ("pending", "Menunggu persetujuan di PajakMu"),
+                               ("draft", "Tersimpan di PajakMu"), ("failed", "Gagal"), ("skipped", "Dilewati")],
+                              string="Hasil")
     result_message = fields.Text(string="Keterangan hasil")
     faktur_id = fields.Many2one("coretax.faktur", string="e-Faktur")
     needs_match = fields.Boolean(string="Pelanggan perlu dicocokkan")
